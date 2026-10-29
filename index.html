@@ -241,6 +241,23 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .seat.me .plaque { border-color: var(--brass); }
 .plaque .nm { font-family: var(--f-display); font-size: 15px; letter-spacing: .04em; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .plaque .sub { font-size: 11.5px; color: var(--parch-dim); display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 2px 5px; font-variant-numeric: tabular-nums; }
+.seat.low .plaque {
+  position: relative; border-color: #ff6a2a;
+  background: linear-gradient(180deg, #5a2a17, #2a1610);
+  animation: heat 1.6s ease-in-out infinite;
+}
+.seat.last .plaque { animation-duration: .9s; border-color: #ffb04a; }
+@keyframes heat {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(255, 106, 42, .35), 0 0 12px rgba(255, 90, 30, .35), inset 0 1px 0 rgba(255, 255, 255, .12); }
+  50% { box-shadow: 0 0 0 3px rgba(255, 120, 40, .55), 0 0 30px rgba(255, 110, 30, .75), inset 0 1px 0 rgba(255, 255, 255, .12); }
+}
+.low-badge {
+  position: absolute; top: -11px; right: -8px; z-index: 1; padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+  background: linear-gradient(180deg, #ff8a3d, #d9480f); color: #fff6e8; font-size: 11.5px; font-weight: 800; letter-spacing: .04em;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .5), 0 0 12px rgba(255, 110, 30, .6);
+}
+.low-badge.last { background: linear-gradient(180deg, #ffe08a, #ff8a1a); color: #2a1406; text-transform: uppercase; letter-spacing: .08em; }
+@media (prefers-reduced-motion: reduce) { .seat.low .plaque { animation: none; box-shadow: 0 0 0 2px rgba(255, 120, 40, .6), 0 0 20px rgba(255, 110, 30, .6); } }
 .seat.win .plaque {
   border-color: var(--ember); background: linear-gradient(180deg, #6a3f22, #2e1d13);
   box-shadow: 0 0 0 2px rgba(255, 138, 42, .35), 0 0 26px rgba(255, 138, 42, .55), inset 0 1px 0 rgba(255, 255, 255, .15);
@@ -537,9 +554,12 @@ function seatHtml(i, deg) {
     else tags.push('<span class="tag dim">thinking…</span>');
   }
   const title = i === 0 ? 'Your seat' : STYLE_LABEL[M.styles[i]];
-  return `<div class="seat ${sin < -0.05 ? 'below' : ''} ${won ? 'win' : ''} ${i === 0 ? 'me' : ''}"
+  // close to going out: 3 or fewer cards
+  const left = p.hand.length, low = left > 0 && left <= 3;
+  const lowBadge = low ? `<span class="low-badge ${left === 1 ? 'last' : ''}">${left === 1 ? 'Last card!' : left + ' left'}</span>` : '';
+  return `<div class="seat ${sin < -0.05 ? 'below' : ''} ${won ? 'win' : ''} ${i === 0 ? 'me' : ''} ${low ? 'low' : ''} ${left === 1 ? 'last' : ''}"
       style="left:clamp(calc(var(--sw) / 2), ${x.toFixed(2)}%, calc(100% - var(--sw) / 2));top:clamp(34px, ${y.toFixed(2)}%, calc(100% - 34px))">
-    <div class="plaque" title="${title}"><div class="nm">${p.name}</div>
+    <div class="plaque" title="${title}${low ? ` · ${left === 1 ? 'one card left' : left + ' cards left'}` : ''}">${lowBadge}<div class="nm">${p.name}</div>
       <div class="sub" aria-label="${p.hand.length} cards, ${M.totals[i]} match points">${backEl('tiny')}<span>${p.hand.length}</span><span aria-hidden="true">·</span><span>${M.totals[i]} pts</span></div></div>
     <div class="played">${cards ? `<div class="cards">${cards}</div>` : ''}${tags.join('')}</div>
   </div>`;
