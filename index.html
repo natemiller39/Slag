@@ -53,7 +53,7 @@ body {
 }
 .wrap {
   position: relative; z-index: 1;
-  max-width: 1100px; margin: 0 auto; min-height: 100%;
+  max-width: 1500px; margin: 0 auto; min-height: 100%;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   padding-block: 12px 28px;
@@ -173,7 +173,7 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 @keyframes crown-pop { from { transform: translateX(-50%) scale(0) rotate(-14deg); opacity: 0; } to { transform: translateX(-50%) scale(1); opacity: 1; } }
 @keyframes winglow { 50% { box-shadow: 0 0 0 5px rgba(255, 138, 42, .35), 0 0 70px rgba(255, 150, 50, .75); } }
 @media (prefers-reduced-motion: reduce) { .showdown, .sd-crown, .sd-tile.win { animation: none; } }
-.stage { --sw: clamp(80px, 13vw, 132px); position: relative; width: min(100cqw, 100cqh * 1.75); height: min(100cqh, 100cqw / 1.75); }
+.stage { --sw: clamp(80px, 12vw, 156px); position: relative; width: min(100cqw, 100cqh * 2.05); height: min(100cqh, 100cqw / 2.05); }
 .board {
   position: absolute; inset: 13% 8.5%; border-radius: 50%;
   background:
@@ -206,8 +206,8 @@ header { display: flex; align-items: center; justify-content: space-between; gap
   outline: 1.5px dashed rgba(241, 228, 204, .22); outline-offset: -7px;
 }
 .mat .draw { grid-area: draw; } .mat .tcol { grid-area: tcol; } .mat .disc { grid-area: disc; }
-.mat .card.big { --w: clamp(52px, min(11vw, 21cqh), 118px); }
-.pile { --w: clamp(28px, min(6vw, 11cqh), 62px); display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 12px; color: var(--parch-dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mat .card.big { --w: clamp(52px, min(11vw, 24cqh), 150px); }
+.pile { --w: clamp(28px, min(6vw, 13cqh), 80px); display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 12px; color: var(--parch-dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .pile .card, .pile .empty-slot { --w: inherit; width: var(--w); }
 .pile .stack { position: relative; isolation: isolate; }
 .pile .stack::before, .pile .stack::after { content: ""; position: absolute; inset: 0; border-radius: 7%/5%; background: #2a1b12; border: 1px solid var(--line); }
@@ -239,7 +239,7 @@ header { display: flex; align-items: center; justify-content: space-between; gap
   transition: border-color .25s, box-shadow .25s, background .25s;
 }
 .seat.me .plaque { border-color: var(--brass); }
-.plaque .nm { font-family: var(--f-display); font-size: 15px; letter-spacing: .04em; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.plaque .nm { font-family: var(--f-display); font-size: clamp(15px, 1.25vw, 19px); letter-spacing: .04em; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .plaque .sub { font-size: 11.5px; color: var(--parch-dim); display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 2px 5px; font-variant-numeric: tabular-nums; }
 .seat.low .plaque {
   position: relative; border-color: #ff6a2a;
@@ -264,7 +264,7 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 }
 .seat .played { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .seat .cards { display: flex; gap: 3px; justify-content: center; }
-.seat .card.mini { --w: clamp(19px, min(3vw, 5.5cqh), 32px); }
+.seat .card.mini { --w: clamp(19px, min(3vw, 6.5cqh), 42px); }
 
 .herald { flex: none; margin: 0 auto; text-align: center; font-size: 16px; min-height: 24px; max-width: 62ch; text-wrap: balance; }
 .herald b { color: var(--ember-hot); }
@@ -282,13 +282,13 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .meter { font-size: 15px; font-variant-numeric: tabular-nums; min-height: 22px; }
 .meter .ok { color: var(--good); font-weight: 700; }
 .meter .no { color: var(--bad); }
-.hand { --hw: clamp(44px, min(12vw, 10.5dvh), 84px); display: flex; flex-wrap: nowrap; justify-content: center; padding-top: 12px; }
-.hand .card { --w: var(--hw); width: var(--hw); }
-.hand .card + .card { margin-left: min(6px, calc((100% - var(--n) * var(--hw)) / (var(--n) - 1))); }
-.hand .card:hover:not(:disabled), .hand .card.sel { z-index: 1; }
+.hand { --hw: clamp(46px, min(12vw, 12.5dvh), 104px); display: flex; flex-wrap: nowrap; justify-content: center; padding-top: 12px; }
+.hand { --cw: max(46px, min(var(--hw), calc((100% - (var(--n) - 1) * 8px) / var(--n)))); }
+.hand .card { --w: var(--hw); width: var(--cw); }
+.hand .card + .card { margin-left: min(8px, calc((100% - var(--n) * var(--cw)) / (var(--n) - 1))); }
 .hand .card { transition: transform .15s ease, box-shadow .15s ease, opacity .2s; }
-.hand .card:hover:not(:disabled) { transform: translateY(-4px); }
-.hand .card.sel { transform: translateY(-12px); box-shadow: 0 0 0 3px var(--ember-hot), 0 0 18px rgba(255, 138, 42, .5); }
+@media (hover: hover) { .hand .card:hover:not(:disabled):not(.sel) { transform: translateY(-4px); } }
+.hand .card.sel { transform: translateY(-12px); outline: 3px solid var(--ember-hot); outline-offset: -1px; box-shadow: 0 0 18px rgba(255, 138, 42, .5); }
 .hand .card.dim { opacity: .45; }
 .hand .card.pickable { box-shadow: 0 0 0 2px var(--parch), 0 6px 14px rgba(0, 0, 0, .35); }
 .hand .card:disabled { cursor: default; }
@@ -379,7 +379,9 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 
 @media (max-width: 640px) {
   .stage { --sw: 78px; width: 100cqw; height: 100cqh; }
-  .hand { --hw: clamp(44px, min(15vw, 9dvh), 64px); }
+  .hand { --hw: clamp(44px, min(15vw, 9dvh), 64px); flex-wrap: wrap; gap: 12px 6px; }
+  .hand .card { width: min(var(--hw), calc((100% - (var(--rn) - 1) * 6px) / var(--rn))); }
+  .hand .card + .card { margin-left: 0; }
   header .meta { display: none; }
   .stage-box { min-height: 200px; }
   .board { inset: 10% 9%; }
@@ -670,7 +672,7 @@ function you() {
   }).join('');
   return `<section class="you ${S.phase === 'pick' ? 'picking' : ''}" aria-label="Your hand">
     <div class="you-top">${top || '<div class="meter"></div>'}<div class="actions">${actions}</div></div>
-    <div class="hand" style="--n:${Math.max(hand.length, 2)}">${cards}</div>
+    <div class="hand" style="--n:${Math.max(hand.length, 2)};--rn:${Math.max(Math.ceil(hand.length / 2), hand.length <= 7 ? hand.length : 0, 1)}">${cards}</div>
   </section>`;
 }
 
