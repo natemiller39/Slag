@@ -706,7 +706,7 @@ function bindTable() {
 // ===== online play =====
 // The server runs hosted games. Each player's view arrives already turned so that they sit at seat 0,
 // which lets the same table code draw single-player and online games.
-const ONLINE_HOST = 'ONLINE_HOST_PLACEHOLDER'; // the web service that hosts games, used when this page is opened from elsewhere
+const ONLINE_HOST = 'slag-online.onrender.com'; // the web service that hosts games, used when this page is opened from elsewhere
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 function wsUrl() {
   const local = location.protocol.startsWith('http') && !/slag-in1n\.onrender\.com$/.test(location.hostname);
