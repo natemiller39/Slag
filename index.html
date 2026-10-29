@@ -1,0 +1,963 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Slag: a card-shedding game for 2 to 8 players. Match the target, dump your cards, keep your score low.">
+<style>
+:root { box-sizing: border-box; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+</style>
+<title>Slag</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Marcellus+SC&family=Alegreya+Sans:wght@400;500;700;800&display=swap">
+<style>
+/* Layout: a forge-lit smithy. An oval oak table banded in riveted iron fills the middle; opponents sit on its rim, you sit at the near edge, and your hand rests on the workbench below. One dark world, deliberately single-theme. */
+:root {
+  --soot: #120e0c;
+  --stone: #241c17;
+  --oak: #6b4527;
+  --oak-dark: #3c2513;
+  --iron: #2e3034;
+  --iron-hi: #70757c;
+  --ember: #ff8a2a;
+  --ember-hot: #ffc067;
+  --parch: #f1e4cc;
+  --parch-dim: rgba(241, 228, 204, .72);
+  --line: rgba(241, 228, 204, .14);
+  --ink: #1d1410;
+  --brass: #e2b25a;
+  --bad: #f2a08a;
+  --good: #9fe0b4;
+  --f-mark: "Pirata One", "UnifrakturCook", Georgia, serif;
+  --f-display: "Marcellus SC", "Trajan Pro", Georgia, serif;
+  --f-body: "Alegreya Sans", "Gill Sans", "Segoe UI", system-ui, sans-serif;
+  --card-w: clamp(54px, 12.5vw, 82px);
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background-color: var(--soot);
+  background-image:
+    radial-gradient(ellipse 80% 38% at 50% 100%, rgba(255, 106, 24, .30), transparent 70%),
+    radial-gradient(ellipse 70% 50% at 50% 34%, rgba(78, 58, 46, .55), transparent 75%),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, .22) 0 2px, transparent 2px 52px),
+    linear-gradient(180deg, var(--stone), var(--soot));
+  color: var(--parch);
+  font-family: var(--f-body);
+  font-size: 16px;
+  line-height: 1.4;
+}
+.wrap {
+  position: relative; z-index: 1;
+  max-width: 1100px; margin: 0 auto; min-height: 100%;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 12px 28px;
+  box-sizing: border-box;
+  display: flex; flex-direction: column; gap: 12px;
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, .card:focus-visible { outline: 3px solid var(--ember-hot); outline-offset: 3px; }
+
+/* forged buttons */
+.btn {
+  border: 1.5px solid var(--iron-hi); border-radius: 10px;
+  background: linear-gradient(180deg, #3d4046, #25272b);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 3px 8px rgba(0, 0, 0, .45);
+  padding: 9px 18px; font-weight: 700; letter-spacing: .02em; min-height: 44px;
+}
+.btn:hover:not(:disabled) { border-color: var(--parch-dim); }
+.btn.primary {
+  background: linear-gradient(180deg, #ffbd6b, #e46a17); border-color: #ffd49a; color: #2a1406;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 0 18px rgba(255, 138, 42, .35), 0 3px 8px rgba(0, 0, 0, .45);
+}
+.btn.primary:hover:not(:disabled) { background: linear-gradient(180deg, #ffcb85, #f07a22); }
+.btn:disabled { opacity: .38; cursor: not-allowed; box-shadow: none; }
+.btn.small { padding: 5px 14px; min-height: 34px; font-size: 14px; }
+
+/* header */
+header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.mark { font-family: var(--f-mark); font-size: 38px; line-height: 1; display: flex; align-items: center; gap: 8px;
+  color: var(--parch); text-shadow: 0 0 14px rgba(255, 138, 42, .45); }
+.mark svg { width: 26px; height: 26px; color: var(--ember-hot); }
+.meta { color: var(--parch-dim); font-size: 14px; font-variant-numeric: tabular-nums; }
+.hdr-btns { display: flex; gap: 8px; }
+
+/* cards */
+.card {
+  position: relative; width: var(--card-w); aspect-ratio: 5 / 7; border-radius: 7%/5%;
+  background: var(--parch); box-shadow: 0 2px 0 rgba(0, 0, 0, .3), 0 6px 14px rgba(0, 0, 0, .35);
+  flex: none; border: 0; padding: 0; overflow: hidden; display: block;
+}
+.card img { width: 100%; height: 100%; display: block; object-fit: cover; pointer-events: none; }
+.card .star {
+  position: absolute; right: 6%; top: 38%; width: 26%; aspect-ratio: 1; border-radius: 50%;
+  background: var(--brass); color: var(--ink); display: grid; place-items: center;
+  font-size: calc(var(--w, var(--card-w)) * .17); line-height: 1; box-shadow: 0 1px 3px rgba(0, 0, 0, .4);
+}
+.card .new {
+  position: absolute; right: 5%; top: 3%;
+  background: var(--ember-hot); color: var(--ink); font-size: 10px; font-weight: 800; letter-spacing: .08em;
+  padding: 1px 6px; border-radius: 4px; text-transform: uppercase;
+}
+.card.mini { --w: 34px; width: var(--w); border-radius: 3px; box-shadow: 0 1px 3px rgba(0, 0, 0, .45); }
+.card.mini .star { font-size: 7px; }
+.card.tiny { --w: 11px; width: var(--w); border-radius: 2px; box-shadow: none; }
+.card.big { --w: clamp(96px, 26vw, 136px); width: var(--w); }
+.card .negmark {
+  position: absolute; left: 50%; bottom: 4%; transform: translateX(-50%);
+  background: var(--ink); color: var(--parch); font-weight: 800; line-height: 1;
+  font-size: calc(var(--w, var(--card-w)) * .2); padding: .18em .4em; border-radius: .3em;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.card.mini .negmark { font-size: 9px; padding: 1px 3px; }
+.card .fivemark {
+  position: absolute; left: 50%; bottom: calc(4% + var(--w, var(--card-w)) * .3); transform: translateX(-50%);
+  background: var(--bad); color: var(--ink); font-weight: 800; line-height: 1; white-space: nowrap;
+  font-size: calc(var(--w, var(--card-w)) * .15); padding: .2em .45em; border-radius: .3em;
+}
+.card .fivemark.paired { background: var(--good); }
+.tag { white-space: nowrap; flex: none; font-size: 11.5px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: rgba(0, 0, 0, .45); color: var(--parch-dim); }
+.tag.win { background: var(--ember-hot); color: var(--ink); }
+.tag.drew { color: var(--bad); }
+.tag.dim { background: transparent; font-weight: 500; font-style: italic; }
+
+/* the table */
+.wrap.fit { height: 100%; min-height: 0; padding-block: 8px 10px; gap: 8px; }
+.stage-box { flex: 1 1 0; min-height: 220px; container-type: size; display: grid; place-items: center; }
+.stage { --sw: clamp(80px, 13vw, 132px); position: relative; width: min(100cqw, 100cqh * 1.75); height: min(100cqh, 100cqw / 1.75); }
+.board {
+  position: absolute; inset: 13% 8.5%; border-radius: 50%;
+  background:
+    radial-gradient(ellipse 58% 52% at 50% 50%, rgba(255, 150, 70, .13), transparent 72%),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, .45) 0 2px, transparent 2px 12.5%),
+    repeating-linear-gradient(91deg, rgba(255, 235, 200, .035) 0 1px, transparent 1px 5px, rgba(0, 0, 0, .06) 5px 6px, transparent 6px 11px),
+    linear-gradient(180deg, var(--oak) 0%, var(--oak-dark) 100%);
+  box-shadow:
+    inset 0 0 0 2px rgba(0, 0, 0, .6),
+    inset 0 16px 40px rgba(0, 0, 0, .55),
+    inset 0 -12px 30px rgba(255, 140, 60, .12),
+    0 0 0 9px #26282c,
+    0 0 0 11px #5b6067,
+    0 0 0 14px #18191c,
+    0 24px 50px rgba(0, 0, 0, .7),
+    0 0 100px rgba(255, 120, 40, .18);
+}
+.rivet {
+  position: absolute; width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #d3d8de, #5a5f66 55%, #1d1f22);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, .6);
+}
+.mat {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 1;
+  display: grid; grid-template-columns: auto auto auto; grid-template-areas: "draw tcol disc";
+  align-items: center; gap: clamp(10px, 2vw, 22px);
+  padding: clamp(10px, 1.6vw, 18px) clamp(12px, 2vw, 24px); border-radius: 18px;
+  background: radial-gradient(ellipse at 50% 35%, #3d2619, #22140c);
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, .55), 0 8px 20px rgba(0, 0, 0, .5);
+  outline: 1.5px dashed rgba(241, 228, 204, .22); outline-offset: -7px;
+}
+.mat .draw { grid-area: draw; } .mat .tcol { grid-area: tcol; } .mat .disc { grid-area: disc; }
+.mat .card.big { --w: clamp(52px, min(11vw, 21cqh), 118px); }
+.pile { --w: clamp(28px, min(6vw, 11cqh), 62px); display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 12px; color: var(--parch-dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pile .card, .pile .empty-slot { --w: inherit; width: var(--w); }
+.pile .stack { position: relative; isolation: isolate; }
+.pile .stack::before, .pile .stack::after { content: ""; position: absolute; inset: 0; border-radius: 7%/5%; background: #2a1b12; border: 1px solid var(--line); }
+.pile .stack::before { transform: translate(2px, 2px); z-index: -1; }
+.pile .stack::after { transform: translate(4px, 4px); z-index: -2; }
+.empty-slot { display: block; width: var(--w, 60px); aspect-ratio: 5/7; border: 1.5px dashed var(--line); border-radius: 7%/5%; }
+.tcol { display: flex; flex-direction: column; align-items: center; }
+.plate {
+  margin-top: 8px; display: flex; flex-direction: column; align-items: center; padding: 3px 12px 5px; border-radius: 8px;
+  background: linear-gradient(180deg, #4a4e54, #26282c); border: 1px solid var(--iron-hi);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .15), 0 3px 8px rgba(0, 0, 0, .5); line-height: 1.05;
+}
+.pl-row { display: flex; align-items: baseline; gap: 6px; }
+.pl-l { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--parch-dim); font-weight: 700; }
+.pl-n { font-family: var(--f-display); font-size: clamp(22px, 3.4vw, 34px); color: var(--ember-hot); text-shadow: 0 0 10px rgba(255, 138, 42, .6); font-variant-numeric: tabular-nums; }
+.pl-s { font-size: 11px; color: var(--parch-dim); white-space: nowrap; }
+.card.preview { box-shadow: 0 0 0 3px var(--ember-hot), 0 0 24px rgba(255, 138, 42, .55); }
+
+/* seats on the rim */
+.seat {
+  position: absolute; z-index: 2; transform: translate(-50%, -50%); width: var(--sw);
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.seat.below { flex-direction: column-reverse; }
+.plaque {
+  width: 100%; padding: 5px 8px 6px; border-radius: 10px; text-align: center;
+  background: linear-gradient(180deg, #3d4046, #232529); border: 1px solid #5d6269;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 4px 10px rgba(0, 0, 0, .55);
+  transition: border-color .25s, box-shadow .25s, background .25s;
+}
+.seat.me .plaque { border-color: var(--brass); }
+.plaque .nm { font-family: var(--f-display); font-size: 15px; letter-spacing: .04em; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.plaque .sub { font-size: 11.5px; color: var(--parch-dim); display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 2px 5px; font-variant-numeric: tabular-nums; }
+.seat.win .plaque {
+  border-color: var(--ember); background: linear-gradient(180deg, #6a3f22, #2e1d13);
+  box-shadow: 0 0 0 2px rgba(255, 138, 42, .35), 0 0 26px rgba(255, 138, 42, .55), inset 0 1px 0 rgba(255, 255, 255, .15);
+}
+.seat .played { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.seat .cards { display: flex; gap: 3px; justify-content: center; }
+.seat .card.mini { --w: clamp(19px, min(3vw, 5.5cqh), 32px); }
+
+.herald { flex: none; margin: 0 auto; text-align: center; font-size: 16px; min-height: 24px; max-width: 62ch; text-wrap: balance; }
+.herald b { color: var(--ember-hot); }
+
+/* workbench: your hand */
+.you {
+  flex: none; display: flex; flex-direction: column; gap: 4px; padding: 10px 12px 12px; border-radius: 16px;
+  background: linear-gradient(180deg, #2c241f, #1a1512); border: 1px solid #4a4e54;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 10px 30px rgba(0, 0, 0, .45);
+}
+.you.picking { border-color: var(--ember); }
+.you-top { display: flex; justify-content: space-between; align-items: center; gap: 6px 12px; flex-wrap: wrap; }
+.you-top .meter { flex: 1 1 260px; min-width: 0; }
+.seat-name { font-weight: 800; font-size: 16px; }
+.meter { font-size: 15px; font-variant-numeric: tabular-nums; min-height: 22px; }
+.meter .ok { color: var(--good); font-weight: 700; }
+.meter .no { color: var(--bad); }
+.hand { --hw: clamp(44px, min(12vw, 10.5dvh), 84px); display: flex; flex-wrap: nowrap; justify-content: center; padding-top: 12px; }
+.hand .card { --w: var(--hw); width: var(--hw); }
+.hand .card + .card { margin-left: min(6px, calc((100% - var(--n) * var(--hw)) / (var(--n) - 1))); }
+.hand .card:hover:not(:disabled), .hand .card.sel { z-index: 1; }
+.hand .card { transition: transform .15s ease, box-shadow .15s ease, opacity .2s; }
+.hand .card:hover:not(:disabled) { transform: translateY(-4px); }
+.hand .card.sel { transform: translateY(-12px); box-shadow: 0 0 0 3px var(--ember-hot), 0 0 18px rgba(255, 138, 42, .5); }
+.hand .card.dim { opacity: .45; }
+.hand .card.pickable { box-shadow: 0 0 0 2px var(--parch), 0 6px 14px rgba(0, 0, 0, .35); }
+.hand .card:disabled { cursor: default; }
+.pickbar { display: flex; flex-direction: column; gap: 2px; padding: 10px 14px; border-radius: 12px; background: rgba(255, 138, 42, .12); border: 1.5px solid var(--ember); }
+.pick-title { font-family: var(--f-display); font-size: 22px; color: var(--ember-hot); line-height: 1.15; }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.eyebrow { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--parch-dim); font-weight: 700; }
+.hint { color: var(--parch-dim); font-size: 14px; }
+
+/* overlays */
+.sheet-bg { position: fixed; inset: 0; background: rgba(8, 5, 3, .74); display: grid; place-items: center; z-index: 10;
+  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.sheet { background: linear-gradient(180deg, #2a221d, #19140f); border: 1px solid var(--iron-hi); border-radius: 16px; width: min(640px, 100%);
+  max-height: 100%; overflow: auto; padding: 22px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 20px 60px rgba(0, 0, 0, .6), 0 0 60px rgba(255, 120, 40, .12); }
+.sheet h2 { font-family: var(--f-display); font-weight: 400; font-size: 28px; margin: 0; letter-spacing: .03em; text-wrap: balance; }
+.sheet h3 { margin: 6px 0 0; font-size: 15px; letter-spacing: .1em; text-transform: uppercase; color: var(--parch-dim); }
+.sheet p, .sheet li { max-width: 65ch; }
+.sheet ol, .sheet ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+.seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.seg button { border: 1.5px solid #5d6269; background: linear-gradient(180deg, #34373c, #222428); border-radius: 10px; min-width: 44px; min-height: 44px; padding: 0 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.seg button[aria-pressed="true"] { background: linear-gradient(180deg, #ffbd6b, #e46a17); color: #2a1406; border-color: #ffd49a; }
+
+/* splash */
+.splash { overflow-x: clip; overflow-y: visible; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 480px); gap: 28px; align-items: center; padding-block: 24px; }
+.splash h1 { font-family: var(--f-mark); font-weight: 400; font-size: clamp(72px, 15vw, 132px); line-height: .85; margin: 0; text-shadow: 0 0 30px rgba(255, 138, 42, .45); }
+.splash .lead { font-size: 18px; max-width: 40ch; color: var(--parch-dim); margin: 0; }
+.fan { --spread: 68px; --fw: 112px; position: relative; isolation: isolate; width: 480px; max-width: 100%; height: 260px; overflow: visible; }
+.fan::before {
+  content: ""; position: absolute; left: 4%; right: 4%; top: 46%; height: 56%; border-radius: 50%; z-index: -1;
+  background: repeating-linear-gradient(90deg, rgba(0, 0, 0, .45) 0 2px, transparent 2px 12.5%), linear-gradient(180deg, var(--oak), var(--oak-dark));
+  box-shadow: 0 0 0 7px #26282c, 0 0 0 9px #5b6067, 0 0 0 11px #18191c, 0 18px 40px rgba(0, 0, 0, .6), 0 0 70px rgba(255, 120, 40, .2);
+}
+.fan .card { position: absolute; left: 50%; top: 10px; width: var(--fw); --w: var(--fw); margin-left: calc(var(--fw) / -2); transform-origin: 50% 160%; }
+@media (max-width: 560px) { .fan { --spread: 44px; --fw: 80px; height: 200px; width: 100%; } }
+@media (max-width: 380px) { .fan { --spread: 38px; --fw: 66px; height: 180px; } }
+.setup { display: flex; flex-direction: column; gap: 16px; }
+.field { display: flex; flex-direction: column; gap: 8px; }
+.field label, .field .lbl { font-weight: 700; }
+
+/* scores */
+.scores { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.scores th, .scores td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.scores th { font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: var(--parch-dim); font-weight: 700; }
+.scores td.num, .scores th.num { text-align: right; }
+.scores tr.lead td { color: var(--ember-hot); }
+.breakdown { display: flex; flex-wrap: wrap; gap: 3px; align-items: center; }
+.pts { font-size: 11px; color: var(--parch-dim); display: block; text-align: center; }
+.pts.paired { color: var(--good); }
+.pts.unpaired { color: var(--bad); }
+.cell-card { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.tbl-wrap { overflow-x: auto; }
+
+/* sparks rising from the forge */
+.sparks { position: fixed; left: 0; right: 0; bottom: 0; height: 70vh; pointer-events: none; overflow: hidden; z-index: 0; }
+.sparks i { position: absolute; bottom: -8px; width: 3px; height: 3px; border-radius: 50%; background: var(--ember-hot);
+  box-shadow: 0 0 6px 2px rgba(255, 138, 42, .7); opacity: 0; animation: spark var(--d) linear var(--dl) infinite; }
+@keyframes spark { 0% { transform: translate(0, 0); opacity: 0; } 12% { opacity: .9; } 100% { transform: translate(var(--dx), -70vh); opacity: 0; } }
+
+/* reveal anim */
+@keyframes flip { 0% { transform: rotateY(90deg); } 100% { transform: rotateY(0); } }
+.flip { animation: flip .35s ease-out both; }
+@keyframes rise { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
+.rise { animation: rise .3s ease-out both; }
+@media (prefers-reduced-motion: reduce) { .flip, .rise { animation: none; } .hand .card { transition: none; } .sparks { display: none; } }
+
+@media (max-width: 640px) {
+  .stage { --sw: 78px; width: 100cqw; height: 100cqh; }
+  .hand { --hw: clamp(44px, min(15vw, 9dvh), 64px); }
+  header .meta { display: none; }
+  .stage-box { min-height: 200px; }
+  .board { inset: 10% 9%; }
+  .mat .card.big { --w: clamp(48px, 15cqh, 64px); }
+  .pile { --w: clamp(26px, 7cqh, 30px); font-size: 11px; }
+  .mark { font-size: 30px; } .mark svg { width: 20px; height: 20px; }
+  .pl-s { white-space: normal; text-align: center; max-width: 10ch; }
+  .mat { grid-template-columns: auto auto; grid-template-areas: "draw tcol" "disc tcol"; row-gap: 8px; }
+  .plaque .nm { font-size: 14px; }
+  .splash { grid-template-columns: 1fr; }
+  .fan { margin: 0 auto; }
+}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+
+<script>
+// ===== Slag rules engine (matches the Slag Rulebook) =====
+const SUITS = {
+  red:    { name: 'Red',    art: 'Crossbow',    rank: 6, sister: 'orange', hex: '#d0161b' },
+  orange: { name: 'Orange', art: 'Spear',       rank: 5, sister: 'red',    hex: '#f07c12' },
+  green:  { name: 'Green',  art: 'Axe',         rank: 4, sister: 'blue',   hex: '#16b85a' },
+  blue:   { name: 'Blue',   art: 'Sword',       rank: 3, sister: 'green',  hex: '#1a4fb0' },
+  purple: { name: 'Purple', art: 'Chest armor', rank: 2, sister: 'grey',   hex: '#8b5cf0' },
+  grey:   { name: 'Grey',   art: 'Helmet',      rank: 1, sister: 'purple', hex: '#5d5d63' },
+  black:  { name: 'Black',  art: 'Serpent',     rank: 0, sister: null,     hex: '#111111' },
+};
+const SUIT_ORDER = ['red', 'orange', 'green', 'blue', 'purple', 'grey'];
+
+let _uid = 0;
+function mkCard(suit, value, star) { return { id: 'c' + (++_uid), suit, value, star: !!star }; }
+
+function shuffle(a, rng) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+function setupFor(n) {
+  if (n === 2) return { suits: SUIT_ORDER.slice(0, 4), doubles: false, hand: 11, black: 0 };
+  if (n === 3 || n === 4) return RULES.colorCount
+    ? { suits: SUIT_ORDER, doubles: true, hand: 11, black: 0, singleOnly: ['purple', 'grey'] } // Most of the color: Purple & Grey 1–10, no doubles
+    : { suits: SUIT_ORDER, doubles: true, hand: 11, black: 0, highOnly: ['purple', 'grey'] }; // Highest card: Purple & Grey 6–10 only
+  if (n <= 6) return { suits: SUIT_ORDER, doubles: true, hand: 11, black: 0 };
+  if (n === 7) return { suits: SUIT_ORDER, doubles: true, hand: 11, black: 1 };
+  return { suits: SUIT_ORDER, doubles: true, hand: 10, black: 2 };
+}
+
+function cardLabel(c) { return SUITS[c.suit].name + ' ' + (c.value < 0 ? '−' + (-c.value) : c.value) + (c.star ? '★' : ''); }
+
+// Ranking key of a single positive card relative to a target (higher array wins, compared left to right)
+function cardKey(c, target) {
+  return [c.suit === target.suit ? 1 : 0, c.value, SUITS[target.suit].sister === c.suit ? 1 : 0, SUITS[c.suit].rank, c.star ? 1 : 0];
+}
+function cmpKey(a, b) { for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] - b[i]; return 0; }
+function bestCard(play, target) {
+  let best = null, bk = null;
+  for (const c of play) { if (c.value < 0) continue; const k = cardKey(c, target); if (!bk || cmpKey(k, bk) > 0) { best = c; bk = k; } }
+  return { card: best, key: bk };
+}
+
+// Table rule: when on, the play with the most cards of the target's color wins (negatives count),
+// and the highest target-color card breaks ties. When off, only the single best card counts.
+const RULES = { colorCount: true };
+function colorCount(play, target) { return play.filter(c => c.suit === target.suit).length; }
+function topColor(play, target) { return Math.max(0, ...play.filter(c => c.value > 0 && c.suit === target.suit).map(c => c.value)); }
+function playKey(play, target) {
+  const k = bestCard(play, target).key;
+  return RULES.colorCount ? [colorCount(play, target), topColor(play, target), ...k.slice(1)] : k;
+}
+
+function isLegal(play, target) {
+  if (!play.length || play.length > 3) return false;
+  if (play.filter(c => c.value < 0).length > 1) return false;
+  if (!play.some(c => c.value > 0)) return false;
+  return play.reduce((s, c) => s + c.value, 0) === target.value;
+}
+
+// all legal plays from a hand
+function legalPlays(hand, target) {
+  const out = [], n = hand.length;
+  for (let i = 0; i < n; i++) {
+    if (isLegal([hand[i]], target)) out.push([hand[i]]);
+    for (let j = i + 1; j < n; j++) {
+      if (isLegal([hand[i], hand[j]], target)) out.push([hand[i], hand[j]]);
+      for (let k = j + 1; k < n; k++) if (isLegal([hand[i], hand[j], hand[k]], target)) out.push([hand[i], hand[j], hand[k]]);
+    }
+  }
+  return out;
+}
+
+// Scoring: positives score value; a negative paired with a same-suit positive subtracts, else +5. Black never pairs.
+function scoreHand(hand) {
+  const lines = []; let total = 0;
+  const pos = hand.filter(c => c.value > 0), neg = hand.filter(c => c.value < 0).sort((a, b) => a.value - b.value);
+  const avail = {}; pos.forEach(c => { avail[c.suit] = (avail[c.suit] || 0) + 1; });
+  pos.forEach(c => { total += c.value; });
+  const negLines = [];
+  for (const c of neg) {
+    if (c.suit !== 'black' && avail[c.suit] > 0) { avail[c.suit]--; total += c.value; negLines.push({ card: c, pts: c.value, paired: true }); }
+    else { total += 5; negLines.push({ card: c, pts: 5, paired: false }); }
+  }
+  return { total, pos: pos.map(c => ({ card: c, pts: c.value })), neg: negLines };
+}
+
+// ===== Game state =====
+function newDeal(names, rng, opts = {}) {
+  const n = names.length, cfg = setupFor(n);
+  let main = [];
+  for (const s of cfg.suits) for (let v = 1; v <= 10; v++) {
+    if (cfg.highOnly && cfg.highOnly.includes(s) && v <= 5) continue;
+    main.push(mkCard(s, v, cfg.doubles && v <= 5 && !(cfg.singleOnly && cfg.singleOnly.includes(s))));
+    if (cfg.doubles && v <= 5 && !(cfg.singleOnly && cfg.singleOnly.includes(s))) main.push(mkCard(s, v, false));
+  }
+  shuffle(main, rng);
+  const negSuits = cfg.suits.slice();
+  for (let b = 0; b < cfg.black; b++) negSuits.push('black');
+  const piles = [-1, -2, -3].map(v => shuffle(negSuits.map(s => mkCard(s, v, false)), rng));
+  const players = names.map((name, i) => ({ name, hand: [], seat: i }));
+  for (const p of players) p.hand = main.splice(0, cfg.hand);
+  for (const p of players) for (const pile of piles) p.hand.push(pile.pop());
+  const target = main.shift();
+  return { players, draw: main, discard: [], target, round: 1, reflips: 0, cfg, n, over: false, endReason: null, rng };
+}
+
+function drawOne(G) {
+  if (!G.draw.length && G.discard.length) { G.draw = shuffle(G.discard, G.rng || Math.random); G.discard = []; G.reshuffled = true; }
+  return G.draw.length ? G.draw.shift() : null;
+}
+
+// plays: array (per player) of card arrays or null (pass). Returns round result; mutates G.
+function resolveRound(G, plays) {
+  const t = G.target;
+  const res = { target: t, plays: plays.map(p => p ? p.slice() : null), made: [], winner: -1, reason: '', penalties: [], ended: false, reflip: false };
+  plays.forEach((p, i) => { if (p && isLegal(p, t)) res.made.push(i); });
+  if (!res.made.length) {
+    if (G.n === 2 && G.reflips === 0) {
+      G.reflips++;
+      // nobody draws; flip a fresh target
+      G.discard.push(t);
+      const nt = drawOne(G);
+      if (nt) { G.target = nt; res.reflip = true; G.round++; return res; }
+    }
+    G.over = true; G.endReason = 'Nobody could make ' + cardLabel(t) + '.'; res.ended = true; return res;
+  }
+  let best = -1, bk = null;
+  for (const i of res.made) { const k = playKey(plays[i], t); if (!bk || cmpKey(k, bk) > 0) { best = i; bk = k; } }
+  res.winner = best; res.winCard = bestCard(plays[best], t).card;
+  res.reason = explain(plays, res.made, best, t);
+  for (const i of res.made) {
+    const ids = new Set(plays[i].map(c => c.id));
+    G.players[i].hand = G.players[i].hand.filter(c => !ids.has(c.id));
+    plays[i].forEach(c => { if (c.value > 0) G.discard.push(c); });
+  }
+  const out = G.players.findIndex(p => p.hand.length === 0);
+  if (out >= 0) { G.over = true; G.endReason = G.players[out].name + ' went out.'; res.ended = true; G.discard.push(t); return res; }
+  G.players.forEach((p, i) => { if (!res.made.includes(i)) { const c = drawOne(G); if (c) { p.hand.push(c); res.penalties.push({ i, card: c }); } } });
+  return res;
+}
+
+function explain(plays, made, w, t) {
+  if (RULES.colorCount && made.length > 1) {
+    const n = colorCount(plays[w], t), tc = SUITS[t.suit].name;
+    const others = made.filter(i => i !== w).map(i => colorCount(plays[i], t));
+    if (n > 0 && others.every(o => o < n)) return n === 1 ? 'the only play with ' + tc : 'most ' + tc + ' cards (' + n + ')';
+    if (n > 0 && others.some(o => o === n)) {
+      const top = topColor(plays[w], t), tied = made.filter(i => i !== w && colorCount(plays[i], t) === n).map(i => topColor(plays[i], t));
+      if (tied.every(v => v < top)) return 'tied on ' + n + ' ' + tc + ', highest ' + tc + ' card wins';
+    }
+  }
+  const wc = bestCard(plays[w], t).card;
+  if (made.length === 1) return 'the only player to make ' + t.value;
+  const others = made.filter(i => i !== w).map(i => bestCard(plays[i], t).card);
+  const tc = SUITS[t.suit].name;
+  if (wc.suit === t.suit) {
+    if (others.every(c => c.suit !== t.suit)) return 'played ' + tc + ', the target color';
+    if (others.every(c => c.suit !== t.suit || c.value < wc.value)) return 'highest ' + tc + ' card';
+    return 'tie on ' + cardLabel(wc).replace('★', '') + ', the starred copy wins';
+  }
+  const top = others.filter(c => c.value === wc.value);
+  if (!top.length) return 'nobody played ' + tc + ', and ' + cardLabel(wc) + ' is the highest card';
+  if (SUITS[t.suit].sister === wc.suit && top.every(c => c.suit !== wc.suit)) return 'tie on ' + wc.value + ', broken by the sister suit (' + SUITS[wc.suit].name + ')';
+  if (top.every(c => c.suit !== wc.suit)) return 'tie on ' + wc.value + ', broken by suit rank (' + SUITS[wc.suit].name + ' ' + SUITS[wc.suit].rank + ')';
+  return 'tie on ' + cardLabel(wc).replace('★', '') + ', the starred copy wins';
+}
+
+// winner sets the next target (card from their hand) or null → flip
+function setNextTarget(G, winner, card) {
+  G.discard.push(G.target);
+  const p = G.players[winner];
+  if (card) { p.hand = p.hand.filter(c => c.id !== card.id); G.target = card; }
+  else { const c = drawOne(G); if (!c) { G.over = true; G.endReason = 'The deck ran out.'; return; } G.target = c; }
+  G.round++;
+  const out = G.players.findIndex(q => q.hand.length === 0);
+  if (out >= 0) { G.over = true; G.endReason = G.players[out].name + ' went out.'; }
+}
+
+// ===== Bots =====
+// Every bot weighs two goals on each play: shed cards and points now, and win the round
+// so it can set a target that suits its own hand. Styles only tilt the balance.
+const STYLES = ['bold', 'shedder', 'steady'];
+const BOT_W = { bold: { win: 1.4, shed: 0.8 }, shedder: { win: 0.7, shed: 1.3 }, steady: { win: 1, shed: 1 } };
+
+// What a bot can fairly know: everyone else's cards and the draw pile, mixed together, plus hand sizes.
+function botCtx(G, i) {
+  const pool = [];
+  G.players.forEach((p, j) => { if (j !== i) pool.push(...p.hand); });
+  pool.push(...G.draw);
+  return { pool, oppSizes: G.players.filter((_, j) => j !== i).map(p => p.hand.length) };
+}
+// Deal random hands to the opponents from the unseen cards and see how they could answer this target.
+function sampleOpps(target, ctx, rng, samples) {
+  const out = [];
+  for (let s = 0; s < samples; s++) {
+    const deck = shuffle(ctx.pool.slice(), rng);
+    let best = null, makers = 0, idx = 0;
+    for (const n of ctx.oppSizes) {
+      const h = deck.slice(idx, idx + n); idx += n;
+      const plays = legalPlays(h, target);
+      if (plays.length) {
+        makers++;
+        for (const p of plays) { const k = playKey(p, target); if (!best || cmpKey(k, best) > 0) best = k; }
+      }
+    }
+    out.push({ best, makers });
+  }
+  return out;
+}
+function winShare(key, sims) { return sims.filter(x => !x.best || cmpKey(key, x.best) > 0).length / sims.length; }
+function roughWin(key) { return key[0] > 0 ? Math.min(0.95, 0.3 + key[0] * 0.15 + key[1] * 0.04) : Math.min(0.4, key[1] * 0.03); }
+
+// How good a hand is for choosing the next target: dump a high card that you can follow up on, ideally in its own color.
+function targetValue(rest) {
+  let best = -2;
+  for (const c of rest) {
+    if (c.value <= 0) continue;
+    const after = rest.filter(x => x !== c);
+    if (!after.length) return 10; // setting your last card takes you out
+    const plays = legalPlays(after, c);
+    let v = c.value * 0.3;
+    if (plays.length) {
+      v += 1.5 + Math.max(...plays.map(p => p.length)) * 0.6;
+      v += 1.5 * Math.max(...plays.map(p => colorCount(p, c)));
+    } else v -= 1.5;
+    if (v > best) best = v;
+  }
+  return best;
+}
+
+function botPlay(hand, target, style, rng, ctx) {
+  const plays = legalPlays(hand, target);
+  if (!plays.length) return null;
+  const W = BOT_W[style] || BOT_W.steady;
+  const base = scoreHand(hand).total;
+  const sims = ctx ? sampleOpps(target, ctx, rng, 16) : null;
+  let best = null, bs = -1e9;
+  for (const p of plays) {
+    const rest = hand.filter(c => !p.includes(c));
+    if (!rest.length) return p; // going out ends the deal at 0 points
+    const saved = base - scoreHand(rest).total; // points removed from the hand (a paired negative counts against)
+    const shed = p.length * 2.2 + saved * 0.35;
+    const key = playKey(p, target);
+    const pWin = sims ? winShare(key, sims) : roughWin(key);
+    const winVal = 2.2 + targetValue(rest); // the target card leaves your hand too
+    const u = W.shed * shed + 2 * W.win * pWin * winVal + rng() * 0.6;
+    if (u > bs) { bs = u; best = p; }
+  }
+  return best;
+}
+
+function botTarget(hand, rng, ctx) {
+  const pos = hand.filter(c => c.value > 0);
+  if (!pos.length) return null;
+  let best = null, bs = -1e9;
+  for (const c of pos) {
+    const rest = hand.filter(x => x.id !== c.id);
+    if (!rest.length) return c; // goes out
+    const plays = legalPlays(rest, c);
+    let s = c.value * 0.4; // dumping a high card saves points
+    if (plays.length) {
+      s += 3 + Math.max(...plays.map(p => p.length)) * 0.8;
+      let myBest = null;
+      for (const p of plays) { const k = playKey(p, c); if (!myBest || cmpKey(k, myBest) > 0) myBest = k; }
+      if (ctx) {
+        const sims = sampleOpps(c, ctx, rng, 10);
+        const miss = sims.reduce((a, x) => a + (ctx.oppSizes.length - x.makers), 0) / sims.length;
+        s += winShare(myBest, sims) * 4 + miss * 1.2; // likely to win again, and others draw penalties
+      } else if (myBest[0] > 0) s += 3;
+    } else s -= 6; // you'd have to draw
+    s += rng() * 0.5;
+    if (s > bs) { bs = s; best = c; }
+  }
+  return best;
+}
+
+if (typeof module !== 'undefined') module.exports = { RULES, playKey, colorCount, SUITS, SUIT_ORDER, setupFor, newDeal, resolveRound, setNextTarget, legalPlays, isLegal, bestCard, cardKey, cmpKey, scoreHand, botPlay, botTarget, botCtx, STYLES, cardLabel, shuffle };
+
+</script>
+<script>
+(() => {
+const $ = (s, r = document) => r.querySelector(s);
+const BOTS = ['Ana', 'Ben', 'Cora', 'Dev', 'Edda', 'Finn', 'Gus'];
+const STYLE_LABEL = { bold: 'plays to win', shedder: 'dumps cards', steady: 'balanced' };
+const rng = Math.random;
+const neg = v => v < 0 ? '−' + (-v) : String(v);
+const src = c => 'cards/' + c.suit + '_' + c.value + '.webp';
+const suitIdx = s => s === 'black' ? 9 : SUIT_ORDER.indexOf(s);
+const sortHand = h => h.slice().sort((a, b) => a.value - b.value || suitIdx(a.suit) - suitIdx(b.suit) || (b.star - a.star));
+
+let S = { phase: 'splash', bots: 3, mode: 'deals', colorRule: true, match: null, G: null, sel: [], last: null, newIds: [], msg: '', showRules: false };
+
+function cardEl(c, cls = '', extra = '') {
+  return `<span class="card ${cls}" ${extra}><img src="${src(c)}" alt="${cardLabel(c)}">${badges(c, cls.includes('mini'), false)}</span>`;
+}
+function badges(c, mini, paired) {
+  let s = c.star ? '<span class="star" aria-hidden="true">★</span>' : '';
+  if (c.value < 0) {
+    s += `<span class="negmark" aria-hidden="true">${neg(c.value)}</span>`;
+    if (!mini) s += paired ? '<span class="fivemark paired" title="Paired with a same-suit card: subtracts at scoring">paired</span>' : `<span class="fivemark" title="Scores +5 at the end unless paired with a same-suit card${c.suit === 'black' ? ' (black never pairs)' : ''}">+5</span>`;
+  }
+  return s;
+}
+function backEl(cls = '') { return `<span class="card ${cls}"><img src="cards/back.webp" alt="Face-down card"></span>`; }
+const hammerSvg = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4.5h10.5l3 2.5v3.5H4z M9 10.5h3.4V22H9z" fill="currentColor"/></svg>`;
+// sparks drifting up from the forge
+(() => { const box = document.createElement('div'); box.className = 'sparks'; box.setAttribute('aria-hidden', 'true');
+  box.innerHTML = Array.from({ length: 16 }, () => `<i style="left:${(Math.random() * 100).toFixed(1)}%;--d:${(5 + Math.random() * 6).toFixed(1)}s;--dl:${(-Math.random() * 10).toFixed(1)}s;--dx:${(Math.random() * 80 - 40).toFixed(0)}px"></i>`).join('');
+  document.body.prepend(box); })();
+
+// ===== flow =====
+function startMatch() {
+  const names = ['You', ...BOTS.slice(0, S.bots)];
+  const styles = names.map((_, i) => i === 0 ? null : STYLES[(i - 1) % 3]);
+  S.match = { names, styles, totals: names.map(() => 0), deals: [], mode: S.mode };
+  startDeal();
+}
+function startDeal() {
+  S.G = newDeal(S.match.names, rng); delete S.G.rng;
+  S.sel = []; S.last = null; S.newIds = [];
+  S.phase = 'choose';
+  S.msg = `Deal ${S.match.deals.length + 1}. Pick up to 3 cards that add up to the target.`;
+  render();
+}
+function myHand() { return S.G.players[0].hand; }
+function commit(play) {
+  const G = S.G, t = G.target;
+  const plays = G.players.map((p, i) => i === 0 ? play : botPlay(p.hand, t, S.match.styles[i], rng, botCtx(G, i)));
+  const before = G.players.map(p => p.hand.length);
+  const res = resolveRound(G, plays);
+  S.last = res; S.sel = [];
+  S.newIds = res.penalties.filter(p => p.i === 0).map(p => p.card.id);
+  S.phase = 'reveal';
+  const t2 = res.target;
+  if (res.reflip) S.msg = `Nobody made ${t2.value}. In a 2-player game the first miss flips a new target.`;
+  else if (res.ended) S.msg = G.endReason;
+  else {
+    const w = G.players[res.winner].name;
+    S.msg = `<b>${w === 'You' ? 'You win' : w + ' wins'}</b> the round: ${res.reason}.`;
+    if (res.winner === 0 && myHand().some(c => c.value > 0)) {
+      S.phase = 'pick'; S.pickSel = null;
+      S.msg = `<b>You win</b> the round: ${res.reason}. Now pick the next target from your hand.`;
+    }
+  }
+  render();
+}
+function afterReveal() {
+  const G = S.G, res = S.last;
+  if (G.over) return endDeal();
+  if (res.reflip) { S.phase = 'choose'; S.last = null; S.msg = `New target. Make ${G.target.value}.`; return render(); }
+  if (res.winner === 0) {
+    if (!myHand().some(c => c.value > 0)) { setNextTarget(G, 0, null); return toChoose(`You hold only negatives, so the target was flipped from the draw pile.`); }
+    S.phase = 'pick'; S.msg = `<b>You won.</b> Tap a card from your hand to set the next target.`;
+    return render();
+  }
+  const w = res.winner, card = botTarget(G.players[w].hand, rng, botCtx(G, w));
+  setNextTarget(G, w, card);
+  if (G.over) return endDeal();
+  toChoose(card ? `${G.players[w].name} set the next target: ${cardLabel(card)}.` : `${G.players[w].name} holds only negatives, so the target was flipped.`);
+}
+function toChoose(msg) { S.phase = 'choose'; S.last = null; S.msg = msg; render(); }
+function pickTarget(card) {
+  setNextTarget(S.G, 0, card);
+  if (S.G.over) return endDeal();
+  S.newIds = [];
+  toChoose(`You set the target: ${cardLabel(card)}.`);
+}
+function endDeal() {
+  const G = S.G, M = S.match;
+  const scores = G.players.map(p => scoreHand(p.hand));
+  scores.forEach((s, i) => { M.totals[i] += s.total; });
+  M.deals.push(scores.map(s => s.total));
+  const done = M.mode === 'deals' ? M.deals.length >= 3 : M.totals.some(t => t >= 50);
+  S.dealScores = scores; S.phase = done ? 'matchEnd' : 'dealEnd';
+  render();
+}
+
+// ===== render =====
+function render() {
+  const app = $('#app');
+  if (S.phase === 'splash') { app.classList.remove('fit'); app.innerHTML = splash(); bindSplash(); return; }
+  app.classList.add('fit');
+  app.innerHTML = header() + `<div class="stage-box">${tableHtml()}</div>` + `<p class="herald" role="status">${S.msg}</p>` + you() + overlay();
+  bindTable();
+}
+function header() {
+  const M = S.match, G = S.G;
+  const dealN = M.deals.length + (S.phase === 'dealEnd' || S.phase === 'matchEnd' ? 0 : 1);
+  const goal = M.mode === 'deals' ? `Deal ${Math.min(dealN, 3)} of 3` : `Deal ${dealN} · play to 50`;
+  return `<header><div class="mark">${hammerSvg}Slag</div>
+    <div class="meta">${goal} · Round ${G.round}</div>
+    <div class="hdr-btns"><button class="btn small" id="b-rules">Rules</button><button class="btn small" id="b-quit">New game</button></div></header>`;
+}
+
+// rivets around the iron band, placed once
+const RIVETS = Array.from({ length: 30 }, (_, i) => {
+  const a = i / 30 * Math.PI * 2;
+  return `<span class="rivet" style="left:calc(50% + (50% + 5px) * ${Math.cos(a).toFixed(4)});top:calc(50% - (50% + 5px) * ${Math.sin(a).toFixed(4)})"></span>`;
+}).join('');
+
+const narrow = () => window.matchMedia('(max-width: 640px)').matches;
+let _rz; window.addEventListener('resize', () => { clearTimeout(_rz); _rz = setTimeout(() => { if (S.phase !== 'splash') render(); }, 150); });
+// opponents spread over the far side of the table; more players wrap down the sides
+function seatAngles(n) {
+  if (n === 1) return [90];
+  const [a, b] = n <= 3 ? [158, 22] : narrow() ? [215, -35] : [208, -28];
+  return Array.from({ length: n }, (_, k) => a + (b - a) * k / (n - 1));
+}
+function seatHtml(i, deg) {
+  const G = S.G, res = S.last, M = S.match, p = G.players[i];
+  const r = deg * Math.PI / 180, sin = Math.sin(r), cos = Math.cos(r);
+  const [rx, ry] = narrow() ? [41, 40] : [41.5, 37.5];
+  const x = 50 + rx * cos, y = 50 - ry * sin;
+  const showing = (S.phase === 'reveal' || S.phase === 'pick') && res;
+  const play = showing ? res.plays[i] : null;
+  const won = showing && res.winner === i;
+  const drew = showing && res.penalties.some(q => q.i === i);
+  let cards = '';
+  const tags = [];
+  if (showing) {
+    if (play) cards = play.map((c, j) => cardEl(c, 'mini flip', `style="animation-delay:${80 * j + 70 * i}ms"`)).join('');
+    else tags.push('<span class="tag">passed</span>');
+    if (won) tags.push('<span class="tag win">won the round</span>');
+    if (drew) tags.push('<span class="tag drew">drew 1</span>');
+  } else if (S.phase === 'choose' && i !== 0) {
+    tags.push('<span class="tag dim">thinking…</span>');
+  }
+  const title = i === 0 ? 'Your seat' : STYLE_LABEL[M.styles[i]];
+  return `<div class="seat ${sin < -0.05 ? 'below' : ''} ${won ? 'win' : ''} ${i === 0 ? 'me' : ''}"
+      style="left:clamp(calc(var(--sw) / 2), ${x.toFixed(2)}%, calc(100% - var(--sw) / 2));top:clamp(34px, ${y.toFixed(2)}%, calc(100% - 34px))">
+    <div class="plaque" title="${title}"><div class="nm">${p.name}</div>
+      <div class="sub" aria-label="${p.hand.length} cards, ${M.totals[i]} match points">${backEl('tiny')}<span>${p.hand.length}</span><span aria-hidden="true">·</span><span>${M.totals[i]} pts</span></div></div>
+    <div class="played">${cards ? `<div class="cards">${cards}</div>` : ''}${tags.join('')}</div>
+  </div>`;
+}
+function matHtml() {
+  const G = S.G;
+  const preview = S.phase === 'pick' && S.pickSel ? myHand().find(c => c.id === S.pickSel) : null;
+  const t = preview || ((S.phase === 'reveal' || S.phase === 'pick') && S.last ? S.last.target : G.target);
+  const tl = SUITS[t.suit];
+  const label = preview ? 'Next' : S.phase === 'pick' ? 'Was' : 'Make';
+  return `<div class="mat">
+    <div class="pile draw"><div class="stack">${G.draw.length ? backEl() : '<span class="empty-slot"></span>'}</div><span>Draw ${G.draw.length}</span></div>
+    <div class="tcol">${cardEl(t, preview ? 'big rise preview' : 'big rise')}
+      <div class="plate"><div class="pl-row"><span class="pl-l">${label}</span><span class="pl-n">${neg(t.value)}</span></div><span class="pl-s">${tl.name} ${tl.art}</span></div></div>
+    <div class="pile disc"><div class="stack">${G.discard.length ? cardEl(G.discard[G.discard.length - 1]) : '<span class="empty-slot"></span>'}</div><span>Discard ${G.discard.length}</span></div>
+  </div>`;
+}
+function tableHtml() {
+  const n = S.G.players.length - 1, angs = seatAngles(n);
+  const seatsH = angs.map((a, k) => seatHtml(k + 1, a)).join('') + seatHtml(0, 270);
+  return `<section class="stage" aria-label="The table"><div class="board" aria-hidden="false">${RIVETS}${matHtml()}</div>${seatsH}</section>`;
+}
+function meterText() {
+  const t = S.G.target, sel = S.sel.map(id => myHand().find(c => c.id === id)).filter(Boolean);
+  if (!sel.length) return `<span class="hint">Tap cards to build a play that adds up to ${t.value}. At most one negative.</span>`;
+  const sum = sel.reduce((s, c) => s + c.value, 0);
+  const expr = sel.map(c => neg(c.value)).join(' + ') + ' = ' + neg(sum);
+  if (sel.filter(c => c.value < 0).length > 1) return `${expr} <span class="no">· only one negative per play</span>`;
+  if (!sel.some(c => c.value > 0)) return `${expr} <span class="no">· add a positive card</span>`;
+  if (sum === t.value) {
+    const b = bestCard(sel, t).card;
+    const n = colorCount(sel, t);
+    const strength = RULES.colorCount && n ? `${n} ${SUITS[t.suit].name} card${n > 1 ? 's' : ''}` : `best card ${cardLabel(b)}${b.suit === t.suit ? ' (target color)' : ''}`;
+    return `${expr} <span class="ok">· makes ${t.value}</span> <span class="hint">· ${strength}</span>`;
+  }
+  return `${expr} <span class="no">· need ${t.value}</span>`;
+}
+function you() {
+  const G = S.G, hand = sortHand(myHand()), res = S.last;
+  const legal = S.phase === 'choose' && isLegal(S.sel.map(id => myHand().find(c => c.id === id)).filter(Boolean), G.target);
+  let top = '', actions = '';
+  if (S.phase === 'choose') {
+    top = `<div class="meter" id="meter">${meterText()}</div>`;
+    actions = `<button class="btn primary" id="b-play" ${legal ? '' : 'disabled'}>Play ${S.sel.length ? S.sel.length + ' card' + (S.sel.length > 1 ? 's' : '') : ''}</button>
+      <button class="btn" id="b-pass">Pass and draw 1</button>
+      <button class="btn small" id="b-hint">Hint</button>`;
+  } else if (S.phase === 'reveal') {
+    const drewCard = res.penalties.find(q => q.i === 0);
+    const line = res.winner === 0 ? '<span class="ok">You won the round.</span>'
+      : drewCard ? `<span class="no">You drew ${cardLabel(drewCard.card)}.</span>`
+      : res.plays[0] ? 'Your cards are on the table.' : '';
+    top = `<div class="meter">${line}</div>`;
+    actions = `<button class="btn primary" id="b-next">${G.over ? 'See scores' : 'Continue'}</button>`;
+  } else if (S.phase === 'pick') {
+    const pc = S.pickSel && myHand().find(c => c.id === S.pickSel);
+    top = `<div class="meter"><span class="ok">You won.</span> Tap a card to set the next target. It leaves your hand.</div>`;
+    actions = `<button class="btn primary" id="b-settarget" ${pc ? '' : 'disabled'}>${pc ? 'Set target: ' + cardLabel(pc) : 'Set target'}</button>`;
+  }
+  const pairedIds = new Set(scoreHand(myHand()).neg.filter(x => x.paired).map(x => x.card.id));
+  const cards = hand.map(c => {
+    const sel = S.phase === 'pick' ? S.pickSel === c.id : S.sel.includes(c.id);
+    const pickable = S.phase === 'pick' && c.value > 0;
+    const can = S.phase === 'choose' || pickable;
+    const dim = S.phase === 'pick' && c.value < 0;
+    return `<button class="card ${sel ? 'sel' : ''} ${pickable ? 'pickable' : ''} ${dim ? 'dim' : ''}" data-id="${c.id}" ${can ? '' : 'disabled'} aria-pressed="${sel}" aria-label="${cardLabel(c)}">
+      <img src="${src(c)}" alt="">${badges(c, false, pairedIds.has(c.id))}${S.newIds.includes(c.id) ? '<span class="new">new</span>' : ''}</button>`;
+  }).join('');
+  return `<section class="you ${S.phase === 'pick' ? 'picking' : ''}" aria-label="Your hand">
+    <div class="you-top">${top || '<div class="meter"></div>'}<div class="actions">${actions}</div></div>
+    <div class="hand" style="--n:${Math.max(hand.length, 2)}">${cards}</div>
+  </section>`;
+}
+
+function scoreTable(final) {
+  const G = S.G, M = S.match, sc = S.dealScores;
+  const minT = Math.min(...M.totals);
+  const rows = G.players.map((p, i) => {
+    const s = sc[i];
+    const cells = [...s.pos.map(x => ({ c: x.card, t: String(x.pts), k: '' })), ...s.neg.map(x => ({ c: x.card, t: x.paired ? neg(x.pts) : '+5', k: x.paired ? 'paired' : 'unpaired' }))]
+      .sort((a, b) => suitIdx(a.c.suit) - suitIdx(b.c.suit) || b.c.value - a.c.value);
+    const bd = cells.length ? cells.map(x => `<span class="cell-card">${cardEl(x.c, 'mini')}<span class="pts ${x.k}">${x.t}</span></span>`).join('') : '<span class="tag win">out</span>';
+    return `<tr class="${M.totals[i] === minT ? 'lead' : ''}"><td><b>${p.name}</b></td><td><div class="breakdown">${bd}</div></td><td class="num">${s.total}</td><td class="num"><b>${M.totals[i]}</b></td></tr>`;
+  }).join('');
+  return `<div class="tbl-wrap"><table class="scores"><thead><tr><th>Player</th><th>Cards left</th><th class="num">Deal</th><th class="num">Match</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function overlay() {
+  if (S.showRules) return `<div class="sheet-bg" id="bg-rules"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="rules-h">${rulesHtml()}<div class="actions"><button class="btn primary" id="b-close">Back to the table</button></div></div></div>`;
+  if (S.confirmPass) return `<div class="sheet-bg"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="pass-h"><h2 id="pass-h">Pass this round?</h2><p>You'll draw a penalty card. You have a play that makes ${S.G.target.value}.</p><div class="actions"><button class="btn primary" id="b-pass-yes">Yes, pass</button><button class="btn" id="b-pass-no">Keep playing</button></div></div></div>`;
+  if (S.confirmQuit) return `<div class="sheet-bg"><div class="sheet" role="dialog" aria-modal="true"><h2>Start a new game?</h2><p>This match will be lost.</p><div class="actions"><button class="btn primary" id="b-quit-yes">New game</button><button class="btn" id="b-quit-no">Keep playing</button></div></div></div>`;
+  if (S.phase === 'dealEnd' || S.phase === 'matchEnd') {
+    const M = S.match, final = S.phase === 'matchEnd';
+    const minT = Math.min(...M.totals);
+    const leaders = M.names.filter((_, i) => M.totals[i] === minT);
+    const head = final
+      ? (leaders.length > 1 ? `Tie: ${leaders.join(' and ')}` : leaders[0] === 'You' ? 'You win the match' : `${leaders[0]} wins the match`)
+      : `Deal ${M.deals.length} scored`;
+    const sub = final ? `Lowest total wins: ${minT} points.` : (M.mode === 'deals' ? `${3 - M.deals.length} deal${3 - M.deals.length > 1 ? 's' : ''} left. Lowest total wins.` : `First to 50 ends the match. Lowest total wins.`);
+    return `<div class="sheet-bg"><div class="sheet rise" role="dialog" aria-modal="true" aria-labelledby="sc-h">
+      <span class="eyebrow">${S.G.endReason}</span><h2 id="sc-h">${head}</h2><p class="hint" style="margin:0">${sub} Negatives score +5 unless paired with a same-suit card (green).</p>
+      ${scoreTable(final)}
+      <div class="actions">${final ? `<button class="btn primary" id="b-again">Play again</button><button class="btn" id="b-setup">Change players</button>` : `<button class="btn primary" id="b-deal">Deal again</button>`}</div>
+    </div></div>`;
+  }
+  return '';
+}
+function rulesHtml() {
+  return `<h2 id="rules-h">How to play Slag</h2>
+  <p>Race to match the target number. Lowest score at the end wins.</p>
+  <h3>Each round</h3>
+  <ol>
+    <li>Everyone secretly picks up to 3 cards that add up exactly to the target. At most one may be a negative. Or pass.</li>
+    <li>Plays are revealed together. If nobody made it, the deal ends.</li>
+    <li>The best play wins. ${RULES.colorCount ? "The play with the most cards of the target's color wins (negatives count). If that's tied, the highest card of the target's color wins." : "Any play with a card of the target's color beats every play without one, then the higher card wins."}</li>
+    <li>Everyone who made it discards those cards. Anyone who passed or missed draws one card.</li>
+    <li>The winner sets the next target with a card from their hand.</li>
+  </ol>
+  <h3>Ties</h3>
+  <p>${RULES.colorCount ? 'After the color count and the highest target-color card, compare' : 'Compare'} each play's best positive card: target color, then value, then the target's sister suit, then suit rank (Red 6, Orange 5, Green 4, Blue 3, Purple 2, Grey 1), then the starred copy.</p>
+  <h3>Scoring</h3>
+  <ul><li>The deal ends when someone runs out of cards or nobody can make the target.</li>
+  <li>Positive cards score their value. A negative scores +5 (shown on the card), unless paired with a positive card of the same suit, when it subtracts instead. Black negatives never pair.</li></ul>`;
+}
+
+function splash() {
+  const fanCards = [{ suit: 'red', value: 10 }, { suit: 'orange', value: 7 }, { suit: 'green', value: 5 }, { suit: 'blue', value: 8 }, { suit: 'purple', value: -3 }, { suit: 'grey', value: 4 }];
+  const mid = (fanCards.length - 1) / 2;
+  const fan = fanCards.map((c, i) => { const o = i - mid; return `<span class="card" style="transform:translateX(calc(${o} * var(--spread))) translateY(${Math.abs(o) * Math.abs(o) * 5}px) rotate(${o * 7}deg)"><img src="${src(c)}" alt="">${badges(c, true)}</span>`; }).join('');
+  const n = S.bots + 1, cfg = setupFor(n);
+  const deck = n === 2 ? 'Red, Orange, Green and Blue with no doubles (40 cards)' : (n === 3 || n === 4) ? (S.colorRule ? 'all six suits, with no doubles in Purple and Grey (80 cards)' : 'all six suits, with Purple and Grey only 6 to 10 (70 cards)') : 'all six suits (90 cards)' + (cfg.black ? ` plus ${cfg.black} black negative set${cfg.black > 1 ? 's' : ''}` : '');
+  return `<section class="splash">
+    <div class="setup">
+      <h1>Slag</h1>
+      <p class="lead">A shedding game for 2 to 8. Match the target, dump your cards, keep your score low.</p>
+      <div class="field"><span class="lbl" id="l-bots">Opponents</span>
+        <div class="seg" role="group" aria-labelledby="l-bots">${[1, 2, 3, 4, 5, 6, 7].map(k => `<button data-bots="${k}" aria-pressed="${S.bots === k}">${k}</button>`).join('')}</div>
+        <span class="hint">${n} players: ${deck}, ${cfg.hand} cards each plus a −1, −2 and −3.</span></div>
+      <div class="field"><span class="lbl" id="l-mode">Match</span>
+        <div class="seg" role="group" aria-labelledby="l-mode">
+          <button data-mode="deals" aria-pressed="${S.mode === 'deals'}">Three deals</button>
+          <button data-mode="fifty" aria-pressed="${S.mode === 'fifty'}">Play to 50</button></div></div>
+      <div class="field"><span class="lbl" id="l-rule">Who wins a round</span>
+        <div class="seg" role="group" aria-labelledby="l-rule">
+          <button data-rule="count" aria-pressed="${S.colorRule}">Most of the color</button>
+          <button data-rule="high" aria-pressed="${!S.colorRule}">Highest card</button></div>
+        <span class="hint">${S.colorRule ? "Most cards of the target's color wins; the highest card of that color breaks ties." : "Any target-color card beats other colors; the highest one wins."}</span></div>
+      <div class="actions"><button class="btn primary" id="b-start">Deal the cards</button><button class="btn" id="b-rules">Rules</button></div>
+    </div>
+    <div class="fan" aria-hidden="true">${fan}</div>
+  </section>${S.showRules ? overlay() : ''}`;
+}
+function bindSplash() {
+  document.querySelectorAll('[data-bots]').forEach(b => b.onclick = () => { S.bots = +b.dataset.bots; save(); render(); });
+  document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { S.mode = b.dataset.mode; save(); render(); });
+  document.querySelectorAll('[data-rule]').forEach(b => b.onclick = () => { S.colorRule = b.dataset.rule === 'count'; RULES.colorCount = S.colorRule; save(); render(); });
+  $('#b-start').onclick = startMatch;
+  $('#b-rules').onclick = () => { S.showRules = true; render(); };
+  bindOverlay();
+}
+function bindOverlay() {
+  const c = $('#b-close'); if (c) c.onclick = () => { S.showRules = false; render(); };
+  const bg = $('#bg-rules'); if (bg) bg.onclick = e => { if (e.target === bg) { S.showRules = false; render(); } };
+}
+function bindTable() {
+  $('#b-rules').onclick = () => { S.showRules = true; render(); };
+  $('#b-quit').onclick = () => { S.confirmQuit = true; render(); };
+  bindOverlay();
+  const qy = $('#b-quit-yes'); if (qy) qy.onclick = () => { S.confirmQuit = false; S.phase = 'splash'; S.G = null; S.match = null; render(); };
+  const qn = $('#b-quit-no'); if (qn) qn.onclick = () => { S.confirmQuit = false; render(); };
+  document.querySelectorAll('.hand .card').forEach(b => b.onclick = () => {
+    const id = b.dataset.id;
+    if (S.phase === 'choose') {
+      if (S.sel.includes(id)) S.sel = S.sel.filter(x => x !== id);
+      else if (S.sel.length < 3) S.sel.push(id);
+      else { S.sel.shift(); S.sel.push(id); }
+      render();
+    } else if (S.phase === 'pick') {
+      const c = myHand().find(x => x.id === id); if (c && c.value > 0) { S.pickSel = id; render(); }
+    }
+  });
+  const p = $('#b-play'); if (p) p.onclick = () => { const play = S.sel.map(id => myHand().find(c => c.id === id)); if (isLegal(play, S.G.target)) { S.newIds = []; commit(play); } };
+  const ps = $('#b-pass'); if (ps) ps.onclick = () => {
+    if (!legalPlays(myHand(), S.G.target).length) { S.newIds = []; return commit(null); }
+    S.confirmPass = true; render(); const y = $('#b-pass-yes'); if (y) y.focus();
+  };
+  const py = $('#b-pass-yes'); if (py) py.onclick = () => { S.confirmPass = false; S.newIds = []; commit(null); };
+  const pn = $('#b-pass-no'); if (pn) pn.onclick = () => { S.confirmPass = false; render(); };
+  const h = $('#b-hint'); if (h) h.onclick = () => {
+    const play = botPlay(myHand(), S.G.target, 'steady', Math.random, botCtx(S.G, 0));
+    if (!play) { S.msg = `No play from your hand makes ${S.G.target.value}. Pass to draw a card.`; S.sel = []; }
+    else { S.sel = play.map(c => c.id); }
+    render();
+  };
+  const n = $('#b-next'); if (n) n.onclick = afterReveal;
+  const stb = $('#b-settarget'); if (stb) stb.onclick = () => { const c = myHand().find(x => x.id === S.pickSel); if (c) { S.pickSel = null; pickTarget(c); } };
+  const d = $('#b-deal'); if (d) d.onclick = startDeal;
+  const a = $('#b-again'); if (a) a.onclick = startMatch;
+  const st = $('#b-setup'); if (st) st.onclick = () => { S.phase = 'splash'; render(); };
+}
+
+// remember setup choices for this viewer only
+function save() { try { localStorage.setItem('slag-setup', JSON.stringify({ bots: S.bots, mode: S.mode, colorRule: S.colorRule })); } catch (e) {} }
+function load() { try { const v = JSON.parse(localStorage.getItem('slag-setup') || 'null'); if (v) { S.bots = v.bots || 3; S.mode = v.mode || 'deals'; if (typeof v.colorRule === 'boolean') S.colorRule = v.colorRule; } } catch (e) {} }
+
+// keep a game in progress across page updates
+const hot = window.claude && window.claude.hot;
+function start(data) {
+  load();
+  if (data && data.S && data.S.phase) S = data.S;
+  if (typeof S.colorRule !== 'boolean') S.colorRule = true;
+  RULES.colorCount = S.colorRule;
+  render();
+}
+try { if (hot && hot.snapshot) hot.snapshot(() => ({ S })); } catch (e) {}
+if (hot && hot.ready) hot.ready(start); else start((hot && hot.data) || {});
+})();
+</script>
+</body>
+</html>
