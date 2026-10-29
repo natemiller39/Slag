@@ -280,6 +280,29 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .cell-card { display: flex; flex-direction: column; align-items: center; gap: 1px; }
 .tbl-wrap { overflow-x: auto; }
 
+/* online: start screen fields and lobby */
+.inp { font: inherit; color: var(--parch); background: #1b1512; border: 1.5px solid #5d6269; border-radius: 10px; min-height: 44px; padding: 8px 12px; min-width: 0; }
+.inp:focus-visible { outline: 3px solid var(--ember-hot); outline-offset: 2px; }
+.inp::placeholder { color: rgba(241, 228, 204, .4); }
+#o-name { max-width: 280px; }
+.inp.code { width: 6.2em; text-transform: uppercase; letter-spacing: .2em; font-weight: 700; text-align: center; }
+.or { color: var(--parch-dim); font-size: 14px; }
+.field.online { border-top: 1px solid var(--line); padding-top: 16px; }
+.hint.bad { color: var(--bad); }
+.lobby { max-width: 680px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; padding-block: 8px 24px; }
+.panel { display: flex; flex-direction: column; gap: 12px; padding: 16px 18px; border-radius: 16px;
+  background: linear-gradient(180deg, #2c241f, #1a1512); border: 1px solid #4a4e54; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 10px 30px rgba(0, 0, 0, .4); }
+.code-panel { align-items: flex-start; }
+.code-big { font-family: var(--f-display); font-size: clamp(44px, 12vw, 64px); line-height: 1; letter-spacing: .18em; color: var(--ember-hot); text-shadow: 0 0 18px rgba(255, 138, 42, .45); }
+.sel-text { user-select: all; color: var(--parch); overflow-wrap: anywhere; }
+.ph { margin: 0; font-family: var(--f-display); font-weight: 400; font-size: 22px; display: flex; align-items: baseline; gap: 10px; }
+.plist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.pl { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); min-height: 48px; }
+.pl:last-child { border-bottom: 0; }
+.pl-name { font-weight: 700; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
+.pl.me .pl-name { color: var(--ember-hot); }
+.seg button:disabled { opacity: .55; cursor: default; }
+
 /* sparks rising from the forge */
 .sparks { position: fixed; left: 0; right: 0; bottom: 0; height: 70vh; pointer-events: none; overflow: hidden; z-index: 0; }
 .sparks i { position: absolute; bottom: -8px; width: 3px; height: 3px; border-radius: 50%; background: var(--ember-hot);
@@ -313,289 +336,12 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 <body>
 <div class="wrap" id="app"></div>
 
-<script>
-// ===== Slag rules engine (matches the Slag Rulebook) =====
-const SUITS = {
-  red:    { name: 'Red',    art: 'Crossbow',    rank: 6, sister: 'orange', hex: '#d0161b' },
-  orange: { name: 'Orange', art: 'Spear',       rank: 5, sister: 'red',    hex: '#f07c12' },
-  green:  { name: 'Green',  art: 'Axe',         rank: 4, sister: 'blue',   hex: '#16b85a' },
-  blue:   { name: 'Blue',   art: 'Sword',       rank: 3, sister: 'green',  hex: '#1a4fb0' },
-  purple: { name: 'Purple', art: 'Chest armor', rank: 2, sister: 'grey',   hex: '#8b5cf0' },
-  grey:   { name: 'Grey',   art: 'Helmet',      rank: 1, sister: 'purple', hex: '#5d5d63' },
-  black:  { name: 'Black',  art: 'Serpent',     rank: 0, sister: null,     hex: '#111111' },
-};
-const SUIT_ORDER = ['red', 'orange', 'green', 'blue', 'purple', 'grey'];
-
-let _uid = 0;
-function mkCard(suit, value, star) { return { id: 'c' + (++_uid), suit, value, star: !!star }; }
-
-function shuffle(a, rng) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
-
-function setupFor(n) {
-  if (n === 2) return { suits: SUIT_ORDER.slice(0, 4), doubles: false, hand: 11, black: 0 };
-  if (n === 3 || n === 4) return RULES.colorCount
-    ? { suits: SUIT_ORDER, doubles: true, hand: 11, black: 0, singleOnly: ['purple', 'grey'] } // Most of the color: Purple & Grey 1–10, no doubles
-    : { suits: SUIT_ORDER, doubles: true, hand: 11, black: 0, highOnly: ['purple', 'grey'] }; // Highest card: Purple & Grey 6–10 only
-  if (n <= 6) return { suits: SUIT_ORDER, doubles: true, hand: 11, black: 0 };
-  if (n === 7) return { suits: SUIT_ORDER, doubles: true, hand: 11, black: 1 };
-  return { suits: SUIT_ORDER, doubles: true, hand: 10, black: 2 };
-}
-
-function cardLabel(c) { return SUITS[c.suit].name + ' ' + (c.value < 0 ? '−' + (-c.value) : c.value) + (c.star ? '★' : ''); }
-
-// Ranking key of a single positive card relative to a target (higher array wins, compared left to right)
-function cardKey(c, target) {
-  return [c.suit === target.suit ? 1 : 0, c.value, SUITS[target.suit].sister === c.suit ? 1 : 0, SUITS[c.suit].rank, c.star ? 1 : 0];
-}
-function cmpKey(a, b) { for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] - b[i]; return 0; }
-function bestCard(play, target) {
-  let best = null, bk = null;
-  for (const c of play) { if (c.value < 0) continue; const k = cardKey(c, target); if (!bk || cmpKey(k, bk) > 0) { best = c; bk = k; } }
-  return { card: best, key: bk };
-}
-
-// Table rule: when on, the play with the most cards of the target's color wins (negatives count),
-// and the highest target-color card breaks ties. When off, only the single best card counts.
-const RULES = { colorCount: true };
-function colorCount(play, target) { return play.filter(c => c.suit === target.suit).length; }
-function topColor(play, target) { return Math.max(0, ...play.filter(c => c.value > 0 && c.suit === target.suit).map(c => c.value)); }
-function playKey(play, target) {
-  const k = bestCard(play, target).key;
-  return RULES.colorCount ? [colorCount(play, target), topColor(play, target), ...k.slice(1)] : k;
-}
-
-function isLegal(play, target) {
-  if (!play.length || play.length > 3) return false;
-  if (play.filter(c => c.value < 0).length > 1) return false;
-  if (!play.some(c => c.value > 0)) return false;
-  return play.reduce((s, c) => s + c.value, 0) === target.value;
-}
-
-// all legal plays from a hand
-function legalPlays(hand, target) {
-  const out = [], n = hand.length;
-  for (let i = 0; i < n; i++) {
-    if (isLegal([hand[i]], target)) out.push([hand[i]]);
-    for (let j = i + 1; j < n; j++) {
-      if (isLegal([hand[i], hand[j]], target)) out.push([hand[i], hand[j]]);
-      for (let k = j + 1; k < n; k++) if (isLegal([hand[i], hand[j], hand[k]], target)) out.push([hand[i], hand[j], hand[k]]);
-    }
-  }
-  return out;
-}
-
-// Scoring: positives score value; a negative paired with a same-suit positive subtracts, else +5. Black never pairs.
-function scoreHand(hand) {
-  const lines = []; let total = 0;
-  const pos = hand.filter(c => c.value > 0), neg = hand.filter(c => c.value < 0).sort((a, b) => a.value - b.value);
-  const avail = {}; pos.forEach(c => { avail[c.suit] = (avail[c.suit] || 0) + 1; });
-  pos.forEach(c => { total += c.value; });
-  const negLines = [];
-  for (const c of neg) {
-    if (c.suit !== 'black' && avail[c.suit] > 0) { avail[c.suit]--; total += c.value; negLines.push({ card: c, pts: c.value, paired: true }); }
-    else { total += 5; negLines.push({ card: c, pts: 5, paired: false }); }
-  }
-  return { total, pos: pos.map(c => ({ card: c, pts: c.value })), neg: negLines };
-}
-
-// ===== Game state =====
-function newDeal(names, rng, opts = {}) {
-  const n = names.length, cfg = setupFor(n);
-  let main = [];
-  for (const s of cfg.suits) for (let v = 1; v <= 10; v++) {
-    if (cfg.highOnly && cfg.highOnly.includes(s) && v <= 5) continue;
-    main.push(mkCard(s, v, cfg.doubles && v <= 5 && !(cfg.singleOnly && cfg.singleOnly.includes(s))));
-    if (cfg.doubles && v <= 5 && !(cfg.singleOnly && cfg.singleOnly.includes(s))) main.push(mkCard(s, v, false));
-  }
-  shuffle(main, rng);
-  const negSuits = cfg.suits.slice();
-  for (let b = 0; b < cfg.black; b++) negSuits.push('black');
-  const piles = [-1, -2, -3].map(v => shuffle(negSuits.map(s => mkCard(s, v, false)), rng));
-  const players = names.map((name, i) => ({ name, hand: [], seat: i }));
-  for (const p of players) p.hand = main.splice(0, cfg.hand);
-  for (const p of players) for (const pile of piles) p.hand.push(pile.pop());
-  const target = main.shift();
-  return { players, draw: main, discard: [], target, round: 1, reflips: 0, cfg, n, over: false, endReason: null, rng };
-}
-
-function drawOne(G) {
-  if (!G.draw.length && G.discard.length) { G.draw = shuffle(G.discard, G.rng || Math.random); G.discard = []; G.reshuffled = true; }
-  return G.draw.length ? G.draw.shift() : null;
-}
-
-// plays: array (per player) of card arrays or null (pass). Returns round result; mutates G.
-function resolveRound(G, plays) {
-  const t = G.target;
-  const res = { target: t, plays: plays.map(p => p ? p.slice() : null), made: [], winner: -1, reason: '', penalties: [], ended: false, reflip: false };
-  plays.forEach((p, i) => { if (p && isLegal(p, t)) res.made.push(i); });
-  if (!res.made.length) {
-    if (G.n === 2 && G.reflips === 0) {
-      G.reflips++;
-      // nobody draws; flip a fresh target
-      G.discard.push(t);
-      const nt = drawOne(G);
-      if (nt) { G.target = nt; res.reflip = true; G.round++; return res; }
-    }
-    G.over = true; G.endReason = 'Nobody could make ' + cardLabel(t) + '.'; res.ended = true; return res;
-  }
-  let best = -1, bk = null;
-  for (const i of res.made) { const k = playKey(plays[i], t); if (!bk || cmpKey(k, bk) > 0) { best = i; bk = k; } }
-  res.winner = best; res.winCard = bestCard(plays[best], t).card;
-  res.reason = explain(plays, res.made, best, t);
-  for (const i of res.made) {
-    const ids = new Set(plays[i].map(c => c.id));
-    G.players[i].hand = G.players[i].hand.filter(c => !ids.has(c.id));
-    plays[i].forEach(c => { if (c.value > 0) G.discard.push(c); });
-  }
-  const out = G.players.findIndex(p => p.hand.length === 0);
-  if (out >= 0) { G.over = true; G.endReason = G.players[out].name + ' went out.'; res.ended = true; G.discard.push(t); return res; }
-  G.players.forEach((p, i) => { if (!res.made.includes(i)) { const c = drawOne(G); if (c) { p.hand.push(c); res.penalties.push({ i, card: c }); } } });
-  return res;
-}
-
-function explain(plays, made, w, t) {
-  if (RULES.colorCount && made.length > 1) {
-    const n = colorCount(plays[w], t), tc = SUITS[t.suit].name;
-    const others = made.filter(i => i !== w).map(i => colorCount(plays[i], t));
-    if (n > 0 && others.every(o => o < n)) return n === 1 ? 'the only play with ' + tc : 'most ' + tc + ' cards (' + n + ')';
-    if (n > 0 && others.some(o => o === n)) {
-      const top = topColor(plays[w], t), tied = made.filter(i => i !== w && colorCount(plays[i], t) === n).map(i => topColor(plays[i], t));
-      if (tied.every(v => v < top)) return 'tied on ' + n + ' ' + tc + ', highest ' + tc + ' card wins';
-    }
-  }
-  const wc = bestCard(plays[w], t).card;
-  if (made.length === 1) return 'the only player to make ' + t.value;
-  const others = made.filter(i => i !== w).map(i => bestCard(plays[i], t).card);
-  const tc = SUITS[t.suit].name;
-  if (wc.suit === t.suit) {
-    if (others.every(c => c.suit !== t.suit)) return 'played ' + tc + ', the target color';
-    if (others.every(c => c.suit !== t.suit || c.value < wc.value)) return 'highest ' + tc + ' card';
-    return 'tie on ' + cardLabel(wc).replace('★', '') + ', the starred copy wins';
-  }
-  const top = others.filter(c => c.value === wc.value);
-  if (!top.length) return 'nobody played ' + tc + ', and ' + cardLabel(wc) + ' is the highest card';
-  if (SUITS[t.suit].sister === wc.suit && top.every(c => c.suit !== wc.suit)) return 'tie on ' + wc.value + ', broken by the sister suit (' + SUITS[wc.suit].name + ')';
-  if (top.every(c => c.suit !== wc.suit)) return 'tie on ' + wc.value + ', broken by suit rank (' + SUITS[wc.suit].name + ' ' + SUITS[wc.suit].rank + ')';
-  return 'tie on ' + cardLabel(wc).replace('★', '') + ', the starred copy wins';
-}
-
-// winner sets the next target (card from their hand) or null → flip
-function setNextTarget(G, winner, card) {
-  G.discard.push(G.target);
-  const p = G.players[winner];
-  if (card) { p.hand = p.hand.filter(c => c.id !== card.id); G.target = card; }
-  else { const c = drawOne(G); if (!c) { G.over = true; G.endReason = 'The deck ran out.'; return; } G.target = c; }
-  G.round++;
-  const out = G.players.findIndex(q => q.hand.length === 0);
-  if (out >= 0) { G.over = true; G.endReason = G.players[out].name + ' went out.'; }
-}
-
-// ===== Bots =====
-// Every bot weighs two goals on each play: shed cards and points now, and win the round
-// so it can set a target that suits its own hand. Styles only tilt the balance.
-const STYLES = ['bold', 'shedder', 'steady'];
-const BOT_W = { bold: { win: 1.4, shed: 0.8 }, shedder: { win: 0.7, shed: 1.3 }, steady: { win: 1, shed: 1 } };
-
-// What a bot can fairly know: everyone else's cards and the draw pile, mixed together, plus hand sizes.
-function botCtx(G, i) {
-  const pool = [];
-  G.players.forEach((p, j) => { if (j !== i) pool.push(...p.hand); });
-  pool.push(...G.draw);
-  return { pool, oppSizes: G.players.filter((_, j) => j !== i).map(p => p.hand.length) };
-}
-// Deal random hands to the opponents from the unseen cards and see how they could answer this target.
-function sampleOpps(target, ctx, rng, samples) {
-  const out = [];
-  for (let s = 0; s < samples; s++) {
-    const deck = shuffle(ctx.pool.slice(), rng);
-    let best = null, makers = 0, idx = 0;
-    for (const n of ctx.oppSizes) {
-      const h = deck.slice(idx, idx + n); idx += n;
-      const plays = legalPlays(h, target);
-      if (plays.length) {
-        makers++;
-        for (const p of plays) { const k = playKey(p, target); if (!best || cmpKey(k, best) > 0) best = k; }
-      }
-    }
-    out.push({ best, makers });
-  }
-  return out;
-}
-function winShare(key, sims) { return sims.filter(x => !x.best || cmpKey(key, x.best) > 0).length / sims.length; }
-function roughWin(key) { return key[0] > 0 ? Math.min(0.95, 0.3 + key[0] * 0.15 + key[1] * 0.04) : Math.min(0.4, key[1] * 0.03); }
-
-// How good a hand is for choosing the next target: dump a high card that you can follow up on, ideally in its own color.
-function targetValue(rest) {
-  let best = -2;
-  for (const c of rest) {
-    if (c.value <= 0) continue;
-    const after = rest.filter(x => x !== c);
-    if (!after.length) return 10; // setting your last card takes you out
-    const plays = legalPlays(after, c);
-    let v = c.value * 0.3;
-    if (plays.length) {
-      v += 1.5 + Math.max(...plays.map(p => p.length)) * 0.6;
-      v += 1.5 * Math.max(...plays.map(p => colorCount(p, c)));
-    } else v -= 1.5;
-    if (v > best) best = v;
-  }
-  return best;
-}
-
-function botPlay(hand, target, style, rng, ctx) {
-  const plays = legalPlays(hand, target);
-  if (!plays.length) return null;
-  const W = BOT_W[style] || BOT_W.steady;
-  const base = scoreHand(hand).total;
-  const sims = ctx ? sampleOpps(target, ctx, rng, 16) : null;
-  let best = null, bs = -1e9;
-  for (const p of plays) {
-    const rest = hand.filter(c => !p.includes(c));
-    if (!rest.length) return p; // going out ends the deal at 0 points
-    const saved = base - scoreHand(rest).total; // points removed from the hand (a paired negative counts against)
-    const shed = p.length * 2.2 + saved * 0.35;
-    const key = playKey(p, target);
-    const pWin = sims ? winShare(key, sims) : roughWin(key);
-    const winVal = 2.2 + targetValue(rest); // the target card leaves your hand too
-    const u = W.shed * shed + 2 * W.win * pWin * winVal + rng() * 0.6;
-    if (u > bs) { bs = u; best = p; }
-  }
-  return best;
-}
-
-function botTarget(hand, rng, ctx) {
-  const pos = hand.filter(c => c.value > 0);
-  if (!pos.length) return null;
-  let best = null, bs = -1e9;
-  for (const c of pos) {
-    const rest = hand.filter(x => x.id !== c.id);
-    if (!rest.length) return c; // goes out
-    const plays = legalPlays(rest, c);
-    let s = c.value * 0.4; // dumping a high card saves points
-    if (plays.length) {
-      s += 3 + Math.max(...plays.map(p => p.length)) * 0.8;
-      let myBest = null;
-      for (const p of plays) { const k = playKey(p, c); if (!myBest || cmpKey(k, myBest) > 0) myBest = k; }
-      if (ctx) {
-        const sims = sampleOpps(c, ctx, rng, 10);
-        const miss = sims.reduce((a, x) => a + (ctx.oppSizes.length - x.makers), 0) / sims.length;
-        s += winShare(myBest, sims) * 4 + miss * 1.2; // likely to win again, and others draw penalties
-      } else if (myBest[0] > 0) s += 3;
-    } else s -= 6; // you'd have to draw
-    s += rng() * 0.5;
-    if (s > bs) { bs = s; best = c; }
-  }
-  return best;
-}
-
-if (typeof module !== 'undefined') module.exports = { RULES, playKey, colorCount, SUITS, SUIT_ORDER, setupFor, newDeal, resolveRound, setNextTarget, legalPlays, isLegal, bestCard, cardKey, cmpKey, scoreHand, botPlay, botTarget, botCtx, STYLES, cardLabel, shuffle };
-
-</script>
+<script src="engine.js"></script>
 <script>
 (() => {
 const $ = (s, r = document) => r.querySelector(s);
 const BOTS = ['Ana', 'Ben', 'Cora', 'Dev', 'Edda', 'Finn', 'Gus'];
-const STYLE_LABEL = { bold: 'plays to win', shedder: 'dumps cards', steady: 'balanced' };
+const STYLE_LABEL = { bold: 'plays to win', shedder: 'dumps cards', steady: 'balanced', human: 'player' };
 const rng = Math.random;
 const neg = v => v < 0 ? '−' + (-v) : String(v);
 const src = c => 'cards/' + c.suit + '_' + c.value + '.webp';
@@ -638,6 +384,7 @@ function startDeal() {
 }
 function myHand() { return S.G.players[0].hand; }
 function commit(play) {
+  if (S.online) { S.confirmPass = false; onlineSend({ t: 'play', ids: play ? play.map(c => c.id) : null }); return; }
   const G = S.G, t = G.target;
   const plays = G.players.map((p, i) => i === 0 ? play : botPlay(p.hand, t, S.match.styles[i], rng, botCtx(G, i)));
   const before = G.players.map(p => p.hand.length);
@@ -659,6 +406,7 @@ function commit(play) {
   render();
 }
 function afterReveal() {
+  if (S.online) { onlineSend({ t: 'ready' }); return; }
   const G = S.G, res = S.last;
   if (G.over) return endDeal();
   if (res.reflip) { S.phase = 'choose'; S.last = null; S.msg = `New target. Make ${G.target.value}.`; return render(); }
@@ -674,6 +422,7 @@ function afterReveal() {
 }
 function toChoose(msg) { S.phase = 'choose'; S.last = null; S.msg = msg; render(); }
 function pickTarget(card) {
+  if (S.online) { onlineSend({ t: 'target', id: card.id }); return; }
   setNextTarget(S.G, 0, card);
   if (S.G.over) return endDeal();
   S.newIds = [];
@@ -693,6 +442,7 @@ function endDeal() {
 function render() {
   const app = $('#app');
   if (S.phase === 'splash') { app.classList.remove('fit'); app.innerHTML = splash(); bindSplash(); return; }
+  if (S.phase === 'lobby' && S.online && S.online.view) { app.classList.remove('fit'); app.innerHTML = lobbyHtml(); bindLobby(); return; }
   app.classList.add('fit');
   app.innerHTML = header() + `<div class="stage-box">${tableHtml()}</div>` + `<p class="herald" role="status">${S.msg}</p>` + you() + overlay();
   bindTable();
@@ -702,8 +452,8 @@ function header() {
   const dealN = M.deals.length + (S.phase === 'dealEnd' || S.phase === 'matchEnd' ? 0 : 1);
   const goal = M.mode === 'deals' ? `Deal ${Math.min(dealN, 3)} of 3` : `Deal ${dealN} · play to 50`;
   return `<header><div class="mark">${hammerSvg}Slag</div>
-    <div class="meta">${goal} · Round ${G.round}</div>
-    <div class="hdr-btns"><button class="btn small" id="b-rules">Rules</button><button class="btn small" id="b-quit">New game</button></div></header>`;
+    <div class="meta">${S.online ? `Room ${S.online.view.code} · ` : ''}${goal} · Round ${G.round}</div>
+    <div class="hdr-btns"><button class="btn small" id="b-rules">Rules</button><button class="btn small" id="b-quit">${S.online ? 'Leave' : 'New game'}</button></div></header>`;
 }
 
 // rivets around the iron band, placed once
@@ -737,7 +487,10 @@ function seatHtml(i, deg) {
     if (won) tags.push('<span class="tag win">won the round</span>');
     if (drew) tags.push('<span class="tag drew">drew 1</span>');
   } else if (S.phase === 'choose' && i !== 0) {
-    tags.push('<span class="tag dim">thinking…</span>');
+    const ov = S.online && S.online.view;
+    if (ov && ov.away[i]) tags.push('<span class="tag drew">away · bot playing</span>');
+    else if (ov && ov.ready[i]) tags.push('<span class="tag">locked in</span>');
+    else tags.push('<span class="tag dim">thinking…</span>');
   }
   const title = i === 0 ? 'Your seat' : STYLE_LABEL[M.styles[i]];
   return `<div class="seat ${sin < -0.05 ? 'below' : ''} ${won ? 'win' : ''} ${i === 0 ? 'me' : ''}"
@@ -795,17 +548,23 @@ function you() {
       : drewCard ? `<span class="no">You drew ${cardLabel(drewCard.card)}.</span>`
       : res.plays[0] ? 'Your cards are on the table.' : '';
     top = `<div class="meter">${line}</div>`;
-    actions = `<button class="btn primary" id="b-next">${G.over ? 'See scores' : 'Continue'}</button>`;
+    const ov = S.online && S.online.view;
+    actions = !ov ? `<button class="btn primary" id="b-next">${G.over ? 'See scores' : 'Continue'}</button>`
+      : ov.pickerOther ? '' : ov.readyDone ? '<button class="btn" disabled>Waiting for others…</button>'
+      : `<button class="btn primary" id="b-next">${G.over ? 'See scores' : 'Next round'}</button>`;
   } else if (S.phase === 'pick') {
     const pc = S.pickSel && myHand().find(c => c.id === S.pickSel);
     top = `<div class="meter"><span class="ok">You won.</span> Tap a card to set the next target. It leaves your hand.</div>`;
     actions = `<button class="btn primary" id="b-settarget" ${pc ? '' : 'disabled'}>${pc ? 'Set target: ' + cardLabel(pc) : 'Set target'}</button>`;
   }
+  const ovw = S.online && S.online.view, locked = !!(ovw && S.phase === 'choose' && ovw.submitted);
+  if (locked) { top = `<div class="meter"><span class="ok">Locked in.</span> Waiting for ${ovw.waitingOn.map(esc).join(', ')}…</div>`; actions = ''; }
+  if (S.online && S.online.lost) top = '<div class="meter"><span class="no">Reconnecting…</span></div>';
   const pairedIds = new Set(scoreHand(myHand()).neg.filter(x => x.paired).map(x => x.card.id));
   const cards = hand.map(c => {
     const sel = S.phase === 'pick' ? S.pickSel === c.id : S.sel.includes(c.id);
     const pickable = S.phase === 'pick' && c.value > 0;
-    const can = S.phase === 'choose' || pickable;
+    const can = (S.phase === 'choose' && !locked) || pickable;
     const dim = S.phase === 'pick' && c.value < 0;
     return `<button class="card ${sel ? 'sel' : ''} ${pickable ? 'pickable' : ''} ${dim ? 'dim' : ''}" data-id="${c.id}" ${can ? '' : 'disabled'} aria-pressed="${sel}" aria-label="${cardLabel(c)}">
       <img src="${src(c)}" alt="">${badges(c, false, pairedIds.has(c.id))}${S.newIds.includes(c.id) ? '<span class="new">new</span>' : ''}</button>`;
@@ -831,7 +590,7 @@ function scoreTable(final) {
 function overlay() {
   if (S.showRules) return `<div class="sheet-bg" id="bg-rules"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="rules-h">${rulesHtml()}<div class="actions"><button class="btn primary" id="b-close">Back to the table</button></div></div></div>`;
   if (S.confirmPass) return `<div class="sheet-bg"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="pass-h"><h2 id="pass-h">Pass this round?</h2><p>You'll draw a penalty card. You have a play that makes ${S.G.target.value}.</p><div class="actions"><button class="btn primary" id="b-pass-yes">Yes, pass</button><button class="btn" id="b-pass-no">Keep playing</button></div></div></div>`;
-  if (S.confirmQuit) return `<div class="sheet-bg"><div class="sheet" role="dialog" aria-modal="true"><h2>Start a new game?</h2><p>This match will be lost.</p><div class="actions"><button class="btn primary" id="b-quit-yes">New game</button><button class="btn" id="b-quit-no">Keep playing</button></div></div></div>`;
+  if (S.confirmQuit) return `<div class="sheet-bg"><div class="sheet" role="dialog" aria-modal="true"><h2>${S.online ? 'Leave this game?' : 'Start a new game?'}</h2><p>${S.online ? 'A bot will play your seat. You can rejoin with the same code.' : 'This match will be lost.'}</p><div class="actions"><button class="btn primary" id="b-quit-yes">${S.online ? 'Leave' : 'New game'}</button><button class="btn" id="b-quit-no">Keep playing</button></div></div></div>`;
   if (S.phase === 'dealEnd' || S.phase === 'matchEnd') {
     const M = S.match, final = S.phase === 'matchEnd';
     const minT = Math.min(...M.totals);
@@ -843,7 +602,7 @@ function overlay() {
     return `<div class="sheet-bg"><div class="sheet rise" role="dialog" aria-modal="true" aria-labelledby="sc-h">
       <span class="eyebrow">${S.G.endReason}</span><h2 id="sc-h">${head}</h2><p class="hint" style="margin:0">${sub} Negatives score +5 unless paired with a same-suit card (green).</p>
       ${scoreTable(final)}
-      <div class="actions">${final ? `<button class="btn primary" id="b-again">Play again</button><button class="btn" id="b-setup">Change players</button>` : `<button class="btn primary" id="b-deal">Deal again</button>`}</div>
+      <div class="actions">${S.online && !S.online.view.host ? '<span class="hint">Waiting for the host to deal again…</span>' : final ? `<button class="btn primary" id="b-again">Play again</button><button class="btn" id="b-setup">${S.online ? 'Back to lobby' : 'Change players'}</button>` : `<button class="btn primary" id="b-deal">Deal again</button>`}</div>
     </div></div>`;
   }
   return '';
@@ -888,7 +647,8 @@ function splash() {
           <button data-rule="count" aria-pressed="${S.colorRule}">Most of the color</button>
           <button data-rule="high" aria-pressed="${!S.colorRule}">Highest card</button></div>
         <span class="hint">${S.colorRule ? "Most cards of the target's color wins; the highest card of that color breaks ties." : "Any target-color card beats other colors; the highest one wins."}</span></div>
-      <div class="actions"><button class="btn primary" id="b-start">Deal the cards</button><button class="btn" id="b-rules">Rules</button></div>
+      <div class="actions"><button class="btn primary" id="b-start">Play the computer</button><button class="btn" id="b-rules">Rules</button></div>
+      ${onlineSection()}
     </div>
     <div class="fan" aria-hidden="true">${fan}</div>
   </section>${S.showRules ? overlay() : ''}`;
@@ -898,6 +658,7 @@ function bindSplash() {
   document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { S.mode = b.dataset.mode; save(); render(); });
   document.querySelectorAll('[data-rule]').forEach(b => b.onclick = () => { S.colorRule = b.dataset.rule === 'count'; RULES.colorCount = S.colorRule; save(); render(); });
   $('#b-start').onclick = startMatch;
+  bindOnlineSection();
   $('#b-rules').onclick = () => { S.showRules = true; render(); };
   bindOverlay();
 }
@@ -909,7 +670,7 @@ function bindTable() {
   $('#b-rules').onclick = () => { S.showRules = true; render(); };
   $('#b-quit').onclick = () => { S.confirmQuit = true; render(); };
   bindOverlay();
-  const qy = $('#b-quit-yes'); if (qy) qy.onclick = () => { S.confirmQuit = false; S.phase = 'splash'; S.G = null; S.match = null; render(); };
+  const qy = $('#b-quit-yes'); if (qy) qy.onclick = () => { if (S.online) return leaveOnline(); S.confirmQuit = false; S.phase = 'splash'; S.G = null; S.match = null; render(); };
   const qn = $('#b-quit-no'); if (qn) qn.onclick = () => { S.confirmQuit = false; render(); };
   document.querySelectorAll('.hand .card').forEach(b => b.onclick = () => {
     const id = b.dataset.id;
@@ -930,21 +691,153 @@ function bindTable() {
   const py = $('#b-pass-yes'); if (py) py.onclick = () => { S.confirmPass = false; S.newIds = []; commit(null); };
   const pn = $('#b-pass-no'); if (pn) pn.onclick = () => { S.confirmPass = false; render(); };
   const h = $('#b-hint'); if (h) h.onclick = () => {
-    const play = botPlay(myHand(), S.G.target, 'steady', Math.random, botCtx(S.G, 0));
+    const play = botPlay(myHand(), S.G.target, 'steady', Math.random, S.online ? null : botCtx(S.G, 0));
     if (!play) { S.msg = `No play from your hand makes ${S.G.target.value}. Pass to draw a card.`; S.sel = []; }
     else { S.sel = play.map(c => c.id); }
     render();
   };
   const n = $('#b-next'); if (n) n.onclick = afterReveal;
   const stb = $('#b-settarget'); if (stb) stb.onclick = () => { const c = myHand().find(x => x.id === S.pickSel); if (c) { S.pickSel = null; pickTarget(c); } };
-  const d = $('#b-deal'); if (d) d.onclick = startDeal;
-  const a = $('#b-again'); if (a) a.onclick = startMatch;
-  const st = $('#b-setup'); if (st) st.onclick = () => { S.phase = 'splash'; render(); };
+  const d = $('#b-deal'); if (d) d.onclick = () => S.online ? onlineSend({ t: 'next' }) : startDeal();
+  const a = $('#b-again'); if (a) a.onclick = () => S.online ? onlineSend({ t: 'next' }) : startMatch();
+  const st = $('#b-setup'); if (st) st.onclick = () => { if (S.online) return onlineSend({ t: 'lobby' }); S.phase = 'splash'; render(); };
+}
+
+// ===== online play =====
+// The server runs hosted games. Each player's view arrives already turned so that they sit at seat 0,
+// which lets the same table code draw single-player and online games.
+const ONLINE_HOST = 'ONLINE_HOST_PLACEHOLDER'; // the web service that hosts games, used when this page is opened from elsewhere
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function wsUrl() {
+  const local = location.protocol.startsWith('http') && !/slag-in1n\.onrender\.com$/.test(location.hostname);
+  const host = local ? location.host : ONLINE_HOST;
+  return (location.protocol === 'http:' && local ? 'ws://' : 'wss://') + host + '/ws';
+}
+function getSession() { try { return JSON.parse(localStorage.getItem('slag-online') || 'null'); } catch (e) { return null; } }
+function setSession(v) { try { v ? localStorage.setItem('slag-online', JSON.stringify(v)) : localStorage.removeItem('slag-online'); } catch (e) {} }
+function onlineSend(msg) { const o = S.online; if (o && o.ws && o.ws.readyState === 1) o.ws.send(JSON.stringify(msg)); }
+
+function goOnline(first) {
+  if (S.online && S.online.ws) { S.online.leaving = true; try { S.online.ws.close(); } catch (e) {} }
+  let ws;
+  try { ws = new WebSocket(wsUrl()); } catch (e) { return onlineFail('Online play is not available from this page.'); }
+  const o = S.online = { ws, view: null, lost: false, leaving: false, tries: (S.online && S.online.tries) || 0 };
+  S.oerr = '';
+  ws.onopen = () => { o.tries = 0; o.lost = false; first(); };
+  ws.onmessage = e => { let m; try { m = JSON.parse(e.data); } catch (err) { return; } onlineMessage(m); };
+  ws.onclose = () => {
+    if (S.online !== o || o.leaving) return;
+    const sess = getSession();
+    if (!sess || o.tries >= 8) return onlineFail('Lost the connection to the game.');
+    o.lost = true; o.tries++;
+    if (S.phase !== 'splash') render();
+    setTimeout(() => { if (S.online === o) goOnline(() => onlineSend({ t: 'join', code: sess.code, token: sess.token, rejoinOnly: true })); }, 1500 * o.tries);
+  };
+}
+function onlineFail(msg) {
+  if (S.online) { S.online.leaving = true; try { S.online.ws.close(); } catch (e) {} }
+  S.online = null; setSession(null);
+  S.oerr = msg; S.phase = 'splash'; S.G = null; S.match = null; S.confirmQuit = false;
+  render();
+}
+function onlineMessage(m) {
+  if (m.t === 'joined') { setSession({ code: m.code, token: m.token, name: m.name }); return; }
+  if (m.t === 'kicked') return onlineFail(m.msg);
+  if (m.t === 'error') {
+    if (m.fatal) return onlineFail(m.msg);
+    S.msg = esc(m.msg); render(); return;
+  }
+  if (m.t === 'state') applyView(m);
+}
+function applyView(v) {
+  const o = S.online; if (!o) return;
+  o.view = v; o.lost = false;
+  RULES.colorCount = v.settings.colorRule;
+  if (v.phase === 'lobby') { S.phase = 'lobby'; S.G = null; S.match = null; S.last = null; S.confirmQuit = false; return render(); }
+  const prevPhase = S.phase, prevRound = S.G ? S.G.round : 0;
+  S.G = v.G; S.match = v.match; S.last = v.last; S.dealScores = v.dealScores; S.msg = v.msg;
+  if (v.phase !== prevPhase || v.G.round !== prevRound) { S.sel = []; S.pickSel = null; S.confirmPass = false; }
+  if (v.last) S.newIds = v.last.penalties.filter(q => q.i === 0 && q.card).map(q => q.card.id);
+  else if (v.G.round === 1) S.newIds = [];
+  S.newIds = S.newIds.filter(id => myHand().some(c => c.id === id));
+  S.phase = v.phase;
+  render();
+}
+function leaveOnline() {
+  onlineSend({ t: 'leave' });
+  if (S.online) { S.online.leaving = true; try { S.online.ws.close(); } catch (e) {} }
+  S.online = null; setSession(null);
+  S.phase = 'splash'; S.G = null; S.match = null; S.confirmQuit = false;
+  render();
+}
+function onlineSection() {
+  const code = (S.joinCode || '').toUpperCase();
+  return `<div class="field online"><span class="lbl">Play with friends</span>
+      <label class="hint" for="o-name">Your name</label>
+      <input id="o-name" class="inp" maxlength="16" autocomplete="nickname" placeholder="Your name" value="${esc(S.oname || '')}">
+      <div class="actions"><button class="btn" id="b-host">Host a game</button>
+        <span class="or">or</span>
+        <input id="o-code" class="inp code" maxlength="4" autocomplete="off" placeholder="CODE" aria-label="Room code" value="${esc(code)}">
+        <button class="btn" id="b-join">Join</button></div>
+      ${S.oerr ? `<span class="hint bad" role="alert">${esc(S.oerr)}</span>` : '<span class="hint">The host gets a 4-letter code to share. Empty seats can be filled with bots.</span>'}
+    </div>`;
+}
+function bindOnlineSection() {
+  const nm = $('#o-name'), cd = $('#o-code');
+  if (!nm) return;
+  nm.oninput = () => { S.oname = nm.value; save(); };
+  cd.oninput = () => { cd.value = cd.value.toUpperCase().replace(/[^A-Z]/g, ''); S.joinCode = cd.value; };
+  const need = () => { const name = nm.value.trim(); if (!name) { S.oerr = 'Enter your name first.'; render(); const f = $('#o-name'); if (f) f.focus(); return null; } return name; };
+  $('#b-host').onclick = () => { const name = need(); if (!name) return; S.oerr = ''; goOnline(() => onlineSend({ t: 'create', name })); };
+  $('#b-join').onclick = () => {
+    const name = need(); if (!name) return;
+    const code = cd.value.trim().toUpperCase();
+    if (code.length !== 4) { S.oerr = 'Enter the 4-letter code from your host.'; render(); const f = $('#o-code'); if (f) f.focus(); return; }
+    S.oerr = ''; goOnline(() => onlineSend({ t: 'join', code, name }));
+  };
+  cd.onkeydown = e => { if (e.key === 'Enter') $('#b-join').click(); };
+}
+function lobbyHtml() {
+  const v = S.online.view, host = v.host, n = v.seats.length;
+  const link = `${location.origin}${location.pathname}?join=${v.code}`;
+  const rows = v.seats.map((s, i) => `<li class="pl ${s.you ? 'me' : ''}">
+      <span class="pl-name">${esc(s.name)}${s.you ? ' <span class="tag">you</span>' : ''}${s.host ? ' <span class="tag win">host</span>' : ''}${s.bot ? ` <span class="tag">bot · ${STYLE_LABEL[s.style]}</span>` : ''}${!s.connected ? ' <span class="tag drew">away</span>' : ''}</span>
+      ${host && !s.you ? `<button class="btn small" data-remove="${i}" aria-label="Remove ${esc(s.name)}">Remove</button>` : ''}</li>`).join('');
+  const seg = (k, opts, cur) => `<div class="seg" role="group">${opts.map(([val, label]) => `<button data-${k}="${val}" aria-pressed="${cur === val}" ${host ? '' : 'disabled'}>${label}</button>`).join('')}</div>`;
+  return `<section class="lobby">
+    <header><div class="mark">${hammerSvg}Slag</div><div class="hdr-btns"><button class="btn small" id="b-rules">Rules</button><button class="btn small" id="b-leave">Leave</button></div></header>
+    <div class="panel code-panel"><span class="eyebrow">Room code</span><span class="code-big">${v.code}</span>
+      <span class="hint">Friends open <span class="sel-text">${esc(link)}</span> or enter the code on the start screen.</span>
+      <div class="actions"><button class="btn small" id="b-copy">Copy invite link</button><span class="hint" id="copy-ok" role="status"></span></div></div>
+    <div class="panel"><h2 class="ph">Players <span class="meta">${n} of 8</span></h2><ul class="plist">${rows}</ul>
+      ${host ? `<div class="actions"><button class="btn small" id="b-addbot" ${n >= 8 ? 'disabled' : ''}>Add a bot</button></div>` : ''}</div>
+    <div class="panel"><h2 class="ph">Rules</h2>
+      <div class="field"><span class="lbl">Match</span>${seg('mode', [['deals', 'Three deals'], ['fifty', 'Play to 50']], v.settings.mode)}</div>
+      <div class="field"><span class="lbl">Who wins a round</span>${seg('rule', [['count', 'Most of the color'], ['high', 'Highest card']], v.settings.colorRule ? 'count' : 'high')}</div>
+      ${host ? '' : '<span class="hint">The host sets the rules.</span>'}</div>
+    <div class="actions">${host ? `<button class="btn primary" id="b-ostart" ${n < 2 ? 'disabled' : ''}>Deal the cards</button>${n < 2 ? '<span class="hint">Wait for a friend or add a bot.</span>' : ''}` : '<span class="hint">Waiting for the host to deal…</span>'}</div>
+  </section>${overlay()}`;
+}
+function bindLobby() {
+  const on = (id, f) => { const el = $(id); if (el) el.onclick = f; };
+  on('#b-rules', () => { S.showRules = true; render(); });
+  on('#b-leave', leaveOnline);
+  on('#b-addbot', () => onlineSend({ t: 'addBot' }));
+  on('#b-ostart', () => onlineSend({ t: 'start' }));
+  on('#b-copy', () => {
+    const link = `${location.origin}${location.pathname}?join=${S.online.view.code}`, ok = $('#copy-ok');
+    const done = t => { if (ok) ok.textContent = t; };
+    try { navigator.clipboard.writeText(link).then(() => done('Copied.'), () => done('Select the link above to copy it.')); } catch (e) { done('Select the link above to copy it.'); }
+  });
+  document.querySelectorAll('[data-remove]').forEach(b => b.onclick = () => onlineSend({ t: 'remove', seat: +b.dataset.remove }));
+  document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => onlineSend({ t: 'settings', mode: b.dataset.mode }));
+  document.querySelectorAll('[data-rule]').forEach(b => b.onclick = () => onlineSend({ t: 'settings', colorRule: b.dataset.rule === 'count' }));
+  bindOverlay();
 }
 
 // remember setup choices for this viewer only
-function save() { try { localStorage.setItem('slag-setup', JSON.stringify({ bots: S.bots, mode: S.mode, colorRule: S.colorRule })); } catch (e) {} }
-function load() { try { const v = JSON.parse(localStorage.getItem('slag-setup') || 'null'); if (v) { S.bots = v.bots || 3; S.mode = v.mode || 'deals'; if (typeof v.colorRule === 'boolean') S.colorRule = v.colorRule; } } catch (e) {} }
+function save() { try { localStorage.setItem('slag-setup', JSON.stringify({ bots: S.bots, mode: S.mode, colorRule: S.colorRule, oname: S.oname || '' })); } catch (e) {} }
+function load() { try { const v = JSON.parse(localStorage.getItem('slag-setup') || 'null'); if (v) { S.bots = v.bots || 3; S.mode = v.mode || 'deals'; if (typeof v.colorRule === 'boolean') S.colorRule = v.colorRule; if (v.oname) S.oname = v.oname; } } catch (e) {} }
 
 // keep a game in progress across page updates
 const hot = window.claude && window.claude.hot;
@@ -953,7 +846,12 @@ function start(data) {
   if (data && data.S && data.S.phase) S = data.S;
   if (typeof S.colorRule !== 'boolean') S.colorRule = true;
   RULES.colorCount = S.colorRule;
+  const q = new URLSearchParams(location.search).get('join');
+  if (q) S.joinCode = q.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
   render();
+  const sess = getSession();
+  if (sess && !S.online) goOnline(() => onlineSend({ t: 'join', code: sess.code, token: sess.token, name: sess.name, rejoinOnly: true }));
+  else if (q) { const f = $(S.oname ? '#o-code' : '#o-name'); if (f) f.focus(); }
 }
 try { if (hot && hot.snapshot) hot.snapshot(() => ({ S })); } catch (e) {}
 if (hot && hot.ready) hot.ready(start); else start((hot && hot.data) || {});

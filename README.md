@@ -2,7 +2,17 @@
 
 A card-shedding game for 2 to 8 players. Match the target number, dump your cards, and keep your score low.
 
-This repo is a playable web version: you against 1 to 7 computer players at a forge-lit table. Open `index.html` in a browser, or play the hosted copy on Render.
+This repo is a playable web version at a forge-lit table. Play against 1 to 7 computer players, or host an online game with friends.
+
+## Playing online
+
+1. On the start screen, enter your name and choose **Host a game**. You get a 4-letter room code and an invite link.
+2. Friends open the link, or enter the code and choose **Join**. Up to 8 seats.
+3. The host can add bots to fill seats, choose the rules, and deal.
+4. Everyone picks their cards privately; plays are revealed together once everyone has locked in.
+5. If someone drops out, a bot plays their seat until they come back. Reopening the page rejoins the same seat.
+
+The server (`server.js`) deals and holds every hand, so nobody can see another player's cards.
 
 ## How a round works
 
@@ -53,5 +63,16 @@ When the draw pile runs out, shuffle the discards into a new draw pile. With 2 p
 
 ## Files
 
-- `index.html`: the whole game (rules engine, computer players and table), no build step
+- `index.html`: the game screens: start screen, lobby and table
+- `engine.js`: the rules engine and computer players, shared by the page and the server
+- `server.js`: serves the page and runs online games over WebSockets
 - `cards/`: card artwork
+
+## Running it yourself
+
+```
+npm install
+npm start
+```
+
+Then open http://localhost:3000. On Render this runs as a Node web service with build command `npm install` and start command `npm start`.
