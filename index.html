@@ -128,7 +128,51 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 
 /* the table */
 .wrap.fit { height: 100%; min-height: 0; padding-block: 8px 10px; gap: 8px; }
-.stage-box { flex: 1 1 0; min-height: 220px; container-type: size; display: grid; place-items: center; }
+.stage-box { position: relative; flex: 1 1 0; min-height: 220px; container-type: size; display: grid; place-items: center; }
+
+/* showdown: everyone's play, large, the moment cards flip */
+.showdown {
+  --cols: 2; --rows: 2;
+  --sdw: min(calc(((97cqw - 28px - (var(--cols) - 1) * 12px) / var(--cols) - 28px) / var(--div, 3.3)), calc(((96cqh - 64px - (var(--rows) - 1) * 12px - 18px) / var(--rows) - 52px) / 1.4), 128px);
+  position: absolute; inset: 2% 1.5%; z-index: 5; display: flex; flex-direction: column; gap: 8px; padding: 10px 14px 14px; border-radius: 22px;
+  background: radial-gradient(ellipse 70% 60% at 50% 45%, rgb(62, 36, 19), rgb(16, 10, 7));
+  border: 1px solid rgba(255, 190, 110, .25); box-shadow: 0 20px 50px rgba(0, 0, 0, .6), inset 0 0 60px rgba(255, 120, 40, .1);
+  animation: rise .25s ease-out both;
+}
+.sd-head { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 44px; }
+.sd-head .card { --w: 30px; width: var(--w); border-radius: 3px; }
+.sd-title { font-family: var(--f-display); font-size: clamp(18px, 2.4vw, 24px); letter-spacing: .06em; }
+.sd-title b { color: var(--ember-hot); font-weight: 400; text-shadow: 0 0 10px rgba(255, 138, 42, .6); }
+.sd-grid { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); grid-template-rows: repeat(var(--rows), minmax(0, 1fr)); gap: 12px; padding-top: 18px; }
+.sd-tile { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 8px; min-width: 0; min-height: 0;
+  border-radius: 14px; background: rgba(255, 255, 255, .045); border: 1px solid var(--line); }
+.sd-label { display: flex; align-items: baseline; gap: 8px; max-width: 100%; white-space: nowrap; }
+.sd-name { font-family: var(--f-display); font-size: clamp(14px, 1.8vw, 18px); overflow: hidden; text-overflow: ellipsis; }
+.sd-cap { font-size: 12.5px; color: var(--parch-dim); }
+.sd-tile .cards { display: flex; gap: 6px; justify-content: center; }
+.sd-tile .card { --w: var(--sdw); width: var(--sdw); }
+.sd-pass { font-family: var(--f-display); font-size: clamp(15px, 2vw, 20px); color: var(--parch-dim); padding: 6px 0; }
+.sd-tile.passed { opacity: .5; }
+.showdown.tight { --div: 2.4; }
+.showdown.tight .sd-tile .card + .card { margin-left: calc(var(--sdw) * -.35 - 6px); }
+.sd-tile.win { padding-top: 22px; }
+.sd-tile.win {
+  border: 2px solid var(--ember-hot);
+  background: radial-gradient(ellipse at 50% 0%, rgba(255, 170, 70, .32), rgba(255, 138, 42, .07) 70%);
+  box-shadow: 0 0 0 3px rgba(255, 138, 42, .25), 0 0 44px rgba(255, 138, 42, .5);
+  animation: winglow 1.4s ease-in-out .7s 2;
+}
+.sd-tile.win .sd-name { color: var(--ember-hot); }
+.sd-crown {
+  position: absolute; top: -17px; left: 50%; z-index: 1; display: flex; align-items: center; gap: 6px; padding: 3px 14px 3px 9px; border-radius: 999px;
+  background: linear-gradient(180deg, #ffd884, #e8891a); color: #2a1406; font-weight: 800; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .55), 0 0 22px rgba(255, 170, 60, .65);
+  transform: translateX(-50%); animation: crown-pop .5s cubic-bezier(.2, 1.6, .4, 1) .55s both;
+}
+.sd-crown svg { width: 22px; height: 17px; }
+@keyframes crown-pop { from { transform: translateX(-50%) scale(0) rotate(-14deg); opacity: 0; } to { transform: translateX(-50%) scale(1); opacity: 1; } }
+@keyframes winglow { 50% { box-shadow: 0 0 0 5px rgba(255, 138, 42, .35), 0 0 70px rgba(255, 150, 50, .75); } }
+@media (prefers-reduced-motion: reduce) { .showdown, .sd-crown, .sd-tile.win { animation: none; } }
 .stage { --sw: clamp(80px, 13vw, 132px); position: relative; width: min(100cqw, 100cqh * 1.75); height: min(100cqh, 100cqw / 1.75); }
 .board {
   position: absolute; inset: 13% 8.5%; border-radius: 50%;
@@ -444,7 +488,7 @@ function render() {
   if (S.phase === 'splash') { app.classList.remove('fit'); app.innerHTML = splash(); bindSplash(); return; }
   if (S.phase === 'lobby' && S.online && S.online.view) { app.classList.remove('fit'); app.innerHTML = lobbyHtml(); bindLobby(); return; }
   app.classList.add('fit');
-  app.innerHTML = header() + `<div class="stage-box">${tableHtml()}</div>` + `<p class="herald" role="status">${S.msg}</p>` + you() + overlay();
+  app.innerHTML = header() + `<div class="stage-box">${tableHtml()}${showdownHtml()}</div>` + `<p class="herald" role="status">${S.msg}</p>` + you() + overlay();
   bindTable();
 }
 function header() {
@@ -512,6 +556,41 @@ function matHtml() {
       <div class="plate"><div class="pl-row"><span class="pl-l">${label}</span><span class="pl-n">${neg(t.value)}</span></div><span class="pl-s">${tl.name} ${tl.art}</span></div></div>
     <div class="pile disc"><div class="stack">${G.discard.length ? cardEl(G.discard[G.discard.length - 1]) : '<span class="empty-slot"></span>'}</div><span>Discard ${G.discard.length}</span></div>
   </div>`;
+}
+// Showdown: shown while the round is revealed. Winner first, then the other plays, then passes.
+const crownSvg = '<svg viewBox="0 0 24 18" aria-hidden="true"><path d="M1.5 16.5h21l1-11.5-6.2 4.6L12 1.2 6.7 9.6.5 5z" fill="currentColor"/></svg>';
+function showdownHtml() {
+  if (!(S.phase === 'reveal' || S.phase === 'pick') || !S.last) return '';
+  const res = S.last, G = S.G, t = res.target, n = G.players.length;
+  const preview = S.phase === 'pick' && S.pickSel ? myHand().find(c => c.id === S.pickSel) : null;
+  const order = G.players.map((_, i) => i).sort((a, b) => {
+    const pa = res.plays[a], pb = res.plays[b];
+    if (a === res.winner) return -1; if (b === res.winner) return 1;
+    if (!!pa !== !!pb) return pa ? -1 : 1;
+    if (pa && pb) return cmpKey(playKey(pb, t), playKey(pa, t));
+    return a - b;
+  });
+  const wide = !narrow();
+  const rows = wide ? (n <= 3 ? 1 : 2) : Math.ceil(n / (n <= 1 ? 1 : 2));
+  const cols = Math.ceil(n / rows);
+  const tiles = order.map((i, k) => {
+    const p = G.players[i], play = res.plays[i], won = i === res.winner;
+    const drew = res.penalties.some(q => q.i === i);
+    let cap = '';
+    if (play) {
+      const cnt = colorCount(play, t), b = bestCard(play, t).card;
+      cap = RULES.colorCount && cnt ? `${cnt} ${SUITS[t.suit].name}` : b ? `high ${cardLabel(b)}` : '';
+    } else cap = drew ? 'drew a card' : '';
+    const cards = play ? `<div class="cards">${play.map((c, j) => `<span class="card flip" style="animation-delay:${90 * k + 70 * j}ms"><img src="${src(c)}" alt="${cardLabel(c)}">${badges(c, true)}</span>`).join('')}</div>`
+      : '<span class="sd-pass">Passed</span>';
+    return `<div class="sd-tile ${won ? 'win' : ''} ${play ? '' : 'passed'}">${won ? `<span class="sd-crown">${crownSvg}Winner</span>` : ''}
+      <div class="sd-label"><span class="sd-name">${p.name}</span>${cap ? `<span class="sd-cap">${cap}</span>` : ''}</div>${cards}</div>`;
+  }).join('');
+  const shown = preview || t;
+  const title = preview ? `Next target <b>${neg(shown.value)}</b> ${SUITS[shown.suit].name}` : `Showdown · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}`;
+  return `<section class="showdown ${wide ? '' : 'tight'}" style="--cols:${cols};--rows:${rows}" aria-label="Round results">
+    <div class="sd-head">${cardEl(shown, '')}<span class="sd-title">${title}</span></div>
+    <div class="sd-grid">${tiles}</div></section>`;
 }
 function tableHtml() {
   const n = S.G.players.length - 1, angs = seatAngles(n);
