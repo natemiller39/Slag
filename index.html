@@ -133,7 +133,7 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 /* showdown: everyone's play, large, the moment cards flip */
 .showdown {
   --cols: 2; --rows: 2;
-  --sdw: min(calc(((97cqw - 28px - (var(--cols) - 1) * 12px) / var(--cols) - 28px) / var(--div, 3.3)), calc(((96cqh - 64px - (var(--rows) - 1) * 12px - 18px) / var(--rows) - 52px) / 1.4), 128px);
+  --sdw: min(calc(((97cqw - 28px - (var(--cols) - 1) * 12px) / var(--cols) - 28px) / var(--div, 3.3)), calc(((96cqh - 64px - (var(--rows) - 1) * 12px - 18px) / var(--rows) - 52px) / 1.4), 180px);
   position: absolute; inset: 2% 1.5%; z-index: 5; display: flex; flex-direction: column; gap: 8px; padding: 10px 14px 14px; border-radius: 22px;
   background: radial-gradient(ellipse 70% 60% at 50% 45%, rgb(62, 36, 19), rgb(16, 10, 7));
   border: 1px solid rgba(255, 190, 110, .25); box-shadow: 0 20px 50px rgba(0, 0, 0, .6), inset 0 0 60px rgba(255, 120, 40, .1);
@@ -206,7 +206,8 @@ header { display: flex; align-items: center; justify-content: space-between; gap
   outline: 1.5px dashed rgba(241, 228, 204, .22); outline-offset: -7px;
 }
 .mat .draw { grid-area: draw; } .mat .tcol { grid-area: tcol; } .mat .disc { grid-area: disc; }
-.mat .card.big { --w: clamp(52px, min(11vw, 24cqh), 150px); }
+.mat .card.big { --w: clamp(56px, min(14vw, 30cqh), 200px); }
+@media (min-width: 641px) { .mat .tcol { flex-direction: row; gap: 14px; } .mat .tcol .plate { margin-top: 0; padding: 8px 14px; } .mat .tcol .pl-row { flex-direction: column; align-items: center; gap: 2px; } .mat .tcol .pl-n { font-size: clamp(30px, 4.2vw, 52px); } }
 .pile { --w: clamp(28px, min(6vw, 13cqh), 80px); display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 12px; color: var(--parch-dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .pile .card, .pile .empty-slot { --w: inherit; width: var(--w); }
 .pile .stack { position: relative; isolation: isolate; }
@@ -385,7 +386,7 @@ header { display: flex; align-items: center; justify-content: space-between; gap
   header .meta { display: none; }
   .stage-box { min-height: 200px; }
   .board { inset: 10% 9%; }
-  .mat .card.big { --w: clamp(48px, 15cqh, 64px); }
+  .mat .card.big { --w: clamp(56px, 19cqh, 92px); }
   .pile { --w: clamp(26px, 7cqh, 30px); font-size: 11px; }
   .mark { font-size: 30px; } .mark svg { width: 20px; height: 20px; }
   .pl-s { white-space: normal; text-align: center; max-width: 10ch; }
@@ -672,7 +673,7 @@ function you() {
   }).join('');
   return `<section class="you ${S.phase === 'pick' ? 'picking' : ''}" aria-label="Your hand">
     <div class="you-top">${top || '<div class="meter"></div>'}<div class="actions">${actions}</div></div>
-    <div class="hand" style="--n:${Math.max(hand.length, 2)};--rn:${Math.max(Math.ceil(hand.length / 2), hand.length <= 7 ? hand.length : 0, 1)}">${cards}</div>
+    ${S.phase === 'reveal' ? '' : `<div class="hand" style="--n:${Math.max(hand.length, 2)};--rn:${Math.max(Math.ceil(hand.length / 2), hand.length <= 7 ? hand.length : 0, 1)}">${cards}</div>`}
   </section>`;
 }
 
