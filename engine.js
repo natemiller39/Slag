@@ -41,7 +41,7 @@ function bestCard(play, target) {
 
 // Table rule: when on, the play with the most cards of the target's color wins (negatives count),
 // and the highest target-color card breaks ties. When off, only the single best card counts.
-const RULES = { colorCount: true };
+const RULES = { colorCount: false };
 function colorCount(play, target) { return play.filter(c => c.suit === target.suit).length; }
 function topColor(play, target) { return Math.max(0, ...play.filter(c => c.value > 0 && c.suit === target.suit).map(c => c.value)); }
 function playKey(play, target) {

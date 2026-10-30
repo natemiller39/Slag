@@ -62,7 +62,7 @@ function useRules(room) { E.RULES.colorCount = room.settings.colorRule; }
 
 function createRoom(name) {
   const room = {
-    code: newCode(), hostToken: null, seats: [], settings: { colorRule: true, mode: 'deals' },
+    code: newCode(), hostToken: null, seats: [], settings: { colorRule: false, mode: 'deals' },
     phase: 'lobby', match: null, G: null, plays: [], submitted: [], last: null, picker: -1,
     ready: new Set(), revealAt: 0, dealScores: null, note: null, lastActive: Date.now(),
   };

@@ -411,7 +411,7 @@ const src = c => 'cards/' + c.suit + '_' + c.value + '.webp';
 const suitIdx = s => s === 'black' ? 9 : SUIT_ORDER.indexOf(s);
 const sortHand = h => h.slice().sort((a, b) => a.value - b.value || suitIdx(a.suit) - suitIdx(b.suit) || (b.star - a.star));
 
-let S = { phase: 'splash', bots: 3, mode: 'deals', colorRule: true, match: null, G: null, sel: [], last: null, newIds: [], msg: '', showRules: false };
+let S = { phase: 'splash', bots: 3, mode: 'deals', colorRule: false, match: null, G: null, sel: [], last: null, newIds: [], msg: '', showRules: false };
 
 function cardEl(c, cls = '', extra = '') {
   return `<span class="card ${cls}" ${extra}><img src="${src(c)}" alt="${cardLabel(c)}">${badges(c, cls.includes('mini'), false)}</span>`;
@@ -745,8 +745,8 @@ function splash() {
           <button data-mode="fifty" aria-pressed="${S.mode === 'fifty'}">Play to 50</button></div></div>
       <div class="field"><span class="lbl" id="l-rule">Who wins a round</span>
         <div class="seg" role="group" aria-labelledby="l-rule">
-          <button data-rule="count" aria-pressed="${S.colorRule}">Most of the color</button>
-          <button data-rule="high" aria-pressed="${!S.colorRule}">Highest card</button></div>
+          <button data-rule="high" aria-pressed="${!S.colorRule}">Highest card</button>
+          <button data-rule="count" aria-pressed="${S.colorRule}">Most of the color</button></div>
         <span class="hint">${S.colorRule ? "Most cards of the target's color wins; the highest card of that color breaks ties." : "Any target-color card beats other colors; the highest one wins."}</span></div>
       <div class="actions"><button class="btn primary" id="b-start">Play the computer</button><button class="btn" id="b-rules">Rules</button></div>
       ${onlineSection()}
@@ -757,7 +757,7 @@ function splash() {
 function bindSplash() {
   document.querySelectorAll('[data-bots]').forEach(b => b.onclick = () => { S.bots = +b.dataset.bots; save(); render(); });
   document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { S.mode = b.dataset.mode; save(); render(); });
-  document.querySelectorAll('[data-rule]').forEach(b => b.onclick = () => { S.colorRule = b.dataset.rule === 'count'; RULES.colorCount = S.colorRule; save(); render(); });
+  document.querySelectorAll('[data-rule]').forEach(b => b.onclick = () => { S.colorRule = b.dataset.rule === 'count'; S.ruleChosen = true; RULES.colorCount = S.colorRule; save(); render(); });
   $('#b-start').onclick = startMatch;
   bindOnlineSection();
   $('#b-rules').onclick = () => { S.showRules = true; render(); };
@@ -914,7 +914,7 @@ function lobbyHtml() {
       ${host ? `<div class="actions"><button class="btn small" id="b-addbot" ${n >= 8 ? 'disabled' : ''}>Add a bot</button></div>` : ''}</div>
     <div class="panel"><h2 class="ph">Rules</h2>
       <div class="field"><span class="lbl">Match</span>${seg('mode', [['deals', 'Three deals'], ['fifty', 'Play to 50']], v.settings.mode)}</div>
-      <div class="field"><span class="lbl">Who wins a round</span>${seg('rule', [['count', 'Most of the color'], ['high', 'Highest card']], v.settings.colorRule ? 'count' : 'high')}</div>
+      <div class="field"><span class="lbl">Who wins a round</span>${seg('rule', [['high', 'Highest card'], ['count', 'Most of the color']], v.settings.colorRule ? 'count' : 'high')}</div>
       ${host ? '' : '<span class="hint">The host sets the rules.</span>'}</div>
     <div class="actions">${host ? `<button class="btn primary" id="b-ostart" ${n < 2 ? 'disabled' : ''}>Deal the cards</button>${n < 2 ? '<span class="hint">Wait for a friend or add a bot.</span>' : ''}` : '<span class="hint">Waiting for the host to deal…</span>'}</div>
   </section>${overlay()}`;
@@ -937,15 +937,15 @@ function bindLobby() {
 }
 
 // remember setup choices for this viewer only
-function save() { try { localStorage.setItem('slag-setup', JSON.stringify({ bots: S.bots, mode: S.mode, colorRule: S.colorRule, oname: S.oname || '' })); } catch (e) {} }
-function load() { try { const v = JSON.parse(localStorage.getItem('slag-setup') || 'null'); if (v) { S.bots = v.bots || 3; S.mode = v.mode || 'deals'; if (typeof v.colorRule === 'boolean') S.colorRule = v.colorRule; if (v.oname) S.oname = v.oname; } } catch (e) {} }
+function save() { try { localStorage.setItem('slag-setup', JSON.stringify({ bots: S.bots, mode: S.mode, colorRule: S.colorRule, ruleChosen: !!S.ruleChosen, oname: S.oname || '' })); } catch (e) {} }
+function load() { try { const v = JSON.parse(localStorage.getItem('slag-setup') || 'null'); if (v) { S.bots = v.bots || 3; S.mode = v.mode || 'deals'; if (v.ruleChosen && typeof v.colorRule === 'boolean') { S.colorRule = v.colorRule; S.ruleChosen = true; } if (v.oname) S.oname = v.oname; } } catch (e) {} }
 
 // keep a game in progress across page updates
 const hot = window.claude && window.claude.hot;
 function start(data) {
   load();
   if (data && data.S && data.S.phase) S = data.S;
-  if (typeof S.colorRule !== 'boolean') S.colorRule = true;
+  if (typeof S.colorRule !== 'boolean') S.colorRule = false;
   RULES.colorCount = S.colorRule;
   const q = new URLSearchParams(location.search).get('join');
   if (q) S.joinCode = q.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);

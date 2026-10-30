@@ -28,13 +28,13 @@ The deal ends when someone runs out of cards or nobody can make the target.
 
 The game offers two rules on the setup screen.
 
-**Most of the color** (default)
+**Highest card** (default)
+Any card of the target's color beats every other color, and the highest one wins. Ties fall to the sister suit, then suit rank, then the starred copy.
+
+**Most of the color**
 1. The play with the most cards of the target's color wins. Negatives of that color count.
 2. Tied? The highest card of the target's color wins.
 3. Still tied, or nobody played the color? The highest card wins, then the target's sister suit, then suit rank, then the starred copy.
-
-**Highest card**
-Any card of the target's color beats every other color, and the highest one wins. Ties fall to the sister suit, then suit rank, then the starred copy.
 
 Sister suits: Red & Orange, Green & Blue, Purple & Grey.
 Suit rank: Red 6, Orange 5, Green 4, Blue 3, Purple 2, Grey 1.
