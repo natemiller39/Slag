@@ -313,7 +313,28 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .seg button[aria-pressed="true"] { background: linear-gradient(180deg, #ffbd6b, #e46a17); color: #2a1406; border-color: #ffd49a; }
 
 /* splash */
-.splash { overflow-x: clip; overflow-y: visible; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 480px); gap: 28px; align-items: center; padding-block: 24px; }
+.splash { overflow-x: clip; overflow-y: visible; display: flex; flex-direction: column; gap: 22px; padding-block: 16px 24px; max-width: 1100px; width: 100%; margin: 0 auto; }
+.splash-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 440px); gap: 24px; align-items: center; }
+.splash-top > div:first-child { display: flex; flex-direction: column; gap: 12px; }
+.modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+.panel.mode { gap: 14px; }
+.panel.friends { border-color: rgba(255, 150, 60, .45); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 10px 30px rgba(0, 0, 0, .4), 0 0 40px rgba(255, 120, 40, .12); }
+.name-row { display: flex; flex-direction: column; gap: 6px; }
+.join-row { border-top: 1px solid var(--line); padding-top: 12px; }
+.invite { margin: 0; font-size: 16px; }
+.invite b { color: var(--ember-hot); letter-spacing: .12em; }
+.btn.big { min-height: 52px; padding: 12px 28px; font-size: 18px; }
+.lobby-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+.lobby-grid .code-panel { grid-row: span 2; }
+.deal-row { border-top: 1px solid var(--line); padding-top: 14px; width: 100%; }
+.pl.open .pl-name { color: var(--parch-dim); font-weight: 500; font-style: italic; }
+.sheet.connecting { width: min(420px, 100%); align-items: center; text-align: center; }
+.anvil { display: flex; gap: 8px; height: 22px; align-items: flex-end; }
+.anvil span { width: 10px; height: 10px; border-radius: 50%; background: var(--ember-hot); box-shadow: 0 0 10px rgba(255, 138, 42, .8); animation: spark-hop 1s ease-in-out infinite; }
+.anvil span:nth-child(2) { animation-delay: .15s; } .anvil span:nth-child(3) { animation-delay: .3s; }
+@keyframes spark-hop { 0%, 100% { transform: translateY(0); opacity: .5; } 50% { transform: translateY(-10px); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .anvil span { animation: none; opacity: .9; } }
+@media (max-width: 860px) { .modes, .lobby-grid { grid-template-columns: minmax(0, 1fr); } .lobby-grid .code-panel { grid-row: auto; } }
 .splash h1 { font-family: var(--f-mark); font-weight: 400; font-size: clamp(72px, 15vw, 132px); line-height: .85; margin: 0; text-shadow: 0 0 30px rgba(255, 138, 42, .45); }
 .splash .lead { font-size: 18px; max-width: 40ch; color: var(--parch-dim); margin: 0; }
 .fan { --spread: 68px; --fw: 112px; position: relative; isolation: isolate; width: 480px; max-width: 100%; height: 260px; overflow: visible; }
@@ -351,7 +372,7 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .or { color: var(--parch-dim); font-size: 14px; }
 .field.online { border-top: 1px solid var(--line); padding-top: 16px; }
 .hint.bad { color: var(--bad); }
-.lobby { max-width: 680px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; padding-block: 8px 24px; }
+.lobby { max-width: 1000px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; padding-block: 8px 24px; }
 .panel { display: flex; flex-direction: column; gap: 12px; padding: 16px 18px; border-radius: 16px;
   background: linear-gradient(180deg, #2c241f, #1a1512); border: 1px solid #4a4e54; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 10px 30px rgba(0, 0, 0, .4); }
 .code-panel { align-items: flex-start; }
@@ -392,7 +413,7 @@ header { display: flex; align-items: center; justify-content: space-between; gap
   .pl-s { white-space: normal; text-align: center; max-width: 10ch; }
   .mat { grid-template-columns: auto auto; grid-template-areas: "draw tcol" "disc tcol"; row-gap: 8px; }
   .plaque .nm { font-size: 14px; }
-  .splash { grid-template-columns: 1fr; }
+  .splash-top { grid-template-columns: 1fr; }
   .fan { margin: 0 auto; }
 }
 </style>
@@ -734,26 +755,30 @@ function splash() {
   const n = S.bots + 1, cfg = setupFor(n);
   const deck = n === 2 ? 'Red, Orange, Green and Blue with no doubles (40 cards)' : (n === 3 || n === 4) ? (S.colorRule ? 'all six suits, with no doubles in Purple and Grey (80 cards)' : 'all six suits, with Purple and Grey only 6 to 10 (70 cards)') : 'all six suits (90 cards)' + (cfg.black ? ` plus ${cfg.black} black negative set${cfg.black > 1 ? 's' : ''}` : '');
   return `<section class="splash">
-    <div class="setup">
-      <h1>Slag</h1>
-      <p class="lead">A shedding game for 2 to 8. Match the target, dump your cards, keep your score low.</p>
-      <div class="field"><span class="lbl" id="l-bots">Opponents</span>
-        <div class="seg" role="group" aria-labelledby="l-bots">${[1, 2, 3, 4, 5, 6, 7].map(k => `<button data-bots="${k}" aria-pressed="${S.bots === k}">${k}</button>`).join('')}</div>
-        <span class="hint">${n} players: ${deck}, ${cfg.hand} cards each plus a −1, −2 and −3.</span></div>
-      <div class="field"><span class="lbl" id="l-mode">Match</span>
-        <div class="seg" role="group" aria-labelledby="l-mode">
-          <button data-mode="deals" aria-pressed="${S.mode === 'deals'}">Three deals</button>
-          <button data-mode="fifty" aria-pressed="${S.mode === 'fifty'}">Play to 50</button></div></div>
-      <div class="field"><span class="lbl" id="l-rule">Who wins a round</span>
-        <div class="seg" role="group" aria-labelledby="l-rule">
-          <button data-rule="high" aria-pressed="${!S.colorRule}">Highest card</button>
-          <button data-rule="count" aria-pressed="${S.colorRule}">Most of the color</button></div>
-        <span class="hint">${S.colorRule ? "Most cards of the target's color wins; the highest card of that color breaks ties." : "Any target-color card beats other colors; the highest one wins."}</span></div>
-      <div class="actions"><button class="btn primary" id="b-start">Play the computer</button><button class="btn" id="b-rules">Rules</button></div>
+    <div class="splash-top">
+      <div><h1>Slag</h1><p class="lead">A shedding game for 2 to 8. Match the target, dump your cards, keep your score low.</p>
+        <div class="actions"><button class="btn small" id="b-rules">How to play</button></div></div>
+      <div class="fan" aria-hidden="true">${fan}</div>
+    </div>
+    <div class="modes">
+      <div class="panel mode"><h2 class="ph">Play the computer</h2>
+        <div class="field"><span class="lbl" id="l-bots">Opponents</span>
+          <div class="seg" role="group" aria-labelledby="l-bots">${[1, 2, 3, 4, 5, 6, 7].map(k => `<button data-bots="${k}" aria-pressed="${S.bots === k}">${k}</button>`).join('')}</div>
+          <span class="hint">${n} players: ${deck}, ${cfg.hand} cards each plus a −1, −2 and −3.</span></div>
+        <div class="field"><span class="lbl" id="l-mode">Match</span>
+          <div class="seg" role="group" aria-labelledby="l-mode">
+            <button data-mode="deals" aria-pressed="${S.mode === 'deals'}">Three deals</button>
+            <button data-mode="fifty" aria-pressed="${S.mode === 'fifty'}">Play to 50</button></div></div>
+        <div class="field"><span class="lbl" id="l-rule">Who wins a round</span>
+          <div class="seg" role="group" aria-labelledby="l-rule">
+            <button data-rule="high" aria-pressed="${!S.colorRule}">Highest card</button>
+            <button data-rule="count" aria-pressed="${S.colorRule}">Most of the color</button></div>
+          <span class="hint">${S.colorRule ? "Most cards of the target's color wins; the highest card of that color breaks ties." : "Any target-color card beats other colors; the highest one wins."}</span></div>
+        <div class="actions"><button class="btn primary" id="b-start">Play the computer</button></div>
+      </div>
       ${onlineSection()}
     </div>
-    <div class="fan" aria-hidden="true">${fan}</div>
-  </section>${S.showRules ? overlay() : ''}`;
+  </section>${S.showRules ? overlay() : ''}${connectingHtml()}`;
 }
 function bindSplash() {
   document.querySelectorAll('[data-bots]').forEach(b => b.onclick = () => { S.bots = +b.dataset.bots; save(); render(); });
@@ -819,37 +844,56 @@ function getSession() { try { return JSON.parse(localStorage.getItem('slag-onlin
 function setSession(v) { try { v ? localStorage.setItem('slag-online', JSON.stringify(v)) : localStorage.removeItem('slag-online'); } catch (e) {} }
 function onlineSend(msg) { const o = S.online; if (o && o.ws && o.ws.readyState === 1) o.ws.send(JSON.stringify(msg)); }
 
-function goOnline(first) {
+function goOnline(first, connecting) {
   if (S.online && S.online.ws) { S.online.leaving = true; try { S.online.ws.close(); } catch (e) {} }
   let ws;
   try { ws = new WebSocket(wsUrl()); } catch (e) { return onlineFail('Online play is not available from this page.'); }
   const o = S.online = { ws, view: null, lost: false, leaving: false, tries: (S.online && S.online.tries) || 0 };
   S.oerr = '';
+  if (connecting) {
+    S.quietRejoin = false;
+    // show progress right away; the free server can take a while to wake up
+    S.connecting = { label: connecting, since: Date.now(), slow: false };
+    clearTimeout(S.slowTimer);
+    S.slowTimer = setTimeout(() => { if (S.connecting) { S.connecting.slow = true; render(); } }, 5000);
+    render();
+  }
   ws.onopen = () => { o.tries = 0; o.lost = false; first(); };
   ws.onmessage = e => { let m; try { m = JSON.parse(e.data); } catch (err) { return; } onlineMessage(m); };
   ws.onclose = () => {
     if (S.online !== o || o.leaving) return;
     const sess = getSession();
-    if (!sess || o.tries >= 8) return onlineFail('Lost the connection to the game.');
+    if (!sess || o.tries >= 8) return onlineFail(S.connecting ? "Couldn't reach the game server. Check your connection and try again." : 'Lost the connection to the game.');
     o.lost = true; o.tries++;
     if (S.phase !== 'splash') render();
     setTimeout(() => { if (S.online === o) goOnline(() => onlineSend({ t: 'join', code: sess.code, token: sess.token, rejoinOnly: true })); }, 1500 * o.tries);
   };
 }
+function stopConnecting() { S.connecting = null; clearTimeout(S.slowTimer); }
+function cancelConnecting() {
+  if (S.online) { S.online.leaving = true; try { S.online.ws.close(); } catch (e) {} }
+  S.online = null; stopConnecting(); render();
+}
 function onlineFail(msg) {
   if (S.online) { S.online.leaving = true; try { S.online.ws.close(); } catch (e) {} }
-  S.online = null; setSession(null);
-  S.oerr = msg; S.phase = 'splash'; S.G = null; S.match = null; S.confirmQuit = false;
+  S.online = null; setSession(null); stopConnecting();
+  S.oerr = S.quietRejoin ? '' : msg; S.quietRejoin = false;
+  S.phase = 'splash'; S.G = null; S.match = null; S.confirmQuit = false;
   render();
 }
 function onlineMessage(m) {
-  if (m.t === 'joined') { setSession({ code: m.code, token: m.token, name: m.name }); return; }
+  if (m.t === 'joined') {
+    setSession({ code: m.code, token: m.token, name: m.name });
+    S.quietRejoin = false; S.joinCode = '';
+    try { if (location.search) history.replaceState(null, '', location.pathname); } catch (e) {}
+    return;
+  }
   if (m.t === 'kicked') return onlineFail(m.msg);
   if (m.t === 'error') {
     if (m.fatal) return onlineFail(m.msg);
     S.msg = esc(m.msg); render(); return;
   }
-  if (m.t === 'state') applyView(m);
+  if (m.t === 'state') { stopConnecting(); applyView(m); }
 }
 function applyView(v) {
   const o = S.online; if (!o) return;
@@ -873,31 +917,48 @@ function leaveOnline() {
   render();
 }
 function onlineSection() {
-  const code = (S.joinCode || '').toUpperCase();
-  return `<div class="field online"><span class="lbl">Play with friends</span>
-      <label class="hint" for="o-name">Your name</label>
-      <input id="o-name" class="inp" maxlength="16" autocomplete="nickname" placeholder="Your name" value="${esc(S.oname || '')}">
-      <div class="actions"><button class="btn" id="b-host">Host a game</button>
-        <span class="or">or</span>
-        <input id="o-code" class="inp code" maxlength="4" autocomplete="off" placeholder="CODE" aria-label="Room code" value="${esc(code)}">
-        <button class="btn" id="b-join">Join</button></div>
-      ${S.oerr ? `<span class="hint bad" role="alert">${esc(S.oerr)}</span>` : '<span class="hint">The host gets a 4-letter code to share. Empty seats can be filled with bots.</span>'}
+  const code = (S.joinCode || '').toUpperCase(), inviting = code.length === 4;
+  return `<div class="panel mode friends"><h2 class="ph">Play with friends</h2>
+      ${inviting ? `<p class="invite">You're invited to room <b>${esc(code)}</b>. Enter your name to take a seat.</p>` : '<p class="hint">Host a room and share the code, or join a friend\'s room. Empty seats can be filled with bots.</p>'}
+      <div class="name-row"><label class="lbl" for="o-name">Your name</label>
+        <input id="o-name" class="inp" maxlength="16" autocomplete="nickname" placeholder="Your name" value="${esc(S.oname || '')}"></div>
+      ${inviting
+        ? `<div class="actions"><button class="btn primary" id="b-join">Join room ${esc(code)}</button><button class="btn small" id="b-notinvite">Host my own game</button></div>`
+        : `<div class="actions"><button class="btn primary" id="b-host">Host a game</button></div>
+           <div class="actions join-row"><label class="hint" for="o-code">Have a code?</label>
+             <input id="o-code" class="inp code" maxlength="4" autocomplete="off" placeholder="CODE" value="${esc(code)}">
+             <button class="btn" id="b-join">Join</button></div>`}
+      ${S.oerr ? `<span class="hint bad" role="alert">${esc(S.oerr)}</span>` : ''}
     </div>`;
+}
+function connectingHtml() {
+  const c = S.connecting; if (!c) return '';
+  return `<div class="sheet-bg"><div class="sheet connecting" role="dialog" aria-modal="true" aria-labelledby="conn-h">
+      <div class="anvil" aria-hidden="true"><span></span><span></span><span></span></div>
+      <h2 id="conn-h">${esc(c.label)}</h2>
+      <p class="hint" role="status">${c.slow ? 'The game server is waking up. The first game after a quiet spell can take up to a minute; it’s quick after that.' : 'Connecting to the game server…'}</p>
+      <div class="actions"><button class="btn" id="b-conn-cancel">Cancel</button></div></div></div>`;
 }
 function bindOnlineSection() {
   const nm = $('#o-name'), cd = $('#o-code');
+  const cc = $('#b-conn-cancel'); if (cc) cc.onclick = cancelConnecting;
   if (!nm) return;
   nm.oninput = () => { S.oname = nm.value; save(); };
-  cd.oninput = () => { cd.value = cd.value.toUpperCase().replace(/[^A-Z]/g, ''); S.joinCode = cd.value; };
+  if (cd) cd.oninput = () => { cd.value = cd.value.toUpperCase().replace(/[^A-Z]/g, ''); };
   const need = () => { const name = nm.value.trim(); if (!name) { S.oerr = 'Enter your name first.'; render(); const f = $('#o-name'); if (f) f.focus(); return null; } return name; };
-  $('#b-host').onclick = () => { const name = need(); if (!name) return; S.oerr = ''; goOnline(() => onlineSend({ t: 'create', name })); };
-  $('#b-join').onclick = () => {
+  const host = () => { if (S.connecting) return; const name = need(); if (!name) return; goOnline(() => onlineSend({ t: 'create', name }), 'Opening a room…'); };
+  const join = () => {
+    if (S.connecting) return;
     const name = need(); if (!name) return;
-    const code = cd.value.trim().toUpperCase();
+    const code = (cd ? cd.value : S.joinCode || '').trim().toUpperCase();
     if (code.length !== 4) { S.oerr = 'Enter the 4-letter code from your host.'; render(); const f = $('#o-code'); if (f) f.focus(); return; }
-    S.oerr = ''; goOnline(() => onlineSend({ t: 'join', code, name }));
+    goOnline(() => onlineSend({ t: 'join', code, name }), `Joining room ${code}…`);
   };
-  cd.onkeydown = e => { if (e.key === 'Enter') $('#b-join').click(); };
+  const on = (id, f) => { const el = $(id); if (el) el.onclick = f; };
+  on('#b-host', host); on('#b-join', join);
+  on('#b-notinvite', () => { S.joinCode = ''; S.oerr = ''; try { history.replaceState(null, '', location.pathname); } catch (e) {} render(); });
+  nm.onkeydown = e => { if (e.key === 'Enter') (S.joinCode ? join : host)(); };
+  if (cd) cd.onkeydown = e => { if (e.key === 'Enter') join(); };
 }
 function lobbyHtml() {
   const v = S.online.view, host = v.host, n = v.seats.length;
@@ -905,31 +966,39 @@ function lobbyHtml() {
   const rows = v.seats.map((s, i) => `<li class="pl ${s.you ? 'me' : ''}">
       <span class="pl-name">${esc(s.name)}${s.you ? ' <span class="tag">you</span>' : ''}${s.host ? ' <span class="tag win">host</span>' : ''}${s.bot ? ` <span class="tag">bot · ${STYLE_LABEL[s.style]}</span>` : ''}${!s.connected ? ' <span class="tag drew">away</span>' : ''}</span>
       ${host && !s.you ? `<button class="btn small" data-remove="${i}" aria-label="Remove ${esc(s.name)}">Remove</button>` : ''}</li>`).join('');
+  const waiting = Array.from({ length: n < 2 ? 1 : 0 }, () => '<li class="pl open"><span class="pl-name">Waiting for a friend…</span></li>').join('');
   const seg = (k, opts, cur) => `<div class="seg" role="group">${opts.map(([val, label]) => `<button data-${k}="${val}" aria-pressed="${cur === val}" ${host ? '' : 'disabled'}>${label}</button>`).join('')}</div>`;
+  const canShare = typeof navigator.share === 'function';
+  const deal = host
+    ? `<button class="btn primary big" id="b-ostart" ${n < 2 ? 'disabled' : ''}>Deal the cards</button><span class="hint">${n < 2 ? 'Share the code, or add a bot to play right away.' : `${n} players at the table.`}</span>`
+    : '<span class="hint">Waiting for the host to deal…</span>';
   return `<section class="lobby">
     <header><div class="mark">${hammerSvg}Slag</div><div class="hdr-btns"><button class="btn small" id="b-rules">Rules</button><button class="btn small" id="b-leave">Leave</button></div></header>
-    <div class="panel code-panel"><span class="eyebrow">Room code</span><span class="code-big">${v.code}</span>
-      <span class="hint">Friends open <span class="sel-text">${esc(link)}</span> or enter the code on the start screen.</span>
-      <div class="actions"><button class="btn small" id="b-copy">Copy invite link</button><span class="hint" id="copy-ok" role="status"></span></div></div>
-    <div class="panel"><h2 class="ph">Players <span class="meta">${n} of 8</span></h2><ul class="plist">${rows}</ul>
-      ${host ? `<div class="actions"><button class="btn small" id="b-addbot" ${n >= 8 ? 'disabled' : ''}>Add a bot</button></div>` : ''}</div>
-    <div class="panel"><h2 class="ph">Rules</h2>
-      <div class="field"><span class="lbl">Match</span>${seg('mode', [['deals', 'Three deals'], ['fifty', 'Play to 50']], v.settings.mode)}</div>
-      <div class="field"><span class="lbl">Who wins a round</span>${seg('rule', [['high', 'Highest card'], ['count', 'Most of the color']], v.settings.colorRule ? 'count' : 'high')}</div>
-      ${host ? '' : '<span class="hint">The host sets the rules.</span>'}</div>
-    <div class="actions">${host ? `<button class="btn primary" id="b-ostart" ${n < 2 ? 'disabled' : ''}>Deal the cards</button>${n < 2 ? '<span class="hint">Wait for a friend or add a bot.</span>' : ''}` : '<span class="hint">Waiting for the host to deal…</span>'}</div>
+    <div class="lobby-grid">
+      <div class="panel code-panel"><span class="eyebrow">Room code</span><span class="code-big">${v.code}</span>
+        <div class="actions">${canShare ? '<button class="btn" id="b-share">Share invite</button>' : ''}<button class="btn" id="b-copy">Copy invite link</button><span class="hint" id="copy-ok" role="status"></span></div>
+        <span class="hint">Friends open the link, or enter <b>${v.code}</b> on the start screen.</span>
+        <div class="actions deal-row">${deal}</div></div>
+      <div class="panel"><h2 class="ph">Players <span class="meta">${n} of 8</span></h2><ul class="plist">${rows}${waiting}</ul>
+        ${host ? `<div class="actions"><button class="btn small" id="b-addbot" ${n >= 8 ? 'disabled' : ''}>Add a bot</button></div>` : ''}</div>
+      <div class="panel rules-panel"><h2 class="ph">Rules</h2>
+        <div class="field"><span class="lbl">Match</span>${seg('mode', [['deals', 'Three deals'], ['fifty', 'Play to 50']], v.settings.mode)}</div>
+        <div class="field"><span class="lbl">Who wins a round</span>${seg('rule', [['high', 'Highest card'], ['count', 'Most of the color']], v.settings.colorRule ? 'count' : 'high')}</div>
+        ${host ? '' : '<span class="hint">The host sets the rules.</span>'}</div>
+    </div>
   </section>${overlay()}`;
 }
 function bindLobby() {
   const on = (id, f) => { const el = $(id); if (el) el.onclick = f; };
+  const link = () => `${location.origin}${location.pathname}?join=${S.online.view.code}`;
   on('#b-rules', () => { S.showRules = true; render(); });
   on('#b-leave', leaveOnline);
   on('#b-addbot', () => onlineSend({ t: 'addBot' }));
   on('#b-ostart', () => onlineSend({ t: 'start' }));
+  on('#b-share', () => { try { navigator.share({ title: 'Play Slag with me', text: `Join my Slag game. Room code ${S.online.view.code}.`, url: link() }).catch(() => {}); } catch (e) {} });
   on('#b-copy', () => {
-    const link = `${location.origin}${location.pathname}?join=${S.online.view.code}`, ok = $('#copy-ok');
-    const done = t => { if (ok) ok.textContent = t; };
-    try { navigator.clipboard.writeText(link).then(() => done('Copied.'), () => done('Select the link above to copy it.')); } catch (e) { done('Select the link above to copy it.'); }
+    const ok = $('#copy-ok'), done = t => { if (ok) ok.textContent = t; };
+    try { navigator.clipboard.writeText(link()).then(() => done('Copied. Paste it to your friends.'), () => done(link())); } catch (e) { done(link()); }
   });
   document.querySelectorAll('[data-remove]').forEach(b => b.onclick = () => onlineSend({ t: 'remove', seat: +b.dataset.remove }));
   document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => onlineSend({ t: 'settings', mode: b.dataset.mode }));
@@ -950,10 +1019,17 @@ function start(data) {
   RULES.colorCount = S.colorRule;
   const q = new URLSearchParams(location.search).get('join');
   if (q) S.joinCode = q.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
+  // wake the game server now, so hosting or joining is quick when the player gets there
+  try { if (location.host !== ONLINE_HOST) fetch('https://' + ONLINE_HOST + '/healthz', { mode: 'no-cors', cache: 'no-store' }).catch(() => {}); } catch (e) {}
   render();
   const sess = getSession();
-  if (sess && !S.online) goOnline(() => onlineSend({ t: 'join', code: sess.code, token: sess.token, name: sess.name, rejoinOnly: true }));
-  else if (q) { const f = $(S.oname ? '#o-code' : '#o-name'); if (f) f.focus(); }
+  if (sess && !S.online && (!S.joinCode || S.joinCode === sess.code)) {
+    S.quietRejoin = true;
+    goOnline(() => onlineSend({ t: 'join', code: sess.code, token: sess.token, name: sess.name, rejoinOnly: true }));
+  } else if (S.joinCode && S.joinCode.length === 4 && (S.oname || '').trim()) {
+    const code = S.joinCode, name = S.oname.trim();
+    goOnline(() => onlineSend({ t: 'join', code, name }), `Joining room ${code}…`);
+  } else if (S.joinCode) { const f = $('#o-name'); if (f) f.focus(); }
 }
 try { if (hot && hot.snapshot) hot.snapshot(() => ({ S })); } catch (e) {}
 if (hot && hot.ready) hot.ready(start); else start((hot && hot.data) || {});
