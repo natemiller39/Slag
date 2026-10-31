@@ -56,7 +56,7 @@ Turn on **Usurper card** on the start screen or in the lobby to shuffle one colo
 
 - Play it like any 3. It counts as one of your 3 cards.
 - **With the target's color:** play it alongside a positive card of the target's color and you take the round outright.
-- **Without it:** the Usurper dethrones whoever would have won, and the next best play wins instead. You can't dethrone yourself: if your play was already the best, you just win.
+- **Without it:** the Usurper is just a plain 3 with no color. It doesn't change who wins.
 - **As the target:** the Usurper has no color, so the highest single card wins. The Usurper itself never counts as the high card. If the top plays tie on that card, nobody wins: everyone who made the number still discards, misses still draw, and a new target is flipped.
 - A Quench still beats everything: if both are played, nobody wins.
 - A winner can set the Usurper as the next target.

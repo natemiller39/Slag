@@ -692,7 +692,7 @@ function meterText() {
   if (sel.filter(c => c.value < 0).length > 1) return `${expr} <span class="no">· only one negative per play</span>`;
   if (sel.filter(isQuench).length > 1) return `${expr} <span class="no">· only one Quench per play</span>`;
   if (isUsurper(t) && sum === t.value && sel.some(c => c.value > 0)) return `${expr} <span class="ok">· makes ${t.value}</span> <span class="hint">· Usurper target: color doesn't count, highest card wins</span>`;
-  if (sel.some(isUsurper) && sum === t.value) return `${expr} <span class="ok">· makes ${t.value}</span> <span class="hint">· ${sel.some(c => c.suit === t.suit && c.value > 0) ? `Usurper with ${SUITS[t.suit].name}: you take the round` : 'Usurper: the best play is dethroned, next best wins'}</span>`;
+  if (sel.some(isUsurper) && sum === t.value) return `${expr} <span class="ok">· makes ${t.value}</span> <span class="hint">· ${sel.some(c => c.suit === t.suit && c.value > 0) ? `Usurper with ${SUITS[t.suit].name}: you take the round` : 'Usurper without the target color: just a plain 3'}</span>`;
   if (sel.some(isQuench) && sum === t.value && sel.some(c => c.value > 0)) return `${expr} <span class="ok">· makes ${t.value}</span> <span class="hint">· with Quench: nobody wins this round</span>`;
   if (!sel.some(c => c.value > 0)) return `${expr} <span class="no">· add a positive card</span>`;
   if (sum === t.value) {
@@ -793,7 +793,7 @@ function rulesHtml() {
     <li>The best play wins. ${RULES.colorCount ? "The play with the most cards of the target's color wins (negatives count). If that's tied, the highest card of the target's color wins." : "Any play with a card of the target's color beats every play without one, then the higher card wins."}</li>
     <li>Everyone who made it discards those cards. Anyone who passed or missed draws one card.</li>
     <li>The winner sets the next target with a card from their hand.</li>
-  </ol>${RULES.usurper ? `<h3>Usurper</h3><p>One colorless Usurper card (worth 3) is in the deck. Play it like any 3. Play it alongside a card of the target's color and you take the round outright. Play it without one and it dethrones whoever would have won: the next best play wins instead (you can't dethrone yourself). When the Usurper is the target it has no color, so the highest single card wins; if that card is tied, nobody wins, plays still discard, misses still draw, and a new target is flipped. Held at the end, it scores 3.</p>` : ''}${RULES.quench ? `<h3>Quench cards</h3><p>Quench is a 0 card shuffled into the deck (1 at 2–4 players, 2 at 5–6, 3 at 7–8). Add it to a play that makes the number; it uses one of your 3 card slots. When a Quench is revealed, nobody wins the round: plays still discard, misses still draw, and a new target is flipped. A Quench never becomes the target, and one left in your hand at the end scores +5. If a Quench is played when the draw pile is empty, the deal ends.</p>` : ''}
+  </ol>${RULES.usurper ? `<h3>Usurper</h3><p>One colorless Usurper card (worth 3) is in the deck. Play it alongside a card of the target's color and you take the round outright. Play it without one and it's just a plain 3 with no color: it doesn't change who wins. When the Usurper is the target it has no color, so the highest single card wins; if that card is tied, nobody wins, plays still discard, misses still draw, and a new target is flipped. Held at the end, it scores 3.</p>` : ''}${RULES.quench ? `<h3>Quench cards</h3><p>Quench is a 0 card shuffled into the deck (1 at 2–4 players, 2 at 5–6, 3 at 7–8). Add it to a play that makes the number; it uses one of your 3 card slots. When a Quench is revealed, nobody wins the round: plays still discard, misses still draw, and a new target is flipped. A Quench never becomes the target, and one left in your hand at the end scores +5. If a Quench is played when the draw pile is empty, the deal ends.</p>` : ''}
   <h3>Ties</h3>
   <p>${RULES.colorCount ? 'After the color count and the highest target-color card, compare' : 'Compare'} each play's best positive card: target color, then value, then the target's sister suit, then suit rank (Red 6, Orange 5, Green 4, Blue 3, Purple 2, Grey 1), then the starred copy.</p>
   <h3>Scoring</h3>
@@ -836,7 +836,7 @@ function splash() {
           <div class="seg" role="group" aria-labelledby="l-usurper">
             <button data-usurper="off" aria-pressed="${!S.usurper}">Off</button>
             <button data-usurper="on" aria-pressed="${!!S.usurper}">On</button></div>
-          ${S.usurper ? '<span class="hint">One colorless 3. Played, it dethrones the leader, or with the target color it takes the round.</span>' : ''}</div>
+          ${S.usurper ? '<span class="hint">One colorless 3. Play it with the target color to take the round.</span>' : ''}</div>
         <div class="actions"><button class="btn primary" id="b-start">Play the computer</button></div>
       </div>
       ${onlineSection()}

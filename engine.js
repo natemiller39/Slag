@@ -47,8 +47,8 @@ function bestCard(play, target) {
 // Table rule: when on, the play with the most cards of the target's color wins (negatives count),
 // and the highest target-color card breaks ties. When off, only the single best card counts.
 const RULES = { colorCount: false, quench: false, usurper: false };
-// Usurper option: one colorless 3. As the target, color doesn't count. Played, it dethrones the would-be winner (next best wins),
-// or with a card of the target's color it takes the round outright.
+// Usurper option: one colorless 3. As the target, color doesn't count. Played with a card of the target's color, it takes the round outright;
+// played without one, it is just a colorless 3.
 const isUsurper = c => !!c && c.suit === 'usurper';
 function colorCount(play, target) { return play.filter(c => c.suit === target.suit).length; }
 function topColor(play, target) { return Math.max(0, ...play.filter(c => c.value > 0 && c.suit === target.suit).map(c => c.value)); }
@@ -166,7 +166,7 @@ function resolveRound(G, plays) {
     else { res.winner = at[0]; res.winCard = bestCard(plays[at[0]], t).card; res.reason = `Usurper: color doesn't count, and ${res.winCard ? cardLabel(res.winCard) : 'that play'} is the highest card`; }
   }
   else if (res.usurperPlayed) {
-    // Usurper played: with a target-color card it seizes the round; otherwise it dethrones the would-be winner and the next best play wins.
+    // Usurper played: with a positive target-color card it seizes the round; otherwise it is just a colorless 3.
     const u = res.made.find(i => plays[i].some(isUsurper));
     res.usurper = u;
     const tc = plays[u].find(c => c.suit === t.suit && c.value > 0);
@@ -174,16 +174,7 @@ function resolveRound(G, plays) {
     if (tc) {
       res.winner = u; res.winCard = tc; res.seized = true;
       res.reason = best === u ? `Usurper with ${cardLabel(tc)}, the target color` : `Usurper with ${cardLabel(tc)}, the target color, seizes the round from ${name(best)}`;
-    } else if (best === u) {
-      res.winner = u; res.winCard = bestCard(plays[u], t).card; res.reason = explain(plays, res.made, u, t);
-    } else {
-      res.dethroned = best;
-      const rest = res.made.filter(i => i !== best);
-      let nb = -1, nk = null;
-      for (const i of rest) { const k = playKey(plays[i], t); if (!nk || cmpKey(k, nk) > 0) { nb = i; nk = k; } }
-      res.winner = nb; res.winCard = bestCard(plays[nb], t).card;
-      res.reason = `the Usurper dethroned ${name(best)}, so the next best play wins${res.winCard ? ` (${cardLabel(res.winCard)})` : ''}`;
-    }
+    } else { res.winner = best; res.winCard = bestCard(plays[best], t).card; res.reason = explain(plays, res.made, best, t); }
   }
   else { res.winner = best; res.winCard = bestCard(plays[best], t).card; res.reason = explain(plays, res.made, best, t); }
   for (const i of res.made) {
@@ -217,7 +208,7 @@ function explain(plays, made, w, t) {
   }
   const wc = bestCard(plays[w], t).card;
   if (made.length === 1) return 'the only player to make ' + t.value;
-  const others = made.filter(i => i !== w).map(i => bestCard(plays[i], t).card);
+  const others = made.filter(i => i !== w).map(i => bestCard(plays[i], t).card).filter(Boolean);
   const tc = SUITS[t.suit].name;
   if (wc.suit === t.suit) {
     if (others.every(c => c.suit !== t.suit)) return 'played ' + tc + ', the target color';
@@ -308,7 +299,7 @@ function botPlay(hand, target, style, rng, ctx) {
     const shed = p.length * 2.2 + saved * 0.35;
     const key = playKey(p, target);
     let pWin = sims ? winShare(key, sims) : roughWin(key);
-    if (p.some(isUsurper) && !isUsurper(target)) pWin = p.some(c => c.suit === target.suit) ? 0.97 : Math.min(0.9, pWin + 0.3);
+    if (p.some(isUsurper) && !isUsurper(target)) pWin = p.some(c => c.suit === target.suit && c.value > 0) ? 0.97 : pWin;
     const winVal = 2.2 + targetValue(rest); // the target card leaves your hand too
     const u = W.shed * shed + 2 * W.win * pWin * winVal + rng() * 0.6;
     if (u > bs) { bs = u; best = p; }
