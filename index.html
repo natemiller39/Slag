@@ -360,7 +360,15 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .pts { font-size: 11px; color: var(--parch-dim); display: block; text-align: center; }
 .pts.paired { color: var(--good); }
 .pts.unpaired { color: var(--bad); }
-.cell-card { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.cell-card { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.chip { position: relative; display: grid; place-items: center; min-width: 40px; height: 44px; padding: 0 6px; border-radius: 8px; border: 2px solid;
+  color: #fff; font-family: var(--f-display); font-size: 22px; line-height: 1; font-variant-numeric: tabular-nums; text-shadow: 0 1px 2px rgba(0, 0, 0, .45);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), 0 2px 6px rgba(0, 0, 0, .4); }
+.chip.neg { background: #1d1410; text-shadow: none; }
+.chip i { position: absolute; top: -6px; right: -6px; font-style: normal; font-size: 11px; width: 17px; height: 17px; display: grid; place-items: center; border-radius: 50%; background: var(--brass); color: var(--ink); text-shadow: none; }
+.breakdown { gap: 6px !important; }
+.pts { font-size: 12px !important; font-weight: 700; }
+@media (max-width: 640px) { .chip { min-width: 30px; height: 34px; font-size: 17px; padding: 0 4px; border-radius: 6px; } .breakdown { gap: 4px !important; } .scores th, .scores td { padding: 6px 4px; } }
 .tbl-wrap { overflow-x: auto; }
 
 /* online: start screen fields and lobby */
@@ -698,6 +706,12 @@ function you() {
   </section>`;
 }
 
+// End-of-deal cards as clear value chips: the number in the card's color, big enough to read at a glance.
+function chipEl(c) {
+  const hex = SUITS[c.suit].hex, negv = c.value < 0;
+  const style = negv ? `border-color:${hex};color:${c.suit === 'black' ? '#f1e4cc' : hex}` : `background:${hex};border-color:${hex}`;
+  return `<span class="chip ${negv ? 'neg' : ''}" style="${style}" role="img" aria-label="${cardLabel(c)}">${neg(c.value)}${c.star ? '<i aria-hidden="true">★</i>' : ''}</span>`;
+}
 function scoreTable(final) {
   const G = S.G, M = S.match, sc = S.dealScores;
   const minT = Math.min(...M.totals);
@@ -705,7 +719,7 @@ function scoreTable(final) {
     const s = sc[i];
     const cells = [...s.pos.map(x => ({ c: x.card, t: String(x.pts), k: '' })), ...s.neg.map(x => ({ c: x.card, t: x.paired ? neg(x.pts) : '+5', k: x.paired ? 'paired' : 'unpaired' }))]
       .sort((a, b) => suitIdx(a.c.suit) - suitIdx(b.c.suit) || b.c.value - a.c.value);
-    const bd = cells.length ? cells.map(x => `<span class="cell-card">${cardEl(x.c, 'mini')}<span class="pts ${x.k}">${x.t}</span></span>`).join('') : '<span class="tag win">out</span>';
+    const bd = cells.length ? cells.map(x => `<span class="cell-card">${chipEl(x.c)}<span class="pts ${x.k}">${x.t}</span></span>`).join('') : '<span class="tag win">out</span>';
     return `<tr class="${M.totals[i] === minT ? 'lead' : ''}"><td><b>${p.name}</b></td><td><div class="breakdown">${bd}</div></td><td class="num">${s.total}</td><td class="num"><b>${M.totals[i]}</b></td></tr>`;
   }).join('');
   return `<div class="tbl-wrap"><table class="scores"><thead><tr><th>Player</th><th>Cards left</th><th class="num">Deal</th><th class="num">Match</th></tr></thead><tbody>${rows}</tbody></table></div>`;
