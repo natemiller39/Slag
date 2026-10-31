@@ -200,7 +200,7 @@ function viewFor(room, s) {
   v.match = { names: rot(M.names).map((x, k) => (k === 0 ? 'You' : x)), styles: rot(M.styles), totals: rot(M.totals), deals: M.deals.map(rot), mode: M.mode };
   const L = room.last;
   v.last = L ? {
-    target: L.target, plays: rot(L.plays), made: L.made.map(R), winner: L.winner >= 0 ? R(L.winner) : -1, reason: L.reason, quenched: !!L.quenched, usurperTie: !!L.usurperTie, colorless: !!L.colorless, usurperTop: L.usurperTop || 0, quenchedBy: (L.quenchedBy || []).map(R), wouldWin: L.wouldWin >= 0 ? R(L.wouldWin) : -1,
+    target: L.target, plays: rot(L.plays), made: L.made.map(R), winner: L.winner >= 0 ? R(L.winner) : -1, reason: L.reason, quenched: !!L.quenched, usurperTie: !!L.usurperTie, colorless: !!L.colorless, usurperTop: L.usurperTop || 0, dethroned: L.dethroned >= 0 ? R(L.dethroned) : -1, seized: !!L.seized, quenchedBy: (L.quenchedBy || []).map(R), wouldWin: L.wouldWin >= 0 ? R(L.wouldWin) : -1,
     penalties: L.penalties.map(q => ({ i: R(q.i), card: q.i === s ? q.card : null })), ended: L.ended, reflip: L.reflip,
   } : null;
   v.ready = rot(room.submitted);
