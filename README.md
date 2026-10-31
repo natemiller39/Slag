@@ -39,6 +39,17 @@ Any card of the target's color beats every other color, and the highest one wins
 Sister suits: Red & Orange, Green & Blue, Purple & Grey.
 Suit rank: Red 6, Orange 5, Green 4, Blue 3, Purple 2, Grey 1.
 
+## Option: Quench cards
+
+Turn on **Quench cards** on the start screen or in the lobby to shuffle 0-value Quench cards into the deck: 1 at 2–4 players, 2 at 5–6, 3 at 7–8.
+
+- Add a Quench to a play that makes the number. It counts as one of your 3 cards and can't be played alone.
+- When a Quench is revealed, nobody wins the round. Everyone who made the number still discards, misses still draw, and a new target is flipped instead of being chosen by a winner.
+- A Quench never becomes the target: if one is flipped, it goes under the draw pile and the next card is flipped.
+- A Quench drawn as a penalty goes into your hand like any other card.
+- One still in your hand at the end of a deal scores +5.
+- If a Quench is played when the draw pile is empty, the deal ends.
+
 ## Scoring
 
 - Positive cards score their value.

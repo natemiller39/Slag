@@ -8,6 +8,7 @@ const SUITS = {
   purple: { name: 'Purple', art: 'Chest armor', rank: 2, sister: 'grey',   hex: '#8b5cf0' },
   grey:   { name: 'Grey',   art: 'Helmet',      rank: 1, sister: 'purple', hex: '#5d5d63' },
   black:  { name: 'Black',  art: 'Serpent',     rank: 0, sister: null,     hex: '#111111' },
+  quench: { name: 'Quench', art: 'Water bucket', rank: 0, sister: null,    hex: '#2e86ab' },
 };
 const SUIT_ORDER = ['red', 'orange', 'green', 'blue', 'purple', 'grey'];
 
@@ -26,7 +27,10 @@ function setupFor(n) {
   return { suits: SUIT_ORDER, doubles: true, hand: 10, black: 2 };
 }
 
-function cardLabel(c) { return SUITS[c.suit].name + ' ' + (c.value < 0 ? '−' + (-c.value) : c.value) + (c.star ? '★' : ''); }
+// Quench option: 0-value cards shuffled into the deck. One per 2–4 players, two at 5–6, three at 7–8.
+const isQuench = c => !!c && c.suit === 'quench';
+function quenchCount(n) { return n <= 4 ? 1 : n <= 6 ? 2 : 3; }
+function cardLabel(c) { if (isQuench(c)) return 'Quench 0'; return SUITS[c.suit].name + ' ' + (c.value < 0 ? '−' + (-c.value) : c.value) + (c.star ? '★' : ''); }
 
 // Ranking key of a single positive card relative to a target (higher array wins, compared left to right)
 function cardKey(c, target) {
@@ -41,7 +45,7 @@ function bestCard(play, target) {
 
 // Table rule: when on, the play with the most cards of the target's color wins (negatives count),
 // and the highest target-color card breaks ties. When off, only the single best card counts.
-const RULES = { colorCount: false };
+const RULES = { colorCount: false, quench: false };
 function colorCount(play, target) { return play.filter(c => c.suit === target.suit).length; }
 function topColor(play, target) { return Math.max(0, ...play.filter(c => c.value > 0 && c.suit === target.suit).map(c => c.value)); }
 function playKey(play, target) {
@@ -50,6 +54,7 @@ function playKey(play, target) {
 }
 
 function isLegal(play, target) {
+  if (play.filter(isQuench).length > 1) return false;
   if (!play.length || play.length > 3) return false;
   if (play.filter(c => c.value < 0).length > 1) return false;
   if (!play.some(c => c.value > 0)) return false;
@@ -80,7 +85,9 @@ function scoreHand(hand) {
     if (c.suit !== 'black' && avail[c.suit] > 0) { avail[c.suit]--; total += c.value; negLines.push({ card: c, pts: c.value, paired: true }); }
     else { total += 5; negLines.push({ card: c, pts: 5, paired: false }); }
   }
-  return { total, pos: pos.map(c => ({ card: c, pts: c.value })), neg: negLines };
+  const qn = hand.filter(isQuench).map(c => ({ card: c, pts: 5 }));
+  total += 5 * qn.length;
+  return { total, pos: pos.map(c => ({ card: c, pts: c.value })), neg: negLines, quench: qn };
 }
 
 // ===== Game state =====
@@ -92,6 +99,7 @@ function newDeal(names, rng, opts = {}) {
     main.push(mkCard(s, v, cfg.doubles && v <= 5 && !(cfg.singleOnly && cfg.singleOnly.includes(s))));
     if (cfg.doubles && v <= 5 && !(cfg.singleOnly && cfg.singleOnly.includes(s))) main.push(mkCard(s, v, false));
   }
+  if (RULES.quench) for (let k = 0; k < quenchCount(n); k++) main.push(mkCard('quench', 0, false));
   shuffle(main, rng);
   const negSuits = cfg.suits.slice();
   for (let b = 0; b < cfg.black; b++) negSuits.push('black');
@@ -99,10 +107,21 @@ function newDeal(names, rng, opts = {}) {
   const players = names.map((name, i) => ({ name, hand: [], seat: i }));
   for (const p of players) p.hand = main.splice(0, cfg.hand);
   for (const p of players) for (const pile of piles) p.hand.push(pile.pop());
-  const target = main.shift();
-  return { players, draw: main, discard: [], target, round: 1, reflips: 0, cfg, n, over: false, endReason: null, rng };
+  // a Quench never starts as the target: slide it under the pile and flip again
+  let target = main.shift();
+  for (let k = 0; isQuench(target) && k < main.length; k++) { main.push(target); target = main.shift(); }
+  return { players, draw: main, discard: [], target, round: 1, reflips: 0, cfg, n, over: false, endReason: null, rng, setter: -1 };
 }
 
+function drawTarget(G) {
+  for (let k = 0, lim = G.draw.length + G.discard.length + 1; k <= lim; k++) {
+    const c = drawOne(G);
+    if (!c) return null;
+    if (!isQuench(c)) return c;
+    G.draw.push(c);
+  }
+  return null;
+}
 function drawOne(G) {
   if (!G.draw.length && G.discard.length) { G.draw = shuffle(G.discard, G.rng || Math.random); G.discard = []; G.reshuffled = true; }
   return G.draw.length ? G.draw.shift() : null;
@@ -111,30 +130,42 @@ function drawOne(G) {
 // plays: array (per player) of card arrays or null (pass). Returns round result; mutates G.
 function resolveRound(G, plays) {
   const t = G.target;
-  const res = { target: t, plays: plays.map(p => p ? p.slice() : null), made: [], winner: -1, reason: '', penalties: [], ended: false, reflip: false };
+  const res = { target: t, plays: plays.map(p => p ? p.slice() : null), made: [], winner: -1, reason: '', penalties: [], ended: false, reflip: false, quenchedBy: [], quenched: false };
   plays.forEach((p, i) => { if (p && isLegal(p, t)) res.made.push(i); });
   if (!res.made.length) {
     if (G.n === 2 && G.reflips === 0) {
       G.reflips++;
       // nobody draws; flip a fresh target
       G.discard.push(t);
-      const nt = drawOne(G);
-      if (nt) { G.target = nt; res.reflip = true; G.round++; return res; }
+      const nt = drawTarget(G);
+      if (nt) { G.target = nt; G.setter = -1; res.reflip = true; G.round++; return res; }
     }
     G.over = true; G.endReason = 'Nobody could make ' + cardLabel(t) + '.'; res.ended = true; return res;
   }
+  // A Quench in any play means nobody wins: plays still discard, misses still draw, and a new target is flipped.
+  res.quenchedBy = res.made.filter(i => plays[i].some(isQuench));
+  res.quenched = res.quenchedBy.length > 0;
   let best = -1, bk = null;
   for (const i of res.made) { const k = playKey(plays[i], t); if (!bk || cmpKey(k, bk) > 0) { best = i; bk = k; } }
-  res.winner = best; res.winCard = bestCard(plays[best], t).card;
-  res.reason = explain(plays, res.made, best, t);
+  res.wouldWin = best;
+  if (res.quenched) res.reason = 'quenched';
+  else { res.winner = best; res.winCard = bestCard(plays[best], t).card; res.reason = explain(plays, res.made, best, t); }
   for (const i of res.made) {
     const ids = new Set(plays[i].map(c => c.id));
     G.players[i].hand = G.players[i].hand.filter(c => !ids.has(c.id));
-    plays[i].forEach(c => { if (c.value > 0) G.discard.push(c); });
+    plays[i].forEach(c => { if (c.value >= 0) G.discard.push(c); });
   }
   const out = G.players.findIndex(p => p.hand.length === 0);
   if (out >= 0) { G.over = true; G.endReason = G.players[out].name + ' went out.'; res.ended = true; G.discard.push(t); return res; }
   G.players.forEach((p, i) => { if (!res.made.includes(i)) { const c = drawOne(G); if (c) { p.hand.push(c); res.penalties.push({ i, card: c }); } } });
+  if (res.quenched) {
+    G.discard.push(t);
+    // table rule: a Quench played when the draw pile is empty ends the deal (no reshuffle for the new target)
+    if (!G.draw.length) { G.over = true; G.endReason = 'Quenched with an empty draw pile, so the deal ends.'; res.ended = true; return res; }
+    const nt = drawTarget(G);
+    if (!nt) { G.over = true; G.endReason = 'The deck ran out.'; res.ended = true; return res; }
+    G.target = nt; G.setter = -1; G.round++;
+  }
   return res;
 }
 
@@ -168,8 +199,8 @@ function explain(plays, made, w, t) {
 function setNextTarget(G, winner, card) {
   G.discard.push(G.target);
   const p = G.players[winner];
-  if (card) { p.hand = p.hand.filter(c => c.id !== card.id); G.target = card; }
-  else { const c = drawOne(G); if (!c) { G.over = true; G.endReason = 'The deck ran out.'; return; } G.target = c; }
+  if (card) { p.hand = p.hand.filter(c => c.id !== card.id); G.target = card; G.setter = winner; }
+  else { const c = drawTarget(G); if (!c) { G.over = true; G.endReason = 'The deck ran out.'; return; } G.target = c; G.setter = -1; }
   G.round++;
   const out = G.players.findIndex(q => q.hand.length === 0);
   if (out >= 0) { G.over = true; G.endReason = G.players[out].name + ' went out.'; }
@@ -228,7 +259,7 @@ function targetValue(rest) {
 }
 
 function botPlay(hand, target, style, rng, ctx) {
-  const plays = legalPlays(hand, target);
+  const plays = legalPlays(hand, target).filter(p => !p.some(isQuench));
   if (!plays.length) return null;
   const W = BOT_W[style] || BOT_W.steady;
   const base = scoreHand(hand).total;
@@ -248,6 +279,22 @@ function botPlay(hand, target, style, rng, ctx) {
   return best;
 }
 
+// A bot's whole move: its best normal play, plus a Quench when a rival set this target and is likely to win it,
+// or when the game is nearly over and an unplayed Quench would cost 5 points.
+function botMove(G, i, style, rng) {
+  const hand = G.players[i].hand, t = G.target, ctx = botCtx(G, i);
+  const play = botPlay(hand, t, style, rng, ctx);
+  const q = hand.find(isQuench);
+  if (!play || !q || play.length >= 3) return play;
+  const myWin = winShare(playKey(play, t), sampleOpps(t, ctx, rng, 10));
+  let use = hand.length <= 4 && myWin < 0.5;
+  const s = G.setter;
+  if (!use && s >= 0 && s !== i && myWin < 0.35) {
+    const rival = G.players[s].hand.length;
+    use = rng() < (rival <= 4 ? 0.85 : rival <= 7 ? 0.45 : 0.15);
+  }
+  return use ? [...play, q] : play;
+}
 function botTarget(hand, rng, ctx) {
   const pos = hand.filter(c => c.value > 0);
   if (!pos.length) return null;
@@ -273,5 +320,5 @@ function botTarget(hand, rng, ctx) {
   return best;
 }
 
-if (typeof module !== 'undefined') module.exports = { RULES, playKey, colorCount, SUITS, SUIT_ORDER, setupFor, newDeal, resolveRound, setNextTarget, legalPlays, isLegal, bestCard, cardKey, cmpKey, scoreHand, botPlay, botTarget, botCtx, STYLES, cardLabel, shuffle };
+if (typeof module !== 'undefined') module.exports = { RULES, playKey, colorCount, SUITS, SUIT_ORDER, setupFor, newDeal, resolveRound, setNextTarget, legalPlays, isLegal, bestCard, cardKey, cmpKey, scoreHand, botPlay, botTarget, botCtx, botMove, isQuench, quenchCount, STYLES, cardLabel, shuffle };
 
