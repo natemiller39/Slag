@@ -10,6 +10,7 @@ const SUITS = {
   black:  { name: 'Black',  art: 'Serpent',     rank: 0, sister: null,     hex: '#111111' },
   usurper: { name: 'Usurper', art: '', rank: 0, sister: null, hex: '#d9cbb0' },
   quench: { name: 'Quench', art: 'Water bucket', rank: 0, sister: null,    hex: '#2e86ab' },
+  slag:   { name: 'Slag',   art: '',            rank: 0, sister: null,     hex: '#3a2a22' },
 };
 const SUIT_ORDER = ['red', 'orange', 'green', 'blue', 'purple', 'grey'];
 
@@ -31,7 +32,7 @@ function setupFor(n) {
 // Quench option: 0-value cards shuffled into the deck. One per 2–4 players, two at 5–6, three at 7–8.
 const isQuench = c => !!c && c.suit === 'quench';
 function quenchCount(n) { return n <= 4 ? 1 : n <= 6 ? 2 : 3; }
-function cardLabel(c) { if (isQuench(c)) return 'Quench 0'; if (isUsurper(c)) return 'Usurper 3'; return SUITS[c.suit].name + ' ' + (c.value < 0 ? '−' + (-c.value) : c.value) + (c.star ? '★' : ''); }
+function cardLabel(c) { if (isQuench(c)) return 'Quench 0'; if (isUsurper(c)) return 'Usurper 3'; if (isSlag(c)) return 'Slag 10'; return SUITS[c.suit].name + ' ' + (c.value < 0 ? '−' + (-c.value) : c.value) + (c.star ? '★' : ''); }
 
 // Ranking key of a single positive card relative to a target (higher array wins, compared left to right)
 function cardKey(c, target) {
@@ -40,13 +41,16 @@ function cardKey(c, target) {
 function cmpKey(a, b) { for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] - b[i]; return 0; }
 function bestCard(play, target) {
   let best = null, bk = null;
-  for (const c of play) { if (c.value < 0 || isUsurper(c) || isQuench(c)) continue; const k = cardKey(c, target); if (!bk || cmpKey(k, bk) > 0) { best = c; bk = k; } }
+  for (const c of play) { if (c.value < 0 || isUsurper(c) || isQuench(c) || isSlag(c)) continue; const k = cardKey(c, target); if (!bk || cmpKey(k, bk) > 0) { best = c; bk = k; } }
   return { card: best, key: bk };
 }
 
 // Table rule: when on, the play with the most cards of the target's color wins (negatives count),
 // and the highest target-color card breaks ties. When off, only the single best card counts.
-const RULES = { colorCount: false, quench: false, usurper: false };
+const RULES = { colorCount: false, quench: false, usurper: false, slag: false };
+// Slag card option: one colorless 10. Played in a combo, whoever wins the round draws a penalty card (unless it's you).
+// As the target, color doesn't count, the best play wins, and the winner draws a penalty card. It never counts as the high card.
+const isSlag = c => !!c && c.suit === 'slag';
 // Usurper option: one colorless 3. As the target, color doesn't count. Played with a card of the target's color, it takes the round outright;
 // played without one, it is just a colorless 3.
 const isUsurper = c => !!c && c.suit === 'usurper';
@@ -104,6 +108,7 @@ function newDeal(names, rng, opts = {}) {
     if (cfg.doubles && v <= 5 && !(cfg.singleOnly && cfg.singleOnly.includes(s))) main.push(mkCard(s, v, false));
   }
   if (RULES.usurper) main.push(mkCard('usurper', 3, false));
+  if (RULES.slag) main.push(mkCard('slag', 10, false));
   if (RULES.quench) for (let k = 0; k < quenchCount(n); k++) main.push(mkCard('quench', 0, false));
   shuffle(main, rng);
   const negSuits = cfg.suits.slice();
@@ -177,6 +182,11 @@ function resolveRound(G, plays) {
     } else { res.winner = best; res.winCard = bestCard(plays[best], t).card; res.reason = explain(plays, res.made, best, t); }
   }
   else { res.winner = best; res.winCard = bestCard(plays[best], t).card; res.reason = explain(plays, res.made, best, t); }
+  // Slag card: as the target, or played by someone other than the winner, the winner draws a penalty card.
+  res.slagTarget = isSlag(t);
+  const sb = res.made.find(i => plays[i].some(isSlag));
+  res.slagBy = sb === undefined ? -1 : sb;
+  res.slagHit = res.winner >= 0 && (res.slagTarget || (res.slagBy >= 0 && res.slagBy !== res.winner)) ? res.winner : -1;
   for (const i of res.made) {
     const ids = new Set(plays[i].map(c => c.id));
     G.players[i].hand = G.players[i].hand.filter(c => !ids.has(c.id));
@@ -185,6 +195,7 @@ function resolveRound(G, plays) {
   const out = G.players.findIndex(p => p.hand.length === 0);
   if (out >= 0) { G.over = true; G.endReason = G.players[out].name + ' went out.'; res.ended = true; G.discard.push(t); return res; }
   G.players.forEach((p, i) => { if (!res.made.includes(i)) { const c = drawOne(G); if (c) { p.hand.push(c); res.penalties.push({ i, card: c }); } } });
+  if (res.slagHit >= 0) { const c = drawOne(G); res.reason += res.slagTarget ? '. The Slag target burns the winner, who draws a penalty card' : `. ${G.players[res.slagBy].name}'s Slag card burns the winner, who draws a penalty card`; if (c) { G.players[res.slagHit].hand.push(c); res.penalties.push({ i: res.slagHit, card: c, slag: true }); } }
   if (res.quenched || res.usurperTie) {
     G.discard.push(t);
     // table rule: a Quench played when the draw pile is empty ends the deal (no reshuffle for the new target)
@@ -197,6 +208,7 @@ function resolveRound(G, plays) {
 }
 
 function explain(plays, made, w, t) {
+  if (isSlag(t)) return made.length === 1 ? 'the only player to make 10' : `color doesn't count, and ${cardLabel(bestCard(plays[w], t).card)} is the highest card`;
   if (RULES.colorCount && made.length > 1) {
     const n = colorCount(plays[w], t), tc = SUITS[t.suit].name;
     const others = made.filter(i => i !== w).map(i => colorCount(plays[i], t));
@@ -300,7 +312,9 @@ function botPlay(hand, target, style, rng, ctx) {
     const key = playKey(p, target);
     let pWin = sims ? winShare(key, sims) : roughWin(key);
     if (p.some(isUsurper) && !isUsurper(target)) pWin = p.some(c => c.suit === target.suit && c.value > 0) ? 0.97 : pWin;
-    const winVal = 2.2 + targetValue(rest); // the target card leaves your hand too
+    let winVal = 2.2 + targetValue(rest); // the target card leaves your hand too
+    if (isSlag(target)) winVal -= 4.5; // the winner of a Slag round draws a penalty card
+    if (p.some(isSlag)) pWin *= 0.5; // the Slag card never counts as your high card; others pay if they win
     const u = W.shed * shed + 2 * W.win * pWin * winVal + rng() * 0.6;
     if (u > bs) { bs = u; best = p; }
   }
@@ -326,6 +340,8 @@ function botMove(G, i, style, rng) {
 function botTarget(hand, rng, ctx) {
   const pos = hand.filter(c => c.value > 0);
   if (!pos.length) return null;
+  const sl = pos.find(isSlag);
+  if (sl && rng() < 0.9) return sl; // pass the curse along
   let best = null, bs = -1e9;
   for (const c of pos) {
     const rest = hand.filter(x => x.id !== c.id);
@@ -348,5 +364,5 @@ function botTarget(hand, rng, ctx) {
   return best;
 }
 
-if (typeof module !== 'undefined') module.exports = { isUsurper, RULES, playKey, colorCount, SUITS, SUIT_ORDER, setupFor, newDeal, resolveRound, setNextTarget, legalPlays, isLegal, bestCard, cardKey, cmpKey, scoreHand, botPlay, botTarget, botCtx, botMove, isQuench, quenchCount, STYLES, cardLabel, shuffle };
+if (typeof module !== 'undefined') module.exports = { isSlag, isUsurper, RULES, playKey, colorCount, SUITS, SUIT_ORDER, setupFor, newDeal, resolveRound, setNextTarget, legalPlays, isLegal, bestCard, cardKey, cmpKey, scoreHand, botPlay, botTarget, botCtx, botMove, isQuench, quenchCount, STYLES, cardLabel, shuffle };
 
