@@ -8,6 +8,7 @@ const SUITS = {
   purple: { name: 'Purple', art: 'Chest armor', rank: 2, sister: 'grey',   hex: '#8b5cf0' },
   grey:   { name: 'Grey',   art: 'Helmet',      rank: 1, sister: 'purple', hex: '#5d5d63' },
   black:  { name: 'Black',  art: 'Serpent',     rank: 0, sister: null,     hex: '#111111' },
+  usurper: { name: 'Usurper', art: '', rank: 0, sister: null, hex: '#d9cbb0' },
   quench: { name: 'Quench', art: 'Water bucket', rank: 0, sister: null,    hex: '#2e86ab' },
 };
 const SUIT_ORDER = ['red', 'orange', 'green', 'blue', 'purple', 'grey'];
@@ -30,7 +31,7 @@ function setupFor(n) {
 // Quench option: 0-value cards shuffled into the deck. One per 2–4 players, two at 5–6, three at 7–8.
 const isQuench = c => !!c && c.suit === 'quench';
 function quenchCount(n) { return n <= 4 ? 1 : n <= 6 ? 2 : 3; }
-function cardLabel(c) { if (isQuench(c)) return 'Quench 0'; return SUITS[c.suit].name + ' ' + (c.value < 0 ? '−' + (-c.value) : c.value) + (c.star ? '★' : ''); }
+function cardLabel(c) { if (isQuench(c)) return 'Quench 0'; if (isUsurper(c)) return 'Usurper 3'; return SUITS[c.suit].name + ' ' + (c.value < 0 ? '−' + (-c.value) : c.value) + (c.star ? '★' : ''); }
 
 // Ranking key of a single positive card relative to a target (higher array wins, compared left to right)
 function cardKey(c, target) {
@@ -39,17 +40,19 @@ function cardKey(c, target) {
 function cmpKey(a, b) { for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] - b[i]; return 0; }
 function bestCard(play, target) {
   let best = null, bk = null;
-  for (const c of play) { if (c.value < 0) continue; const k = cardKey(c, target); if (!bk || cmpKey(k, bk) > 0) { best = c; bk = k; } }
+  for (const c of play) { if (c.value < 0 || isUsurper(c) || isQuench(c)) continue; const k = cardKey(c, target); if (!bk || cmpKey(k, bk) > 0) { best = c; bk = k; } }
   return { card: best, key: bk };
 }
 
 // Table rule: when on, the play with the most cards of the target's color wins (negatives count),
 // and the highest target-color card breaks ties. When off, only the single best card counts.
-const RULES = { colorCount: false, quench: false };
+const RULES = { colorCount: false, quench: false, usurper: false };
+// Usurper option: one colorless 3. As the target, or in any play, color doesn't count that round.
+const isUsurper = c => !!c && c.suit === 'usurper';
 function colorCount(play, target) { return play.filter(c => c.suit === target.suit).length; }
 function topColor(play, target) { return Math.max(0, ...play.filter(c => c.value > 0 && c.suit === target.suit).map(c => c.value)); }
 function playKey(play, target) {
-  const k = bestCard(play, target).key;
+  const k = bestCard(play, target).key || [-1, 0, 0, 0, 0];
   return RULES.colorCount ? [colorCount(play, target), topColor(play, target), ...k.slice(1)] : k;
 }
 
@@ -99,6 +102,7 @@ function newDeal(names, rng, opts = {}) {
     main.push(mkCard(s, v, cfg.doubles && v <= 5 && !(cfg.singleOnly && cfg.singleOnly.includes(s))));
     if (cfg.doubles && v <= 5 && !(cfg.singleOnly && cfg.singleOnly.includes(s))) main.push(mkCard(s, v, false));
   }
+  if (RULES.usurper) main.push(mkCard('usurper', 3, false));
   if (RULES.quench) for (let k = 0; k < quenchCount(n); k++) main.push(mkCard('quench', 0, false));
   shuffle(main, rng);
   const negSuits = cfg.suits.slice();
@@ -148,7 +152,18 @@ function resolveRound(G, plays) {
   let best = -1, bk = null;
   for (const i of res.made) { const k = playKey(plays[i], t); if (!bk || cmpKey(k, bk) > 0) { best = i; bk = k; } }
   res.wouldWin = best;
+  res.usurperTarget = isUsurper(t);
+  res.usurperPlayed = res.made.some(i => plays[i].some(isUsurper));
   if (res.quenched) res.reason = 'quenched';
+  else if (res.usurperTarget || res.usurperPlayed) {
+    // Usurper: color doesn't count. Highest single card wins; a tie on that card flips a new target.
+    res.colorless = true;
+    const top = i => Math.max(0, ...plays[i].filter(c => c.value > 0 && !isUsurper(c)).map(c => c.value));
+    const hi = Math.max(...res.made.map(top)), at = res.made.filter(i => top(i) === hi);
+    res.usurperTop = hi;
+    if (at.length > 1) { res.usurperTie = true; res.reason = `Usurper tie on ${hi}`; }
+    else { res.winner = at[0]; res.winCard = bestCard(plays[at[0]], t).card; res.reason = `Usurper: color doesn't count, and ${res.winCard ? cardLabel(res.winCard) : 'that play'} is the highest card`; }
+  }
   else { res.winner = best; res.winCard = bestCard(plays[best], t).card; res.reason = explain(plays, res.made, best, t); }
   for (const i of res.made) {
     const ids = new Set(plays[i].map(c => c.id));
@@ -158,10 +173,10 @@ function resolveRound(G, plays) {
   const out = G.players.findIndex(p => p.hand.length === 0);
   if (out >= 0) { G.over = true; G.endReason = G.players[out].name + ' went out.'; res.ended = true; G.discard.push(t); return res; }
   G.players.forEach((p, i) => { if (!res.made.includes(i)) { const c = drawOne(G); if (c) { p.hand.push(c); res.penalties.push({ i, card: c }); } } });
-  if (res.quenched) {
+  if (res.quenched || res.usurperTie) {
     G.discard.push(t);
     // table rule: a Quench played when the draw pile is empty ends the deal (no reshuffle for the new target)
-    if (!G.draw.length) { G.over = true; G.endReason = 'Quenched with an empty draw pile, so the deal ends.'; res.ended = true; return res; }
+    if (res.quenched && !G.draw.length) { G.over = true; G.endReason = 'Quenched with an empty draw pile, so the deal ends.'; res.ended = true; return res; }
     const nt = drawTarget(G);
     if (!nt) { G.over = true; G.endReason = 'The deck ran out.'; res.ended = true; return res; }
     G.target = nt; G.setter = -1; G.round++;
@@ -320,5 +335,5 @@ function botTarget(hand, rng, ctx) {
   return best;
 }
 
-if (typeof module !== 'undefined') module.exports = { RULES, playKey, colorCount, SUITS, SUIT_ORDER, setupFor, newDeal, resolveRound, setNextTarget, legalPlays, isLegal, bestCard, cardKey, cmpKey, scoreHand, botPlay, botTarget, botCtx, botMove, isQuench, quenchCount, STYLES, cardLabel, shuffle };
+if (typeof module !== 'undefined') module.exports = { isUsurper, RULES, playKey, colorCount, SUITS, SUIT_ORDER, setupFor, newDeal, resolveRound, setNextTarget, legalPlays, isLegal, bestCard, cardKey, cmpKey, scoreHand, botPlay, botTarget, botCtx, botMove, isQuench, quenchCount, STYLES, cardLabel, shuffle };
 

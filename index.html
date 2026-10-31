@@ -173,6 +173,7 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .sd-crown.sd-quench { background: linear-gradient(180deg, #a8e3f5, #2e86ab); color: #0b2633; box-shadow: 0 4px 14px rgba(0, 0, 0, .55), 0 0 22px rgba(80, 180, 230, .6); }
 .sd-tile.quench { border: 2px solid #5fb8dc; background: radial-gradient(ellipse at 50% 0%, rgba(120, 200, 240, .22), rgba(46, 134, 171, .06) 70%); box-shadow: 0 0 30px rgba(80, 180, 230, .35); padding-top: 22px; }
 .sd-tile.quench .sd-name { color: #a8e3f5; }
+.sd-crown.sd-usurper { background: linear-gradient(180deg, #ffffff, #ffd58a); color: #4a2a08; box-shadow: 0 4px 14px rgba(0, 0, 0, .55), 0 0 26px rgba(255, 240, 200, .8); }
 @keyframes crown-pop { from { transform: translateX(-50%) scale(0) rotate(-14deg); opacity: 0; } to { transform: translateX(-50%) scale(1); opacity: 1; } }
 @keyframes winglow { 50% { box-shadow: 0 0 0 5px rgba(255, 138, 42, .35), 0 0 70px rgba(255, 150, 50, .75); } }
 @media (prefers-reduced-motion: reduce) { .showdown, .sd-crown, .sd-tile.win { animation: none; } }
@@ -450,7 +451,19 @@ const QUENCH_IMG = 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns="http:
 <text x="125" y="312" text-anchor="middle" font-family="Georgia, serif" font-size="30" letter-spacing="5" fill="#2e86ab" font-weight="700">QUENCH</text>
 <text x="26" y="58" font-family="Georgia, serif" font-size="46" fill="#2e86ab" font-weight="700">0</text>
 </svg>`);
-const src = c => c.suit === 'quench' ? QUENCH_IMG : 'cards/' + c.suit + '_' + c.value + '.webp';
+const USURPER_IMG = 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 350">
+<defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f1ede6"/><stop offset="1" stop-color="#dcd5c9"/></linearGradient>
+<linearGradient id="c" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9dde2"/><stop offset="1" stop-color="#8a8f96"/></linearGradient></defs>
+<rect width="250" height="350" rx="16" fill="url(#s)"/><rect x="10" y="10" width="230" height="330" rx="10" fill="none" stroke="#6b7078" stroke-width="5"/>
+<g transform="rotate(-22 125 170)"><path d="M70 205 60 120l38 34 27-52 27 52 38-34-10 85z" fill="url(#c)" stroke="#3b3e43" stroke-width="5" stroke-linejoin="round"/>
+<rect x="68" y="205" width="114" height="18" rx="4" fill="url(#c)" stroke="#3b3e43" stroke-width="5"/>
+<circle cx="60" cy="116" r="7" fill="#3b3e43"/><circle cx="125" cy="98" r="7" fill="#3b3e43"/><circle cx="190" cy="116" r="7" fill="#3b3e43"/></g>
+<path d="M96 132l22 40-12 18 20 32" fill="none" stroke="#3b3e43" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M40 262h170" stroke="#6b7078" stroke-width="3" stroke-linecap="round"/>
+<text x="125" y="300" text-anchor="middle" font-family="Georgia, serif" font-size="30" letter-spacing="4" fill="#3b3e43" font-weight="700">USURPER</text>
+<text x="26" y="58" font-family="Georgia, serif" font-size="46" fill="#3b3e43" font-weight="700">3</text>
+</svg>`);
+const src = c => c.suit === 'usurper' ? USURPER_IMG : c.suit === 'quench' ? QUENCH_IMG : 'cards/' + c.suit + '_' + c.value + '.webp';
 const suitIdx = s => s === 'black' ? 9 : SUIT_ORDER.indexOf(s);
 const sortHand = h => h.slice().sort((a, b) => a.value - b.value || suitIdx(a.suit) - suitIdx(b.suit) || (b.star - a.star));
 
@@ -476,7 +489,7 @@ const hammerSvg = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4.5h1
 
 // ===== flow =====
 function startMatch() {
-  RULES.colorCount = S.colorRule; RULES.quench = !!S.quench;
+  RULES.colorCount = S.colorRule; RULES.quench = !!S.quench; RULES.usurper = !!S.usurper;
   const names = ['You', ...BOTS.slice(0, S.bots)];
   const styles = names.map((_, i) => i === 0 ? null : STYLES[(i - 1) % 3]);
   S.match = { names, styles, totals: names.map(() => 0), deals: [], mode: S.mode };
@@ -501,6 +514,7 @@ function commit(play) {
   S.phase = 'reveal';
   const t2 = res.target;
   if (res.reflip) S.msg = `Nobody made ${t2.value}. In a 2-player game the first miss flips a new target.`;
+  else if (res.usurperTie && !res.ended) S.msg = `<b>Usurper tie!</b> ${res.usurperTop ? 'Two plays tied on ' + res.usurperTop + '. ' : ''}Nobody wins, and a new target is flipped.`;
   else if (res.quenched && !res.ended) S.msg = `<b>Quenched!</b> ${quenchNames(res.quenchedBy, G.players)} doused the round. Nobody wins, and a new target is flipped.`;
   else if (res.ended) S.msg = G.endReason;
   else {
@@ -518,7 +532,7 @@ function afterReveal() {
   if (S.online) { onlineSend({ t: 'ready' }); return; }
   const G = S.G, res = S.last;
   if (G.over) return endDeal();
-  if (res.reflip || res.quenched) { S.phase = 'choose'; S.last = null; S.msg = `New target flipped. Make ${G.target.value}.`; return render(); }
+  if (res.reflip || res.quenched || res.usurperTie) { S.phase = 'choose'; S.last = null; S.msg = `New target flipped. Make ${G.target.value}.`; return render(); }
   if (res.winner === 0) {
     if (!myHand().some(c => c.value > 0)) { setNextTarget(G, 0, null); return toChoose(`You hold only negatives, so the target was flipped from the draw pile.`); }
     S.phase = 'pick'; S.msg = `<b>You won.</b> Tap a card from your hand to set the next target.`;
@@ -648,16 +662,17 @@ function showdownHtml() {
     if (play) {
       const cnt = colorCount(play, t), b = bestCard(play, t).card;
       cap = RULES.colorCount && cnt ? `${cnt} ${SUITS[t.suit].name}` : b ? `high ${cardLabel(b)}` : '';
+      if (res.colorless) { const hi = Math.max(0, ...play.filter(c => c.value > 0 && !isUsurper(c)).map(c => c.value)); cap = hi ? `high ${hi}` : ''; }
       if (res.quenched && i === res.wouldWin) cap += ' · would have won';
     } else cap = drew ? 'drew a card' : '';
     const cards = play ? `<div class="cards">${play.map((c, j) => `<span class="card flip" style="animation-delay:${90 * k + 70 * j}ms"><img src="${src(c)}" alt="${cardLabel(c)}">${badges(c, true)}</span>`).join('')}</div>`
       : '<span class="sd-pass">Passed</span>';
     const quenched = (res.quenchedBy || []).includes(i);
-    return `<div class="sd-tile ${won ? 'win' : ''} ${quenched ? 'quench' : ''} ${play ? '' : 'passed'}">${won ? `<span class="sd-crown">${crownSvg}Winner</span>` : ''}${quenched ? '<span class="sd-crown sd-quench">Quench</span>' : ''}
+    return `<div class="sd-tile ${won ? 'win' : ''} ${quenched ? 'quench' : ''} ${play ? '' : 'passed'}">${won ? `<span class="sd-crown">${crownSvg}Winner</span>` : ''}${quenched ? '<span class="sd-crown sd-quench">Quench</span>' : ''}${!won && !quenched && play && play.some(isUsurper) ? '<span class="sd-crown sd-usurper">Usurper</span>' : ''}
       <div class="sd-label"><span class="sd-name">${p.name}</span>${cap ? `<span class="sd-cap">${cap}</span>` : ''}</div>${cards}</div>`;
   }).join('');
   const shown = preview || t;
-  const title = preview ? `Next target <b>${neg(shown.value)}</b> ${SUITS[shown.suit].name}` : res.quenched ? `Quenched · nobody wins <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : `Showdown · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}`;
+  const title = preview ? `Next target <b>${neg(shown.value)}</b> ${SUITS[shown.suit].name}` : res.usurperTie ? `Usurper tie · new target` : res.colorless ? `Usurper · color doesn't count · make <b>${neg(t.value)}</b>` : res.quenched ? `Quenched · nobody wins <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : `Showdown · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}`;
   return `<section class="showdown ${wide ? '' : 'tight'}" style="--cols:${cols};--rows:${rows}" aria-label="Round results">
     <div class="sd-head">${cardEl(shown, '')}<span class="sd-title">${title}</span></div>
     <div class="sd-grid">${tiles}</div></section>`;
@@ -674,6 +689,7 @@ function meterText() {
   const expr = sel.map(c => neg(c.value)).join(' + ') + ' = ' + neg(sum);
   if (sel.filter(c => c.value < 0).length > 1) return `${expr} <span class="no">· only one negative per play</span>`;
   if (sel.filter(isQuench).length > 1) return `${expr} <span class="no">· only one Quench per play</span>`;
+  if ((isUsurper(t) || sel.some(isUsurper)) && sum === t.value && sel.some(c => c.value > 0 && !isUsurper(c))) return `${expr} <span class="ok">· makes ${t.value}</span> <span class="hint">· Usurper: color doesn't count, highest card wins</span>`;
   if (sel.some(isQuench) && sum === t.value && sel.some(c => c.value > 0)) return `${expr} <span class="ok">· makes ${t.value}</span> <span class="hint">· with Quench: nobody wins this round</span>`;
   if (!sel.some(c => c.value > 0)) return `${expr} <span class="no">· add a positive card</span>`;
   if (sum === t.value) {
@@ -774,7 +790,7 @@ function rulesHtml() {
     <li>The best play wins. ${RULES.colorCount ? "The play with the most cards of the target's color wins (negatives count). If that's tied, the highest card of the target's color wins." : "Any play with a card of the target's color beats every play without one, then the higher card wins."}</li>
     <li>Everyone who made it discards those cards. Anyone who passed or missed draws one card.</li>
     <li>The winner sets the next target with a card from their hand.</li>
-  </ol>${RULES.quench ? `<h3>Quench cards</h3><p>Quench is a 0 card shuffled into the deck (1 at 2–4 players, 2 at 5–6, 3 at 7–8). Add it to a play that makes the number; it uses one of your 3 card slots. When a Quench is revealed, nobody wins the round: plays still discard, misses still draw, and a new target is flipped. A Quench never becomes the target, and one left in your hand at the end scores +5. If a Quench is played when the draw pile is empty, the deal ends.</p>` : ''}
+  </ol>${RULES.usurper ? `<h3>Usurper</h3><p>One colorless Usurper card (worth 3) is in the deck. When it's the target, or anyone plays it, color doesn't count that round: the highest single card wins (Usurper itself never counts as the high card). If the top card is tied, nobody wins, plays still discard, misses still draw, and a new target is flipped. Held at the end, it scores 3.</p>` : ''}${RULES.quench ? `<h3>Quench cards</h3><p>Quench is a 0 card shuffled into the deck (1 at 2–4 players, 2 at 5–6, 3 at 7–8). Add it to a play that makes the number; it uses one of your 3 card slots. When a Quench is revealed, nobody wins the round: plays still discard, misses still draw, and a new target is flipped. A Quench never becomes the target, and one left in your hand at the end scores +5. If a Quench is played when the draw pile is empty, the deal ends.</p>` : ''}
   <h3>Ties</h3>
   <p>${RULES.colorCount ? 'After the color count and the highest target-color card, compare' : 'Compare'} each play's best positive card: target color, then value, then the target's sister suit, then suit rank (Red 6, Orange 5, Green 4, Blue 3, Purple 2, Grey 1), then the starred copy.</p>
   <h3>Scoring</h3>
@@ -813,6 +829,11 @@ function splash() {
             <button data-quench="off" aria-pressed="${!S.quench}">Off</button>
             <button data-quench="on" aria-pressed="${!!S.quench}">On</button></div>
           ${S.quench ? `<span class="hint">${quenchCount(n)} Quench card${quenchCount(n) > 1 ? 's' : ''} in the deck. Tuck one into a play and nobody wins that round.</span>` : ''}</div>
+        <div class="field"><span class="lbl" id="l-usurper">Usurper card</span>
+          <div class="seg" role="group" aria-labelledby="l-usurper">
+            <button data-usurper="off" aria-pressed="${!S.usurper}">Off</button>
+            <button data-usurper="on" aria-pressed="${!!S.usurper}">On</button></div>
+          ${S.usurper ? '<span class="hint">One colorless 3. When it shows up, color doesn\'t count: highest card wins.</span>' : ''}</div>
         <div class="actions"><button class="btn primary" id="b-start">Play the computer</button></div>
       </div>
       ${onlineSection()}
@@ -824,6 +845,7 @@ function bindSplash() {
   document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { S.mode = b.dataset.mode; save(); render(); });
   document.querySelectorAll('[data-rule]').forEach(b => b.onclick = () => { S.colorRule = b.dataset.rule === 'count'; S.ruleChosen = true; RULES.colorCount = S.colorRule; save(); render(); });
   document.querySelectorAll('[data-quench]').forEach(b => b.onclick = () => { S.quench = b.dataset.quench === 'on'; RULES.quench = S.quench; save(); render(); });
+  document.querySelectorAll('[data-usurper]').forEach(b => b.onclick = () => { S.usurper = b.dataset.usurper === 'on'; RULES.usurper = S.usurper; save(); render(); });
   $('#b-start').onclick = startMatch;
   bindOnlineSection();
   $('#b-rules').onclick = () => { S.showRules = true; render(); };
@@ -940,6 +962,7 @@ function applyView(v) {
   o.view = v; o.lost = false;
   RULES.colorCount = v.settings.colorRule;
   RULES.quench = !!v.settings.quench;
+  RULES.usurper = !!v.settings.usurper;
   if (v.phase === 'lobby') { S.phase = 'lobby'; S.G = null; S.match = null; S.last = null; S.confirmQuit = false; return render(); }
   const prevPhase = S.phase, prevRound = S.G ? S.G.round : 0;
   S.G = v.G; S.match = v.match; S.last = v.last; S.dealScores = v.dealScores; S.msg = v.msg;
@@ -1026,6 +1049,7 @@ function lobbyHtml() {
         <div class="field"><span class="lbl">Match</span>${seg('mode', [['deals', 'Three deals'], ['fifty', 'Play to 50']], v.settings.mode)}</div>
         <div class="field"><span class="lbl">Who wins a round</span>${seg('rule', [['high', 'Highest card'], ['count', 'Most of the color']], v.settings.colorRule ? 'count' : 'high')}</div>
         <div class="field"><span class="lbl">Quench cards</span>${seg('quench', [['off', 'Off'], ['on', 'On']], v.settings.quench ? 'on' : 'off')}${v.settings.quench ? `<span class="hint">${quenchCount(Math.max(n, 2))} in the deck for ${n} player${n > 1 ? 's' : ''}.</span>` : ''}</div>
+        <div class="field"><span class="lbl">Usurper card</span>${seg('usurper', [['off', 'Off'], ['on', 'On']], v.settings.usurper ? 'on' : 'off')}</div>
         ${host ? '' : '<span class="hint">The host sets the rules.</span>'}</div>
     </div>
   </section>${overlay()}`;
@@ -1046,12 +1070,13 @@ function bindLobby() {
   document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => onlineSend({ t: 'settings', mode: b.dataset.mode }));
   document.querySelectorAll('[data-rule]').forEach(b => b.onclick = () => onlineSend({ t: 'settings', colorRule: b.dataset.rule === 'count' }));
   document.querySelectorAll('[data-quench]').forEach(b => b.onclick = () => onlineSend({ t: 'settings', quench: b.dataset.quench === 'on' }));
+  document.querySelectorAll('[data-usurper]').forEach(b => b.onclick = () => onlineSend({ t: 'settings', usurper: b.dataset.usurper === 'on' }));
   bindOverlay();
 }
 
 // remember setup choices for this viewer only
-function save() { try { localStorage.setItem('slag-setup', JSON.stringify({ bots: S.bots, mode: S.mode, colorRule: S.colorRule, ruleChosen: !!S.ruleChosen, quench: !!S.quench, oname: S.oname || '' })); } catch (e) {} }
-function load() { try { const v = JSON.parse(localStorage.getItem('slag-setup') || 'null'); if (v) { S.bots = v.bots || 3; S.mode = v.mode || 'deals'; if (v.ruleChosen && typeof v.colorRule === 'boolean') { S.colorRule = v.colorRule; S.ruleChosen = true; } S.quench = !!v.quench; if (v.oname) S.oname = v.oname; } } catch (e) {} }
+function save() { try { localStorage.setItem('slag-setup', JSON.stringify({ bots: S.bots, mode: S.mode, colorRule: S.colorRule, ruleChosen: !!S.ruleChosen, quench: !!S.quench, usurper: !!S.usurper, oname: S.oname || '' })); } catch (e) {} }
+function load() { try { const v = JSON.parse(localStorage.getItem('slag-setup') || 'null'); if (v) { S.bots = v.bots || 3; S.mode = v.mode || 'deals'; if (v.ruleChosen && typeof v.colorRule === 'boolean') { S.colorRule = v.colorRule; S.ruleChosen = true; } S.quench = !!v.quench; S.usurper = !!v.usurper; if (v.oname) S.oname = v.oname; } } catch (e) {} }
 
 // keep a game in progress across page updates
 const hot = window.claude && window.claude.hot;
@@ -1061,6 +1086,7 @@ function start(data) {
   if (typeof S.colorRule !== 'boolean') S.colorRule = false;
   RULES.colorCount = S.colorRule;
   RULES.quench = !!S.quench;
+  RULES.usurper = !!S.usurper;
   const q = new URLSearchParams(location.search).get('join');
   if (q) S.joinCode = q.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
   // wake the game server now, so hosting or joining is quick when the player gets there

@@ -58,11 +58,11 @@ const isAway = (s, now = Date.now()) => !s.bot && !s.connected && now - (s.goneA
 const playsForSelf = s => !s.bot && (s.connected || Date.now() - (s.goneAt || 0) <= GRACE_MS);
 
 function send(ws, msg) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(msg)); }
-function useRules(room) { E.RULES.colorCount = room.settings.colorRule; E.RULES.quench = !!room.settings.quench; }
+function useRules(room) { E.RULES.colorCount = room.settings.colorRule; E.RULES.quench = !!room.settings.quench; E.RULES.usurper = !!room.settings.usurper; }
 
 function createRoom(name) {
   const room = {
-    code: newCode(), hostToken: null, seats: [], settings: { colorRule: false, mode: 'deals', quench: false },
+    code: newCode(), hostToken: null, seats: [], settings: { colorRule: false, mode: 'deals', quench: false, usurper: false },
     phase: 'lobby', match: null, G: null, plays: [], submitted: [], last: null, picker: -1,
     ready: new Set(), revealAt: 0, dealScores: null, note: null, lastActive: Date.now(),
   };
@@ -147,7 +147,7 @@ function maybeAdvance(room) {
   useRules(room);
   const G = room.G, res = room.last;
   if (G.over) return endDeal(room);
-  if (res.reflip || res.quenched) { room.note = { text: `New target flipped. Make ${G.target.value}.` }; return newRound(room); }
+  if (res.reflip || res.quenched || res.usurperTie) { room.note = { text: `New target flipped. Make ${G.target.value}.` }; return newRound(room); }
   const w = res.winner;
   const card = E.botTarget(G.players[w].hand, Math.random, E.botCtx(G, w));
   E.setNextTarget(G, w, card);
@@ -200,7 +200,7 @@ function viewFor(room, s) {
   v.match = { names: rot(M.names).map((x, k) => (k === 0 ? 'You' : x)), styles: rot(M.styles), totals: rot(M.totals), deals: M.deals.map(rot), mode: M.mode };
   const L = room.last;
   v.last = L ? {
-    target: L.target, plays: rot(L.plays), made: L.made.map(R), winner: L.winner >= 0 ? R(L.winner) : -1, reason: L.reason, quenched: !!L.quenched, quenchedBy: (L.quenchedBy || []).map(R), wouldWin: L.wouldWin >= 0 ? R(L.wouldWin) : -1,
+    target: L.target, plays: rot(L.plays), made: L.made.map(R), winner: L.winner >= 0 ? R(L.winner) : -1, reason: L.reason, quenched: !!L.quenched, usurperTie: !!L.usurperTie, colorless: !!L.colorless, usurperTop: L.usurperTop || 0, quenchedBy: (L.quenchedBy || []).map(R), wouldWin: L.wouldWin >= 0 ? R(L.wouldWin) : -1,
     penalties: L.penalties.map(q => ({ i: R(q.i), card: q.i === s ? q.card : null })), ended: L.ended, reflip: L.reflip,
   } : null;
   v.ready = rot(room.submitted);
@@ -214,6 +214,7 @@ function viewFor(room, s) {
   if (room.note) msg = room.note.text.replace('{who}', room.note.who === s ? 'You' : (room.note.who >= 0 ? seats[room.note.who].name : ''));
   if (room.phase === 'reveal') {
     if (L.reflip) msg = `Nobody made ${L.target.value}. In a 2-player game the first miss flips a new target.`;
+    else if (L.usurperTie && !L.ended) msg = `<b>Usurper tie!</b> Two plays tied on ${L.usurperTop}. Nobody wins, and a new target is flipped.`;
     else if (L.quenched && !L.ended) { const names = L.quenchedBy.map(i => (i === s ? 'You' : seats[i].name)); msg = `<b>Quenched!</b> ${names.length > 1 ? names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1] : names[0]} doused the round. Nobody wins, and a new target is flipped.`; }
     else if (L.ended) msg = relEnd(G.endReason);
     else {
@@ -270,6 +271,7 @@ function handle(ws, msg) {
       if (!isHost || room.phase !== 'lobby') return;
       if (typeof msg.colorRule === 'boolean') room.settings.colorRule = msg.colorRule;
       if (typeof msg.quench === 'boolean') room.settings.quench = msg.quench;
+      if (typeof msg.usurper === 'boolean') room.settings.usurper = msg.usurper;
       if (msg.mode === 'deals' || msg.mode === 'fifty') room.settings.mode = msg.mode;
       return broadcast(room);
     case 'addBot':
