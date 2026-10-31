@@ -32,7 +32,7 @@ function setupFor(n) {
 // Quench option: 0-value cards shuffled into the deck. One per 2–4 players, two at 5–6, three at 7–8.
 const isQuench = c => !!c && c.suit === 'quench';
 function quenchCount(n) { return n <= 4 ? 1 : n <= 6 ? 2 : 3; }
-function cardLabel(c) { if (isQuench(c)) return 'Quench 0'; if (isUsurper(c)) return 'Usurper 3'; if (isSlag(c)) return 'Slag 10'; return SUITS[c.suit].name + ' ' + (c.value < 0 ? '−' + (-c.value) : c.value) + (c.star ? '★' : ''); }
+function cardLabel(c) { if (isQuench(c)) return 'Quench 0'; if (isUsurper(c)) return 'Usurper 3'; if (isSlag(c)) return 'Slag 7'; return SUITS[c.suit].name + ' ' + (c.value < 0 ? '−' + (-c.value) : c.value) + (c.star ? '★' : ''); }
 
 // Ranking key of a single positive card relative to a target (higher array wins, compared left to right)
 function cardKey(c, target) {
@@ -48,7 +48,7 @@ function bestCard(play, target) {
 // Table rule: when on, the play with the most cards of the target's color wins (negatives count),
 // and the highest target-color card breaks ties. When off, only the single best card counts.
 const RULES = { colorCount: false, quench: false, usurper: false, slag: false };
-// Slag card option: one colorless 10. Played in a combo, whoever wins the round draws a penalty card (unless it's you).
+// Slag card option: one colorless 7. Played in a combo, whoever wins the round draws a penalty card (unless it's you).
 // As the target, color doesn't count, the best play wins, and the winner draws a penalty card. It never counts as the high card.
 const isSlag = c => !!c && c.suit === 'slag';
 // Usurper option: one colorless 3. As the target, color doesn't count. Played with a card of the target's color, it takes the round outright;
@@ -108,7 +108,7 @@ function newDeal(names, rng, opts = {}) {
     if (cfg.doubles && v <= 5 && !(cfg.singleOnly && cfg.singleOnly.includes(s))) main.push(mkCard(s, v, false));
   }
   if (RULES.usurper) main.push(mkCard('usurper', 3, false));
-  if (RULES.slag) main.push(mkCard('slag', 10, false));
+  if (RULES.slag) main.push(mkCard('slag', 7, false));
   if (RULES.quench) for (let k = 0; k < quenchCount(n); k++) main.push(mkCard('quench', 0, false));
   shuffle(main, rng);
   const negSuits = cfg.suits.slice();
@@ -208,7 +208,7 @@ function resolveRound(G, plays) {
 }
 
 function explain(plays, made, w, t) {
-  if (isSlag(t)) return made.length === 1 ? 'the only player to make 10' : `color doesn't count, and ${cardLabel(bestCard(plays[w], t).card)} is the highest card`;
+  if (isSlag(t)) return made.length === 1 ? 'the only player to make ' + t.value : `color doesn't count, and ${cardLabel(bestCard(plays[w], t).card)} is the highest card`;
   if (RULES.colorCount && made.length > 1) {
     const n = colorCount(plays[w], t), tc = SUITS[t.suit].name;
     const others = made.filter(i => i !== w).map(i => colorCount(plays[i], t));

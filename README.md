@@ -64,14 +64,14 @@ Turn on **Usurper card** on the start screen or in the lobby to shuffle one colo
 
 ## Option: Slag card
 
-Turn on **Slag card** on the start screen or in the lobby to shuffle one colorless Slag card, worth 10, into the deck.
+Turn on **Slag card** on the start screen or in the lobby to shuffle one colorless Slag card, worth 7, into the deck.
 
-- **Played in a combo:** whoever wins that round draws a penalty card, unless it's you. The Slag card never counts as your high card. Because it's worth 10, you can only play it when the target is 7 or higher (10 alone, or 10 with a −1, −2 or −3).
-- **As the target:** make 10. Color doesn't count, the best play wins, and the winner draws a penalty card. So everyone wants to make 10 to shed cards, but nobody wants the best play.
+- **Played in a combo:** whoever wins that round draws a penalty card, unless it's you. The Slag card never counts as your high card. Because it's worth 7, you can only play it when the target is 4 or higher (7 alone, 7 with a negative, or 7 plus other cards).
+- **As the target:** make 7. Color doesn't count, the best play wins, and the winner draws a penalty card. So everyone wants to make 7 to shed cards, but nobody wants the best play.
 - A round winner can set the Slag card as the next target, which gets it out of their hand and passes the curse along.
 - If a Quench is played the same round, nobody wins, so nobody gets burned.
 - If the winner goes out that round, the deal ends before they would draw.
-- Stuck with it at the end of a deal, it scores 10.
+- Stuck with it at the end of a deal, it scores 7.
 
 ## Scoring
 
