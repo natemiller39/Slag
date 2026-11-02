@@ -530,7 +530,7 @@ const hammerSvg = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4.5h1
 
 // ===== flow =====
 function startMatch() {
-  RULES.colorCount = S.colorRule; RULES.scoring = S.scoring || 'face'; RULES.quench = !!S.quench; RULES.usurper = false; RULES.six = !!S.six; RULES.slag = !!S.slag; RULES.matchNumber = !!S.matchNumber;
+  RULES.colorCount = S.colorRule; RULES.scoring = S.scoring || 'tiers'; RULES.quench = !!S.quench; RULES.usurper = false; RULES.six = !!S.six; RULES.slag = !!S.slag; RULES.matchNumber = !!S.matchNumber;
   const names = ['You', ...BOTS.slice(0, S.bots)];
   const styles = names.map((_, i) => i === 0 ? null : STYLES[(i - 1) % 3]);
   S.match = { names, styles, totals: names.map(() => 0), deals: [], mode: S.mode };
@@ -597,7 +597,7 @@ function endDeal() {
   const scores = G.players.map(p => scoreHand(p.hand));
   scores.forEach((s, i) => { M.totals[i] += s.total; });
   M.deals.push(scores.map(s => s.total));
-  const done = M.mode === 'deals' ? M.deals.length >= 3 : M.totals.some(t => t >= 50);
+  const done = M.mode === 'deals' ? M.deals.length >= 3 : M.totals.some(t => t >= playTo());
   S.dealScores = scores; S.phase = done ? 'matchEnd' : 'dealEnd';
   render();
 }
@@ -614,7 +614,7 @@ function render() {
 function header() {
   const M = S.match, G = S.G;
   const dealN = M.deals.length + (S.phase === 'dealEnd' || S.phase === 'matchEnd' ? 0 : 1);
-  const goal = M.mode === 'deals' ? `Deal ${Math.min(dealN, 3)} of 3` : `Deal ${dealN} · play to 50`;
+  const goal = M.mode === 'deals' ? `Deal ${Math.min(dealN, 3)} of 3` : `Deal ${dealN} · play to ${playTo()}`;
   return `<header><div class="mark">${hammerSvg}Slag</div>
     <div class="meta">${S.online ? `Room ${S.online.view.code} · ` : ''}${goal} · Round ${G.round}</div>
     <div class="hdr-btns"><button class="btn small" id="b-rules">Rules</button><button class="btn small" id="b-quit">${S.online ? 'Leave' : 'New game'}</button></div></header>`;
@@ -822,7 +822,7 @@ function overlay() {
     const head = final
       ? (leaders.length > 1 ? `Tie: ${leaders.join(' and ')}` : leaders[0] === 'You' ? 'You win the match' : `${leaders[0]} wins the match`)
       : `Deal ${M.deals.length} scored`;
-    const sub = final ? `Lowest total wins: ${minT} points.` : (M.mode === 'deals' ? `${3 - M.deals.length} deal${3 - M.deals.length > 1 ? 's' : ''} left. Lowest total wins.` : `First to 50 ends the match. Lowest total wins.`);
+    const sub = final ? `Lowest total wins: ${minT} points.` : (M.mode === 'deals' ? `${3 - M.deals.length} deal${3 - M.deals.length > 1 ? 's' : ''} left. Lowest total wins.` : `First to ${playTo()} ends the match. Lowest total wins.`);
     return `<div class="sheet-bg"><div class="sheet rise" role="dialog" aria-modal="true" aria-labelledby="sc-h">
       <span class="eyebrow">${S.G.endReason}</span><h2 id="sc-h">${head}</h2><p class="hint" style="margin:0">${sub} ${RULES.scoring === 'count' ? 'Every card left scores 1 and every negative scores 3.' : (RULES.scoring === 'tiers' ? 'Cards score 1 (1–3), 3 (4–7) or 5 (8–10). ' : '') + 'Negatives score +5 unless paired with a same-suit card (green).'}</p>
       ${scoreTable(final)}
@@ -869,13 +869,13 @@ function splash() {
         <div class="field"><span class="lbl" id="l-mode">Match</span>
           <div class="seg" role="group" aria-labelledby="l-mode">
             <button data-mode="deals" aria-pressed="${S.mode === 'deals'}">Three deals</button>
-            <button data-mode="fifty" aria-pressed="${S.mode === 'fifty'}">Play to 50</button></div></div>
+            <button data-mode="fifty" aria-pressed="${S.mode === 'fifty'}">Play to ${playTo()}</button></div></div>
         <div class="field"><span class="lbl" id="l-scoring">Scoring</span>
           <div class="seg" role="group" aria-labelledby="l-scoring">
-            <button data-scoring="face" aria-pressed="${(S.scoring || 'face') === 'face'}">Face value</button>
+            <button data-scoring="face" aria-pressed="${S.scoring === 'face'}">Face value</button>
             <button data-scoring="count" aria-pressed="${S.scoring === 'count'}">Card count</button>
-            <button data-scoring="tiers" aria-pressed="${S.scoring === 'tiers'}">Tiers</button></div>
-          <span class="hint">${S.scoring === 'count' ? 'Every card left scores 1; every negative scores 3 (no pairing).' : S.scoring === 'tiers' ? '1–3 score 1, 4–7 score 3, 8–10 score 5. Negatives score +5 unless paired.' : 'Cards score their number. Negatives score +5 unless paired with the same color.'}</span></div>
+            <button data-scoring="tiers" aria-pressed="${(S.scoring || 'tiers') === 'tiers'}">Tiers</button></div>
+          <span class="hint">${S.scoring === 'count' ? 'Every card left scores 1; every negative scores 3 (no pairing).' : S.scoring !== 'face' ? '1–3 score 1, 4–7 score 3, 8–10 score 5. Negatives score +5 unless paired.' : 'Cards score their number. Negatives score +5 unless paired with the same color.'}</span></div>
         <div class="field"><span class="lbl" id="l-rule">Who wins a round</span>
           <div class="seg" role="group" aria-labelledby="l-rule">
             <button data-rule="high" aria-pressed="${!S.colorRule}">Highest card</button>
@@ -1030,7 +1030,7 @@ function onlineMessage(m) {
 function applyView(v) {
   const o = S.online; if (!o) return;
   o.view = v; o.lost = false;
-  RULES.colorCount = v.settings.colorRule; RULES.scoring = v.settings.scoring || 'face';
+  RULES.colorCount = v.settings.colorRule; RULES.scoring = v.settings.scoring || 'tiers';
   RULES.quench = !!v.settings.quench;
   RULES.usurper = false; RULES.six = !!v.settings.six;
   RULES.slag = !!v.settings.slag;
@@ -1118,8 +1118,8 @@ function lobbyHtml() {
       <div class="panel"><h2 class="ph">Players <span class="meta">${n} of 8</span></h2><ul class="plist">${rows}${waiting}</ul>
         ${host ? `<div class="actions"><button class="btn small" id="b-addbot" ${n >= 8 ? 'disabled' : ''}>Add a bot</button></div>` : ''}</div>
       <div class="panel rules-panel"><h2 class="ph">Rules</h2>
-        <div class="field"><span class="lbl">Match</span>${seg('mode', [['deals', 'Three deals'], ['fifty', 'Play to 50']], v.settings.mode)}</div>
-        <div class="field"><span class="lbl">Scoring</span>${seg('scoring', [['face', 'Face value'], ['count', 'Card count'], ['tiers', 'Tiers']], v.settings.scoring || 'face')}</div>
+        <div class="field"><span class="lbl">Match</span>${seg('mode', [['deals', 'Three deals'], ['fifty', 'Play to ' + playTo()]], v.settings.mode)}</div>
+        <div class="field"><span class="lbl">Scoring</span>${seg('scoring', [['face', 'Face value'], ['count', 'Card count'], ['tiers', 'Tiers']], v.settings.scoring || 'tiers')}</div>
         <div class="field"><span class="lbl">Who wins a round</span>${seg('rule', [['high', 'Highest card'], ['count', 'Most of the color']], v.settings.colorRule ? 'count' : 'high')}</div>
         <div class="field"><span class="lbl">Quench cards</span>${seg('quench', [['off', 'Off'], ['on', 'On']], v.settings.quench ? 'on' : 'off')}${v.settings.quench ? `<span class="hint">${quenchCount(Math.max(n, 2))} in the deck for ${n} player${n > 1 ? 's' : ''}.</span>` : ''}</div>
         <div class="field"><span class="lbl">Full Tang 6s</span>${seg('six', [['off', 'Off'], ['on', 'On']], v.settings.six ? 'on' : 'off')}</div>
@@ -1153,8 +1153,8 @@ function bindLobby() {
 }
 
 // remember setup choices for this viewer only
-function save() { try { localStorage.setItem('slag-setup', JSON.stringify({ bots: S.bots, mode: S.mode, colorRule: S.colorRule, scoring: S.scoring || 'face', ruleChosen: !!S.ruleChosen, quench: !!S.quench, six: !!S.six, slag: !!S.slag, matchNumber: !!S.matchNumber, oname: S.oname || '' })); } catch (e) {} }
-function load() { try { const v = JSON.parse(localStorage.getItem('slag-setup') || 'null'); if (v) { S.bots = v.bots || 3; S.mode = v.mode || 'deals'; S.scoring = ['face', 'count', 'tiers'].includes(v.scoring) ? v.scoring : 'face'; if (v.ruleChosen && typeof v.colorRule === 'boolean') { S.colorRule = v.colorRule; S.ruleChosen = true; } S.quench = !!v.quench; S.six = !!v.six; S.slag = !!v.slag; S.matchNumber = !!v.matchNumber; if (v.oname) S.oname = v.oname; } } catch (e) {} }
+function save() { try { localStorage.setItem('slag-setup', JSON.stringify({ bots: S.bots, mode: S.mode, colorRule: S.colorRule, scoring: S.scoring || 'tiers', ruleChosen: !!S.ruleChosen, quench: !!S.quench, six: !!S.six, slag: !!S.slag, matchNumber: !!S.matchNumber, oname: S.oname || '' })); } catch (e) {} }
+function load() { try { const v = JSON.parse(localStorage.getItem('slag-setup') || 'null'); if (v) { S.bots = v.bots || 3; S.mode = v.mode || 'deals'; S.scoring = ['face', 'count', 'tiers'].includes(v.scoring) ? v.scoring : 'tiers'; if (v.ruleChosen && typeof v.colorRule === 'boolean') { S.colorRule = v.colorRule; S.ruleChosen = true; } S.quench = !!v.quench; S.six = !!v.six; S.slag = !!v.slag; S.matchNumber = !!v.matchNumber; if (v.oname) S.oname = v.oname; } } catch (e) {} }
 
 // keep a game in progress across page updates
 const hot = window.claude && window.claude.hot;
@@ -1163,7 +1163,7 @@ function start(data) {
   if (data && data.S && data.S.phase) S = data.S;
   if (typeof S.colorRule !== 'boolean') S.colorRule = false;
   RULES.colorCount = S.colorRule;
-  RULES.scoring = S.scoring || 'face';
+  RULES.scoring = S.scoring || 'tiers';
   RULES.quench = !!S.quench;
   RULES.usurper = false; RULES.six = !!S.six;
   RULES.slag = !!S.slag;

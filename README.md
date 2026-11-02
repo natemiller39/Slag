@@ -91,9 +91,11 @@ Turn on **Matching number** on the start screen or in the lobby.
 
 Choose **Scoring** on the start screen or in the lobby:
 
-- **Face value** (default): as above.
+- **Tiers** (default): cards 1–3 score 1, 4–7 score 3, 8–10 score 5. Negatives score +5 unless paired, as in face value.
+- **Face value:** as above.
 - **Card count:** every card left in your hand scores 1, every negative scores 3. Negatives never pair.
-- **Tiers:** cards 1–3 score 1, 4–7 score 3, 8–10 score 5. Negatives score +5 unless paired, as in face value.
+
+"Play to" scales with the scoring: 25 with Tiers, 50 with Face value, 10 with Card count.
 
 ## Setup by player count
 
