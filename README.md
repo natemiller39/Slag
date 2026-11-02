@@ -29,7 +29,7 @@ The deal ends when someone runs out of cards or nobody can make the target.
 The game offers two rules on the setup screen.
 
 **Highest card** (default)
-Any card of the target's color beats every other color, and the highest one wins. Ties fall to the sister suit, then suit rank, then the starred copy.
+Any card of the target's color beats every other color, and the highest one wins. Ties fall to the sister suit, then suit rank, then the starred copy. A negative of the target's color counts as playing the color, but as the lowest card of it: it beats plays without the color and loses to any positive card of the color.
 
 **Most of the color**
 1. The play with the most cards of the target's color wins. Negatives of that color count.

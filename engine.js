@@ -69,11 +69,17 @@ const isUsurper = c => !!c && c.suit === 'usurper';
 // otherwise it is a plain colorless 3. (A card with a .pair would only work on its sister pair; not dealt.)
 const PAIRS = { red: ['red', 'orange'], green: ['green', 'blue'], purple: ['purple', 'grey'] };
 const usurperLive = (c, t, play) => isUsurper(c) && (!c.pair || PAIRS[c.pair].includes(t.suit)) && play.some(x => x.suit === t.suit && x.value > 0);
+const negColor = (play, t) => SUIT_ORDER.includes(t.suit) && play.some(c => c.value < 0 && c.suit === t.suit);
 function colorCount(play, target) { return play.filter(c => asColor(c, target, play)).length; }
 function topColor(play, target) { return Math.max(0, ...play.filter(c => c.value > 0 && asColor(c, target, play)).map(c => c.value)); }
 function playKey(play, target) {
-  const k = bestCard(play, target).key || (RULES.matchNumber ? [-1, 0, 0, 0, 0, 0] : [-1, 0, 0, 0, 0]);
-  return RULES.colorCount ? [colorCount(play, target), topColor(play, target), ...k.slice(1)] : k;
+  const k0 = bestCard(play, target).key || (RULES.matchNumber ? [-1, 0, 0, 0, 0, 0] : [-1, 0, 0, 0, 0]);
+  if (RULES.colorCount) return [colorCount(play, target), topColor(play, target), ...k0.slice(1)];
+  // A negative of the target's color counts as playing the color, as the lowest card of it:
+  // it beats plays without the color, and loses to any positive card of the color.
+  const k = k0.slice();
+  k[0] = k0[0] === 1 ? 2 : negColor(play, target) ? 1 : k0[0];
+  return k;
 }
 
 function isLegal(play, target) {
@@ -250,6 +256,10 @@ function explain(plays, made, w, t) {
     if (others.every(c => c.suit !== t.suit || c.value < wc.value)) return 'highest ' + tc + ' card';
     return 'tie on ' + cardLabel(wc).replace('★', '') + ', the starred copy wins';
   }
+  if (!RULES.colorCount && negColor(plays[w], t)) {
+    const neg = plays[w].find(c => c.value < 0 && c.suit === t.suit);
+    return made.some(i => i !== w && negColor(plays[i], t)) ? `${tc} only as a negative (${cardLabel(neg)}), and ${cardLabel(wc)} is the higher card` : `the only play with ${tc}, even as a negative (${cardLabel(neg)})`;
+  }
   const top = others.filter(c => c.value === wc.value);
   if (!top.length) return 'nobody played ' + tc + ', and ' + cardLabel(wc) + ' is the highest card';
   if (SUITS[t.suit].sister === wc.suit && top.every(c => c.suit !== wc.suit)) return 'tie on ' + wc.value + ', broken by the sister suit (' + SUITS[wc.suit].name + ')';
@@ -388,5 +398,5 @@ function botTarget(hand, rng, ctx) {
   return best;
 }
 
-if (typeof module !== 'undefined') module.exports = { isSix, sixCombo, loneMatch, numMatch, asColor, PAIRS, usurperLive, isSlag, isUsurper, RULES, playKey, colorCount, SUITS, SUIT_ORDER, setupFor, newDeal, resolveRound, setNextTarget, legalPlays, isLegal, bestCard, cardKey, cmpKey, scoreHand, botPlay, botTarget, botCtx, botMove, isQuench, quenchCount, STYLES, cardLabel, shuffle };
+if (typeof module !== 'undefined') module.exports = { negColor, isSix, sixCombo, loneMatch, numMatch, asColor, PAIRS, usurperLive, isSlag, isUsurper, RULES, playKey, colorCount, SUITS, SUIT_ORDER, setupFor, newDeal, resolveRound, setNextTarget, legalPlays, isLegal, bestCard, cardKey, cmpKey, scoreHand, botPlay, botTarget, botCtx, botMove, isQuench, quenchCount, STYLES, cardLabel, shuffle };
 
