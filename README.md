@@ -50,17 +50,15 @@ Turn on **Quench cards** on the start screen or in the lobby to shuffle 0-value 
 - One still in your hand at the end of a deal scores +5.
 - If a Quench is played when the draw pile is empty, the deal ends.
 
-## Option: Usurper card
+## Option: 6 combo
 
-Turn on **Usurper card** on the start screen or in the lobby to shuffle one colorless Usurper, worth 3, into the deck.
+Turn on **6 combo** on the start screen or in the lobby. (It replaces the old Usurper card.)
 
-- Play it like any 3. It counts as one of your 3 cards.
-- **With the target's color:** play it alongside a positive card of the target's color and you take the round outright.
-- **Without it:** the Usurper is just a plain 3 with no color. It doesn't change who wins.
-- **As the target:** the Usurper has no color, so the highest single card wins. The Usurper itself never counts as the high card. If the top plays tie on that card, nobody wins: everyone who made the number still discards, misses still draw, and a new target is flipped.
-- A Quench still beats everything: if both are played, nobody wins.
-- A winner can set the Usurper as the next target.
-- Left in your hand at the end of a deal, it scores 3.
+- A **6 combo** is a 6 plus at least one other card, with **no negatives**, where the 6 or another card in the play is the target's color.
+- A 6 combo **always wins the round.** On a Blue 7, Red 6 + Blue 1 beats Blue 10 + −3.
+- Add a negative and it's just a normal play.
+- If two players have a 6 combo, the normal order decides between them. A Quench still cancels the round.
+- On screen, every 6 glows when the option is on so it's easy to spot.
 
 ## Option: Slag card
 

@@ -54,7 +54,11 @@ function bestCard(play, target) {
 
 // Table rule: when on, the play with the most cards of the target's color wins (negatives count),
 // and the highest target-color card breaks ties. When off, only the single best card counts.
-const RULES = { colorCount: false, quench: false, usurper: false, slag: false, matchNumber: false };
+const RULES = { colorCount: false, quench: false, usurper: false, slag: false, matchNumber: false, six: false };
+// 6 combo option: a 6 plus at least one other card, no negatives, with the 6 or another card in the target's color.
+// It always wins the round; between two 6 combos the normal order decides. A Quench still cancels it.
+const isSix = c => !!c && c.value === 6 && SUIT_ORDER.includes(c.suit);
+const sixCombo = (p, t) => RULES.six && p.length >= 2 && SUIT_ORDER.includes(t.suit) && p.some(isSix) && p.some(c => c.suit === t.suit) && !p.some(c => c.value < 0);
 // Slag card option: one colorless 7. Played in a combo, whoever wins the round draws a penalty card (unless it's you).
 // As the target, color doesn't count, the best play wins, and the winner draws a penalty card. It never counts as the high card.
 const isSlag = c => !!c && c.suit === 'slag';
@@ -172,6 +176,13 @@ function resolveRound(G, plays) {
   res.usurperTarget = isUsurper(t);
   res.usurperPlayed = res.made.some(i => plays[i].some(c => usurperLive(c, t, plays[i])));
   if (res.quenched) res.reason = 'quenched';
+  else if (res.made.some(i => sixCombo(plays[i], t))) {
+    let sb = -1, sk = null;
+    for (const i of res.made) if (sixCombo(plays[i], t)) { const k = playKey(plays[i], t); if (!sk || cmpKey(k, sk) > 0) { sb = i; sk = k; } }
+    const rivals = res.made.filter(i => i !== sb && sixCombo(plays[i], t)).length;
+    res.winner = sb; res.winCard = bestCard(plays[sb], t).card; res.sixWin = true;
+    res.reason = rivals ? `6 combo, and ${cardLabel(res.winCard)} wins the clash of 6 combos` : best === sb ? '6 combo' : `6 combo beats ${G.players[best].name}'s play`;
+  }
   else if (res.usurperTarget) {
     // Usurper as the target: it has no color, so the highest single card wins; a tie on that card flips a new target.
     res.colorless = true;
@@ -323,6 +334,7 @@ function botPlay(hand, target, style, rng, ctx) {
     const shed = p.length * 2.2 + saved * 0.35;
     const key = playKey(p, target);
     let pWin = sims ? winShare(key, sims) : roughWin(key);
+    if (sixCombo(p, target)) pWin = Math.max(pWin, 0.9);
     if (p.some(isUsurper) && !isUsurper(target)) pWin = p.some(c => usurperLive(c, target, p)) ? 0.97 : pWin;
     let winVal = 2.2 + targetValue(rest); // the target card leaves your hand too
     if (isSlag(target)) winVal -= 4.5; // the winner of a Slag round draws a penalty card
@@ -376,5 +388,5 @@ function botTarget(hand, rng, ctx) {
   return best;
 }
 
-if (typeof module !== 'undefined') module.exports = { loneMatch, numMatch, asColor, PAIRS, usurperLive, isSlag, isUsurper, RULES, playKey, colorCount, SUITS, SUIT_ORDER, setupFor, newDeal, resolveRound, setNextTarget, legalPlays, isLegal, bestCard, cardKey, cmpKey, scoreHand, botPlay, botTarget, botCtx, botMove, isQuench, quenchCount, STYLES, cardLabel, shuffle };
+if (typeof module !== 'undefined') module.exports = { isSix, sixCombo, loneMatch, numMatch, asColor, PAIRS, usurperLive, isSlag, isUsurper, RULES, playKey, colorCount, SUITS, SUIT_ORDER, setupFor, newDeal, resolveRound, setNextTarget, legalPlays, isLegal, bestCard, cardKey, cmpKey, scoreHand, botPlay, botTarget, botCtx, botMove, isQuench, quenchCount, STYLES, cardLabel, shuffle };
 

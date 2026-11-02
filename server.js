@@ -58,11 +58,11 @@ const isAway = (s, now = Date.now()) => !s.bot && !s.connected && now - (s.goneA
 const playsForSelf = s => !s.bot && (s.connected || Date.now() - (s.goneAt || 0) <= GRACE_MS);
 
 function send(ws, msg) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(msg)); }
-function useRules(room) { E.RULES.colorCount = room.settings.colorRule; E.RULES.quench = !!room.settings.quench; E.RULES.usurper = !!room.settings.usurper; E.RULES.slag = !!room.settings.slag; E.RULES.matchNumber = !!room.settings.matchNumber; }
+function useRules(room) { E.RULES.colorCount = room.settings.colorRule; E.RULES.quench = !!room.settings.quench; E.RULES.usurper = false; E.RULES.six = !!room.settings.six; E.RULES.slag = !!room.settings.slag; E.RULES.matchNumber = !!room.settings.matchNumber; }
 
 function createRoom(name) {
   const room = {
-    code: newCode(), hostToken: null, seats: [], settings: { colorRule: false, mode: 'deals', quench: false, usurper: false, slag: false, matchNumber: false },
+    code: newCode(), hostToken: null, seats: [], settings: { colorRule: false, mode: 'deals', quench: false, usurper: false, slag: false, matchNumber: false, six: false },
     phase: 'lobby', match: null, G: null, plays: [], submitted: [], last: null, picker: -1,
     ready: new Set(), revealAt: 0, dealScores: null, note: null, lastActive: Date.now(),
   };
@@ -271,7 +271,7 @@ function handle(ws, msg) {
       if (!isHost || room.phase !== 'lobby') return;
       if (typeof msg.colorRule === 'boolean') room.settings.colorRule = msg.colorRule;
       if (typeof msg.quench === 'boolean') room.settings.quench = msg.quench;
-      if (typeof msg.usurper === 'boolean') room.settings.usurper = msg.usurper;
+      if (typeof msg.six === 'boolean') room.settings.six = msg.six;
       if (typeof msg.slag === 'boolean') room.settings.slag = msg.slag;
       if (typeof msg.matchNumber === 'boolean') room.settings.matchNumber = msg.matchNumber;
       if (msg.mode === 'deals' || msg.mode === 'fifty') room.settings.mode = msg.mode;

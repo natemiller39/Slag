@@ -171,6 +171,8 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 }
 .sd-crown svg { width: 22px; height: 17px; }
 .sd-crown.sd-slag { background: linear-gradient(180deg, #ffb347, #c4561a); color: #2a1206; box-shadow: 0 4px 14px rgba(0, 0, 0, .55), 0 0 22px rgba(255, 120, 30, .7); }
+.card .sixmark { position: absolute; inset: 0; border-radius: inherit; pointer-events: none; box-shadow: inset 0 0 0 3px #ffc067, inset 0 0 14px rgba(255, 150, 40, .85); }
+.sd-crown.sd-six { background: linear-gradient(180deg, #ffe08a, #ff8a1a); color: #2a1406; }
 .sd-crown.sd-quench { background: linear-gradient(180deg, #a8e3f5, #2e86ab); color: #0b2633; box-shadow: 0 4px 14px rgba(0, 0, 0, .55), 0 0 22px rgba(80, 180, 230, .6); }
 .sd-tile.quench { border: 2px solid #5fb8dc; background: radial-gradient(ellipse at 50% 0%, rgba(120, 200, 240, .22), rgba(46, 134, 171, .06) 70%); box-shadow: 0 0 30px rgba(80, 180, 230, .35); padding-top: 22px; }
 .sd-tile.quench .sd-name { color: #a8e3f5; }
@@ -508,6 +510,7 @@ function cardEl(c, cls = '', extra = '') {
 }
 function badges(c, mini, paired) {
   let s = c.star ? '<span class="star" aria-hidden="true">★</span>' : '';
+  if (RULES.six && isSix(c)) s += '<span class="sixmark" aria-hidden="true"></span>';
   if (c.value < 0) {
     s += `<span class="negmark" aria-hidden="true">${neg(c.value)}</span>`;
     if (!mini) s += paired ? '<span class="fivemark paired" title="Paired with a same-suit card: subtracts at scoring">paired</span>' : `<span class="fivemark" title="Scores +5 at the end unless paired with a same-suit card${c.suit === 'black' ? ' (black never pairs)' : ''}">+5</span>`;
@@ -523,7 +526,7 @@ const hammerSvg = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4.5h1
 
 // ===== flow =====
 function startMatch() {
-  RULES.colorCount = S.colorRule; RULES.quench = !!S.quench; RULES.usurper = !!S.usurper; RULES.slag = !!S.slag; RULES.matchNumber = !!S.matchNumber;
+  RULES.colorCount = S.colorRule; RULES.quench = !!S.quench; RULES.usurper = false; RULES.six = !!S.six; RULES.slag = !!S.slag; RULES.matchNumber = !!S.matchNumber;
   const names = ['You', ...BOTS.slice(0, S.bots)];
   const styles = names.map((_, i) => i === 0 ? null : STYLES[(i - 1) % 3]);
   S.match = { names, styles, totals: names.map(() => 0), deals: [], mode: S.mode };
@@ -710,7 +713,7 @@ function showdownHtml() {
       <div class="sd-label"><span class="sd-name">${p.name}</span>${cap ? `<span class="sd-cap">${cap}</span>` : ''}</div>${cards}</div>`;
   }).join('');
   const shown = preview || t;
-  const title = preview ? `Next target <b>${neg(shown.value)}</b> ${SUITS[shown.suit].name}` : res.usurperTie ? `Usurper tie · new target` : res.colorless ? `Usurper · color doesn't count · make <b>${neg(t.value)}</b>` : res.seized ? `Usurper seizes the round · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : res.dethroned >= 0 && res.dethroned !== undefined ? `Usurper · the leader is dethroned · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : res.slagTarget ? `Slag · color doesn't count · make <b>${neg(t.value)}</b> · the winner draws` : res.slagHit >= 0 ? `Slag card · the winner draws · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : res.quenched ? `Quenched · nobody wins <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : `Showdown · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}`;
+  const title = preview ? `Next target <b>${neg(shown.value)}</b> ${SUITS[shown.suit].name}` : res.usurperTie ? `Usurper tie · new target` : res.colorless ? `Usurper · color doesn't count · make <b>${neg(t.value)}</b>` : res.seized ? `Usurper seizes the round · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : res.dethroned >= 0 && res.dethroned !== undefined ? `Usurper · the leader is dethroned · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : res.sixWin ? `6 combo · always the strongest · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : res.slagTarget ? `Slag · color doesn't count · make <b>${neg(t.value)}</b> · the winner draws` : res.slagHit >= 0 ? `Slag card · the winner draws · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : res.quenched ? `Quenched · nobody wins <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : `Showdown · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}`;
   return `<section class="showdown ${wide ? '' : 'tight'}" style="--cols:${cols};--rows:${rows}" aria-label="Round results">
     <div class="sd-head">${cardEl(shown, '')}<span class="sd-title">${title}</span></div>
     <div class="sd-grid">${tiles}</div></section>`;
@@ -728,6 +731,8 @@ function meterText() {
   if (sel.filter(c => c.value < 0).length > 1) return `${expr} <span class="no">· only one negative per play</span>`;
   if (sel.filter(isQuench).length > 1) return `${expr} <span class="no">· only one Quench per play</span>`;
   if (loneMatch(sel, t)) return `${expr} <span class="ok">· makes ${t.value}</span> <span class="hint">· matching number: your ${cardLabel(sel[0])} counts as ${SUITS[t.suit].name}</span>`;
+  if (sum === t.value && sixCombo(sel, t)) return `${expr} <span class="ok">· makes ${t.value}</span> <span class="hint">· 6 combo: this always wins (unless a better 6 combo shows up)</span>`;
+  if (RULES.six && sum === t.value && sel.some(isSix) && sel.some(c => c.value < 0) && sel.length >= 2) return `${expr} <span class="ok">· makes ${t.value}</span> <span class="hint">· the negative breaks the 6 combo</span>`;
   if (isSlag(t) && sum === t.value && sel.some(c => c.value > 0)) return `${expr} <span class="ok">· makes ${t.value}</span> <span class="hint">· Slag target: highest card wins, and the winner draws a penalty card</span>`;
   if (sel.some(isSlag) && sum === t.value) return `${expr} <span class="ok">· makes ${t.value}</span> <span class="hint">· Slag: whoever wins this round draws a penalty card (unless it's you)</span>`;
   if (isUsurper(t) && sum === t.value && sel.some(c => c.value > 0)) return `${expr} <span class="ok">· makes ${t.value}</span> <span class="hint">· Usurper target: color doesn't count, highest card wins</span>`;
@@ -832,7 +837,7 @@ function rulesHtml() {
     <li>The best play wins. ${RULES.colorCount ? "The play with the most cards of the target's color wins (negatives count). If that's tied, the highest card of the target's color wins." : "Any play with a card of the target's color beats every play without one, then the higher card wins."}</li>
     <li>Everyone who made it discards those cards. Anyone who passed or missed draws one card.</li>
     <li>The winner sets the next target with a card from their hand.</li>
-  </ol>${RULES.matchNumber ? `<h3>Matching number</h3><p>Played alone, the sister-color card with the same number as the middle card counts as the middle color. On a Blue 6, a Green 6 played by itself counts as a Blue 6, so it beats lower Blue cards. In a combo it is just a Green 6. Higher Blue cards still beat it, and a real Blue 6 wins an exact tie.</p>` : ''}${RULES.slag ? `<h3>Slag card</h3><p>One colorless Slag card (worth 7) is in the deck. Play it in a combo and whoever wins that round draws a penalty card (unless that's you). It never counts as your high card. When the Slag card is the target, make 7: color doesn't count, the best play wins, and the winner draws a penalty card. A winner can set it as the next target to pass the curse along. Stuck with it at the end, it scores 7.</p>` : ''}${RULES.usurper ? `<h3>Usurper</h3><p>One colorless Usurper card (worth 3) is in the deck. Play it alongside a card of the target's color and you take the round outright. Otherwise it's just a plain 3 with no color: it doesn't change who wins. When a Usurper is the target it has no color, so the highest single card wins; if that card is tied, nobody wins, plays still discard, misses still draw, and a new target is flipped. Held at the end, it scores 3.</p>` : ''}${RULES.quench ? `<h3>Quench cards</h3><p>Quench is a colorless 0 card shuffled into the deck (1 at 2–3 players, 2 at 4–5, 3 at 6–8). Add it to a play that makes the number; it uses one of your 3 card slots. When a Quench is revealed, nobody wins the round: plays still discard, misses still draw, and a new target is flipped. A Quench never becomes the target, and one left in your hand at the end scores +5. If a Quench is played when the draw pile is empty, the deal ends.</p>` : ''}
+  </ol>${RULES.matchNumber ? `<h3>Matching number</h3><p>Played alone, the sister-color card with the same number as the middle card counts as the middle color. On a Blue 6, a Green 6 played by itself counts as a Blue 6, so it beats lower Blue cards. In a combo it is just a Green 6. Higher Blue cards still beat it, and a real Blue 6 wins an exact tie.</p>` : ''}${RULES.slag ? `<h3>Slag card</h3><p>One colorless Slag card (worth 7) is in the deck. Play it in a combo and whoever wins that round draws a penalty card (unless that's you). It never counts as your high card. When the Slag card is the target, make 7: color doesn't count, the best play wins, and the winner draws a penalty card. A winner can set it as the next target to pass the curse along. Stuck with it at the end, it scores 7.</p>` : ''}${RULES.six ? `<h3>6 combo</h3><p>A 6 plus at least one other card, with no negatives, where the 6 or another card is the middle color, always wins the round. On a Blue 7, Red 6 + Blue 1 beats Blue 10 + −3. Add a negative and it's just a normal play. If two players have a 6 combo, the normal order decides. A Quench still cancels it.</p>` : ''}${RULES.quench ? `<h3>Quench cards</h3><p>Quench is a colorless 0 card shuffled into the deck (1 at 2–3 players, 2 at 4–5, 3 at 6–8). Add it to a play that makes the number; it uses one of your 3 card slots. When a Quench is revealed, nobody wins the round: plays still discard, misses still draw, and a new target is flipped. A Quench never becomes the target, and one left in your hand at the end scores +5. If a Quench is played when the draw pile is empty, the deal ends.</p>` : ''}
   <h3>Ties</h3>
   <p>${RULES.colorCount ? 'After the color count and the highest target-color card, compare' : 'Compare'} each play's best positive card: target color, then value, then the target's sister suit, then suit rank (Red 6, Orange 5, Green 4, Blue 3, Purple 2, Grey 1), then the starred copy.</p>
   <h3>Scoring</h3>
@@ -871,11 +876,11 @@ function splash() {
             <button data-quench="off" aria-pressed="${!S.quench}">Off</button>
             <button data-quench="on" aria-pressed="${!!S.quench}">On</button></div>
           ${S.quench ? `<span class="hint">${quenchCount(n)} Quench card${quenchCount(n) > 1 ? 's' : ''} in the deck. Tuck one into a play and nobody wins that round.</span>` : ''}</div>
-        <div class="field"><span class="lbl" id="l-usurper">Usurper card</span>
-          <div class="seg" role="group" aria-labelledby="l-usurper">
-            <button data-usurper="off" aria-pressed="${!S.usurper}">Off</button>
-            <button data-usurper="on" aria-pressed="${!!S.usurper}">On</button></div>
-          ${S.usurper ? '<span class="hint">One colorless 3. Play it with the target color to take the round.</span>' : ''}</div>
+        <div class="field"><span class="lbl" id="l-six">6 combo</span>
+          <div class="seg" role="group" aria-labelledby="l-six">
+            <button data-six="off" aria-pressed="${!S.six}">Off</button>
+            <button data-six="on" aria-pressed="${!!S.six}">On</button></div>
+          ${S.six ? '<span class="hint">A 6 plus another card, with the middle color and no negatives, always wins.</span>' : ''}</div>
       <div class="field"><span class="lbl" id="l-slag">Slag card</span>
         <div class="seg" role="group" aria-labelledby="l-slag">
           <button data-slag="off" aria-pressed="${!S.slag}">Off</button>
@@ -897,7 +902,7 @@ function bindSplash() {
   document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { S.mode = b.dataset.mode; save(); render(); });
   document.querySelectorAll('[data-rule]').forEach(b => b.onclick = () => { S.colorRule = b.dataset.rule === 'count'; S.ruleChosen = true; RULES.colorCount = S.colorRule; save(); render(); });
   document.querySelectorAll('[data-quench]').forEach(b => b.onclick = () => { S.quench = b.dataset.quench === 'on'; RULES.quench = S.quench; save(); render(); });
-  document.querySelectorAll('[data-usurper]').forEach(b => b.onclick = () => { S.usurper = b.dataset.usurper === 'on'; RULES.usurper = S.usurper; save(); render(); });
+  document.querySelectorAll('[data-six]').forEach(b => b.onclick = () => { S.six = b.dataset.six === 'on'; RULES.six = S.six; save(); render(); });
   document.querySelectorAll('[data-slag]').forEach(b => b.onclick = () => { S.slag = b.dataset.slag === 'on'; RULES.slag = S.slag; save(); render(); });
   document.querySelectorAll('[data-match]').forEach(b => b.onclick = () => { S.matchNumber = b.dataset.match === 'on'; RULES.matchNumber = S.matchNumber; save(); render(); });
   $('#b-start').onclick = startMatch;
@@ -1016,7 +1021,7 @@ function applyView(v) {
   o.view = v; o.lost = false;
   RULES.colorCount = v.settings.colorRule;
   RULES.quench = !!v.settings.quench;
-  RULES.usurper = !!v.settings.usurper;
+  RULES.usurper = false; RULES.six = !!v.settings.six;
   RULES.slag = !!v.settings.slag;
   RULES.matchNumber = !!v.settings.matchNumber;
   if (v.phase === 'lobby') { S.phase = 'lobby'; S.G = null; S.match = null; S.last = null; S.confirmQuit = false; return render(); }
@@ -1105,7 +1110,7 @@ function lobbyHtml() {
         <div class="field"><span class="lbl">Match</span>${seg('mode', [['deals', 'Three deals'], ['fifty', 'Play to 50']], v.settings.mode)}</div>
         <div class="field"><span class="lbl">Who wins a round</span>${seg('rule', [['high', 'Highest card'], ['count', 'Most of the color']], v.settings.colorRule ? 'count' : 'high')}</div>
         <div class="field"><span class="lbl">Quench cards</span>${seg('quench', [['off', 'Off'], ['on', 'On']], v.settings.quench ? 'on' : 'off')}${v.settings.quench ? `<span class="hint">${quenchCount(Math.max(n, 2))} in the deck for ${n} player${n > 1 ? 's' : ''}.</span>` : ''}</div>
-        <div class="field"><span class="lbl">Usurper card</span>${seg('usurper', [['off', 'Off'], ['on', 'On']], v.settings.usurper ? 'on' : 'off')}</div>
+        <div class="field"><span class="lbl">6 combo</span>${seg('six', [['off', 'Off'], ['on', 'On']], v.settings.six ? 'on' : 'off')}</div>
         <div class="field"><span class="lbl">Slag card</span>${seg('slag', [['off', 'Off'], ['on', 'On']], v.settings.slag ? 'on' : 'off')}</div>
         <div class="field"><span class="lbl">Matching number</span>${seg('match', [['off', 'Off'], ['on', 'On']], v.settings.matchNumber ? 'on' : 'off')}</div>
         ${host ? '' : '<span class="hint">The host sets the rules.</span>'}</div>
@@ -1128,15 +1133,15 @@ function bindLobby() {
   document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => onlineSend({ t: 'settings', mode: b.dataset.mode }));
   document.querySelectorAll('[data-rule]').forEach(b => b.onclick = () => onlineSend({ t: 'settings', colorRule: b.dataset.rule === 'count' }));
   document.querySelectorAll('[data-quench]').forEach(b => b.onclick = () => onlineSend({ t: 'settings', quench: b.dataset.quench === 'on' }));
-  document.querySelectorAll('[data-usurper]').forEach(b => b.onclick = () => onlineSend({ t: 'settings', usurper: b.dataset.usurper === 'on' }));
+  document.querySelectorAll('[data-six]').forEach(b => b.onclick = () => onlineSend({ t: 'settings', six: b.dataset.six === 'on' }));
   document.querySelectorAll('[data-slag]').forEach(b => b.onclick = () => onlineSend({ t: 'settings', slag: b.dataset.slag === 'on' }));
   document.querySelectorAll('[data-match]').forEach(b => b.onclick = () => onlineSend({ t: 'settings', matchNumber: b.dataset.match === 'on' }));
   bindOverlay();
 }
 
 // remember setup choices for this viewer only
-function save() { try { localStorage.setItem('slag-setup', JSON.stringify({ bots: S.bots, mode: S.mode, colorRule: S.colorRule, ruleChosen: !!S.ruleChosen, quench: !!S.quench, usurper: !!S.usurper, slag: !!S.slag, matchNumber: !!S.matchNumber, oname: S.oname || '' })); } catch (e) {} }
-function load() { try { const v = JSON.parse(localStorage.getItem('slag-setup') || 'null'); if (v) { S.bots = v.bots || 3; S.mode = v.mode || 'deals'; if (v.ruleChosen && typeof v.colorRule === 'boolean') { S.colorRule = v.colorRule; S.ruleChosen = true; } S.quench = !!v.quench; S.usurper = !!v.usurper; S.slag = !!v.slag; S.matchNumber = !!v.matchNumber; if (v.oname) S.oname = v.oname; } } catch (e) {} }
+function save() { try { localStorage.setItem('slag-setup', JSON.stringify({ bots: S.bots, mode: S.mode, colorRule: S.colorRule, ruleChosen: !!S.ruleChosen, quench: !!S.quench, six: !!S.six, slag: !!S.slag, matchNumber: !!S.matchNumber, oname: S.oname || '' })); } catch (e) {} }
+function load() { try { const v = JSON.parse(localStorage.getItem('slag-setup') || 'null'); if (v) { S.bots = v.bots || 3; S.mode = v.mode || 'deals'; if (v.ruleChosen && typeof v.colorRule === 'boolean') { S.colorRule = v.colorRule; S.ruleChosen = true; } S.quench = !!v.quench; S.six = !!v.six; S.slag = !!v.slag; S.matchNumber = !!v.matchNumber; if (v.oname) S.oname = v.oname; } } catch (e) {} }
 
 // keep a game in progress across page updates
 const hot = window.claude && window.claude.hot;
@@ -1146,7 +1151,7 @@ function start(data) {
   if (typeof S.colorRule !== 'boolean') S.colorRule = false;
   RULES.colorCount = S.colorRule;
   RULES.quench = !!S.quench;
-  RULES.usurper = !!S.usurper;
+  RULES.usurper = false; RULES.six = !!S.six;
   RULES.slag = !!S.slag;
   RULES.matchNumber = !!S.matchNumber;
   const q = new URLSearchParams(location.search).get('join');
