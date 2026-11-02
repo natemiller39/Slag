@@ -54,7 +54,7 @@ function bestCard(play, target) {
 
 // Table rule: when on, the play with the most cards of the target's color wins (negatives count),
 // and the highest target-color card breaks ties. When off, only the single best card counts.
-const RULES = { colorCount: false, quench: false, usurper: false, slag: false, matchNumber: false, six: false };
+const RULES = { scoring: 'face', colorCount: false, quench: false, usurper: false, slag: false, matchNumber: false, six: false };
 // Full Tang 6s option: every 6 is a blade. A 6 plus at least one other card, no negatives, with the 6 or another card in the target's color.
 // It always wins the round; between two Full Tangs the normal order decides. A Quench still cancels it.
 const isSix = c => !!c && c.value === 6 && SUIT_ORDER.includes(c.suit);
@@ -104,19 +104,26 @@ function legalPlays(hand, target) {
 }
 
 // Scoring: positives score value; a negative paired with a same-suit positive subtracts, else +5. Black never pairs.
+// Scoring setting: 'face' (card values; negatives +5 unless paired), 'count' (every card 1, every negative 3, no pairing),
+// or 'tiers' (1–3 score 1, 4–7 score 3, 8–10 score 5; negatives as in 'face').
+const tierPts = v => (v <= 3 ? 1 : v <= 7 ? 3 : 5);
+function cardPts(c) { const m = RULES.scoring; return m === 'count' ? 1 : m === 'tiers' ? tierPts(c.value) : c.value; }
+function negPts() { return RULES.scoring === 'count' ? 3 : 5; }
 function scoreHand(hand) {
-  const lines = []; let total = 0;
+  let total = 0;
   const pos = hand.filter(c => c.value > 0), neg = hand.filter(c => c.value < 0).sort((a, b) => a.value - b.value);
   const avail = {}; pos.forEach(c => { avail[c.suit] = (avail[c.suit] || 0) + 1; });
-  pos.forEach(c => { total += c.value; });
+  const posLines = pos.map(c => ({ card: c, pts: cardPts(c) }));
+  posLines.forEach(x => { total += x.pts; });
   const negLines = [];
   for (const c of neg) {
-    if (c.suit !== 'black' && avail[c.suit] > 0) { avail[c.suit]--; total += c.value; negLines.push({ card: c, pts: c.value, paired: true }); }
-    else { total += 5; negLines.push({ card: c, pts: 5, paired: false }); }
+    if (RULES.scoring !== 'count' && c.suit !== 'black' && avail[c.suit] > 0) { avail[c.suit]--; total += c.value; negLines.push({ card: c, pts: c.value, paired: true }); }
+    else { total += negPts(); negLines.push({ card: c, pts: negPts(), paired: false }); }
   }
-  const qn = hand.filter(isQuench).map(c => ({ card: c, pts: 5 }));
-  total += 5 * qn.length;
-  return { total, pos: pos.map(c => ({ card: c, pts: c.value })), neg: negLines, quench: qn };
+  const qp = RULES.scoring === 'count' || RULES.scoring === 'tiers' ? 1 : 5;
+  const qn = hand.filter(isQuench).map(c => ({ card: c, pts: qp }));
+  total += qp * qn.length;
+  return { total, pos: posLines, neg: negLines, quench: qn };
 }
 
 // ===== Game state =====
@@ -398,5 +405,5 @@ function botTarget(hand, rng, ctx) {
   return best;
 }
 
-if (typeof module !== 'undefined') module.exports = { negColor, isSix, sixCombo, loneMatch, numMatch, asColor, PAIRS, usurperLive, isSlag, isUsurper, RULES, playKey, colorCount, SUITS, SUIT_ORDER, setupFor, newDeal, resolveRound, setNextTarget, legalPlays, isLegal, bestCard, cardKey, cmpKey, scoreHand, botPlay, botTarget, botCtx, botMove, isQuench, quenchCount, STYLES, cardLabel, shuffle };
+if (typeof module !== 'undefined') module.exports = { tierPts, cardPts, negColor, isSix, sixCombo, loneMatch, numMatch, asColor, PAIRS, usurperLive, isSlag, isUsurper, RULES, playKey, colorCount, SUITS, SUIT_ORDER, setupFor, newDeal, resolveRound, setNextTarget, legalPlays, isLegal, bestCard, cardKey, cmpKey, scoreHand, botPlay, botTarget, botCtx, botMove, isQuench, quenchCount, STYLES, cardLabel, shuffle };
 

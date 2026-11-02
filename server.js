@@ -58,11 +58,11 @@ const isAway = (s, now = Date.now()) => !s.bot && !s.connected && now - (s.goneA
 const playsForSelf = s => !s.bot && (s.connected || Date.now() - (s.goneAt || 0) <= GRACE_MS);
 
 function send(ws, msg) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(msg)); }
-function useRules(room) { E.RULES.colorCount = room.settings.colorRule; E.RULES.quench = !!room.settings.quench; E.RULES.usurper = false; E.RULES.six = !!room.settings.six; E.RULES.slag = !!room.settings.slag; E.RULES.matchNumber = !!room.settings.matchNumber; }
+function useRules(room) { E.RULES.colorCount = room.settings.colorRule; E.RULES.scoring = room.settings.scoring || 'face'; E.RULES.quench = !!room.settings.quench; E.RULES.usurper = false; E.RULES.six = !!room.settings.six; E.RULES.slag = !!room.settings.slag; E.RULES.matchNumber = !!room.settings.matchNumber; }
 
 function createRoom(name) {
   const room = {
-    code: newCode(), hostToken: null, seats: [], settings: { colorRule: false, mode: 'deals', quench: false, usurper: false, slag: false, matchNumber: false, six: false },
+    code: newCode(), hostToken: null, seats: [], settings: { colorRule: false, scoring: 'face', mode: 'deals', quench: false, usurper: false, slag: false, matchNumber: false, six: false },
     phase: 'lobby', match: null, G: null, plays: [], submitted: [], last: null, picker: -1,
     ready: new Set(), revealAt: 0, dealScores: null, note: null, lastActive: Date.now(),
   };
@@ -157,6 +157,7 @@ function maybeAdvance(room) {
 }
 function endDeal(room) {
   const M = room.match, G = room.G;
+  useRules(room);
   const scores = G.players.map(p => E.scoreHand(p.hand));
   scores.forEach((s, i) => { M.totals[i] += s.total; });
   M.deals.push(scores.map(s => s.total));
@@ -270,6 +271,7 @@ function handle(ws, msg) {
     case 'settings':
       if (!isHost || room.phase !== 'lobby') return;
       if (typeof msg.colorRule === 'boolean') room.settings.colorRule = msg.colorRule;
+      if (['face', 'count', 'tiers'].includes(msg.scoring)) room.settings.scoring = msg.scoring;
       if (typeof msg.quench === 'boolean') room.settings.quench = msg.quench;
       if (typeof msg.six === 'boolean') room.settings.six = msg.six;
       if (typeof msg.slag === 'boolean') room.settings.slag = msg.slag;

@@ -87,6 +87,14 @@ Turn on **Matching number** on the start screen or in the lobby.
 - Black negatives never pair.
 - Lowest score wins. Play three deals, or play until someone reaches 50.
 
+### Scoring options
+
+Choose **Scoring** on the start screen or in the lobby:
+
+- **Face value** (default): as above.
+- **Card count:** every card left in your hand scores 1, every negative scores 3. Negatives never pair.
+- **Tiers:** cards 1–3 score 1, 4–7 score 3, 8–10 score 5. Negatives score +5 unless paired, as in face value.
+
 ## Setup by player count
 
 | Players | Main deck | Cards each | Negative sets |
