@@ -171,6 +171,10 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 }
 .sd-crown svg { width: 22px; height: 17px; }
 .sd-crown.sd-slag { background: linear-gradient(180deg, #ffb347, #c4561a); color: #2a1206; box-shadow: 0 4px 14px rgba(0, 0, 0, .55), 0 0 22px rgba(255, 120, 30, .7); }
+.card .ftband { position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; align-items: baseline; gap: .35em; padding: .28em 0 .32em;
+  background: linear-gradient(180deg, #2a1406, #120a05); color: #ffc067; font-family: var(--f-display); font-size: max(7px, calc(var(--w, var(--card-w)) * .088)); letter-spacing: .04em; overflow: hidden; line-height: 1; white-space: nowrap; pointer-events: none; }
+.card .ftband b { font-family: var(--f-body); font-weight: 800; color: #fff3df; background: #b3261e; border-radius: .3em; padding: 0 .35em; letter-spacing: 0; text-decoration: line-through; text-decoration-thickness: .14em; }
+@media (max-width: 640px) { .hand .card .ftband { font-size: 0; gap: 0; } .hand .card .ftband b { font-size: 9px; } }
 .card .sixmark { position: absolute; inset: 0; border-radius: inherit; pointer-events: none; box-shadow: inset 0 0 0 3px #ffc067, inset 0 0 14px rgba(255, 150, 40, .85); }
 .sd-crown.sd-six { background: linear-gradient(180deg, #ffe08a, #ff8a1a); color: #2a1406; }
 .sd-crown.sd-quench { background: linear-gradient(180deg, #a8e3f5, #2e86ab); color: #0b2633; box-shadow: 0 4px 14px rgba(0, 0, 0, .55), 0 0 22px rgba(80, 180, 230, .6); }
@@ -510,7 +514,7 @@ function cardEl(c, cls = '', extra = '') {
 }
 function badges(c, mini, paired) {
   let s = c.star ? '<span class="star" aria-hidden="true">★</span>' : '';
-  if (RULES.six && isSix(c)) s += '<span class="sixmark" aria-hidden="true"></span>';
+  if (RULES.six && isSix(c)) s += '<span class="sixmark" aria-hidden="true"></span>' + (mini ? '' : '<span class="ftband" title="Full Tang: a 6 plus another card, with the middle color and no negatives, always wins">FULL TANG<b>−</b></span>');
   if (c.value < 0) {
     s += `<span class="negmark" aria-hidden="true">${neg(c.value)}</span>`;
     if (!mini) s += paired ? '<span class="fivemark paired" title="Paired with a same-suit card: subtracts at scoring">paired</span>' : `<span class="fivemark" title="Scores +5 at the end unless paired with a same-suit card${c.suit === 'black' ? ' (black never pairs)' : ''}">+5</span>`;
