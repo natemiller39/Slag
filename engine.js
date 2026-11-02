@@ -54,8 +54,8 @@ const isSlag = c => !!c && c.suit === 'slag';
 // Usurper option: one colorless 3. As the target, color doesn't count. Played with a card of the target's color, it takes the round outright;
 // played without one, it is just a colorless 3.
 const isUsurper = c => !!c && c.suit === 'usurper';
-// Three Usurpers, one per sister pair. A Usurper takes the round only when the target is one of its two colors
-// and the same play holds a positive card of the target's color. Otherwise it is a plain colorless 3.
+// One colorless Usurper. It takes the round when the same play holds a positive card of the target's color;
+// otherwise it is a plain colorless 3. (A card with a .pair would only work on its sister pair; not dealt.)
 const PAIRS = { red: ['red', 'orange'], green: ['green', 'blue'], purple: ['purple', 'grey'] };
 const usurperLive = (c, t, play) => isUsurper(c) && (!c.pair || PAIRS[c.pair].includes(t.suit)) && play.some(x => x.suit === t.suit && x.value > 0);
 function colorCount(play, target) { return play.filter(c => c.suit === target.suit).length; }
@@ -111,7 +111,7 @@ function newDeal(names, rng, opts = {}) {
     main.push(mkCard(s, v, cfg.doubles && v <= 5 && !(cfg.singleOnly && cfg.singleOnly.includes(s))));
     if (cfg.doubles && v <= 5 && !(cfg.singleOnly && cfg.singleOnly.includes(s))) main.push(mkCard(s, v, false));
   }
-  if (RULES.usurper) for (const k of Object.keys(PAIRS)) if (cfg.suits.includes(k)) { const c = mkCard('usurper', 3, false); c.pair = k; main.push(c); }
+  if (RULES.usurper) main.push(mkCard('usurper', 3, false));
   if (RULES.slag) main.push(mkCard('slag', 7, false));
   if (RULES.quench) for (let k = 0; k < quenchCount(n); k++) main.push(mkCard('quench', 0, false));
   shuffle(main, rng);

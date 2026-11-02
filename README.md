@@ -50,15 +50,16 @@ Turn on **Quench cards** on the start screen or in the lobby to shuffle 0-value 
 - One still in your hand at the end of a deal scores +5.
 - If a Quench is played when the draw pile is empty, the deal ends.
 
-## Option: Usurper cards
+## Option: Usurper card
 
-Turn on **Usurper cards** on the start screen or in the lobby to shuffle three Usurpers, worth 3, into the deck: one for each sister pair (Red/Orange, Green/Blue, Purple/Grey). With 2 players, only the Red/Orange and Green/Blue Usurpers are used.
+Turn on **Usurper card** on the start screen or in the lobby to shuffle one colorless Usurper, worth 3, into the deck.
 
-- **Taking the round:** when the target is one of a Usurper's two colors, play it alongside a positive card of the target's color and you take the round outright. Only one Usurper can match any target, so two players can never both take the round.
-- **Otherwise:** it's just a plain 3 with no color. It doesn't change who wins.
-- **As the target:** it has no color, so the highest single card wins. The Usurper itself never counts as the high card. If the top plays tie on that card, nobody wins: everyone who made the number still discards, misses still draw, and a new target is flipped.
+- Play it like any 3. It counts as one of your 3 cards.
+- **With the target's color:** play it alongside a positive card of the target's color and you take the round outright.
+- **Without it:** the Usurper is just a plain 3 with no color. It doesn't change who wins.
+- **As the target:** the Usurper has no color, so the highest single card wins. The Usurper itself never counts as the high card. If the top plays tie on that card, nobody wins: everyone who made the number still discards, misses still draw, and a new target is flipped.
 - A Quench still beats everything: if both are played, nobody wins.
-- A winner can set a Usurper as the next target.
+- A winner can set the Usurper as the next target.
 - Left in your hand at the end of a deal, it scores 3.
 
 ## Option: Slag card
