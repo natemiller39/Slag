@@ -29,10 +29,10 @@ function setupFor(n) {
   return { suits: SUIT_ORDER, doubles: true, hand: 10, black: 2 };
 }
 
-// Quench option: 0-value cards shuffled into the deck. One per 2–4 players, two at 5–6, three at 7–8.
+// Quench option: colorless 0-value Quench cards shuffled into the deck. One at 2–3 players, two at 4–5, three at 6–8.
 const isQuench = c => !!c && c.suit === 'quench';
-function quenchCount(n) { return n <= 4 ? 1 : n <= 6 ? 2 : 3; }
-function cardLabel(c) { if (isQuench(c)) return 'Quench 0'; if (isUsurper(c)) return 'Usurper 3'; if (isSlag(c)) return 'Slag 7'; return SUITS[c.suit].name + ' ' + (c.value < 0 ? '−' + (-c.value) : c.value) + (c.star ? '★' : ''); }
+function quenchCount(n) { return n <= 3 ? 1 : n <= 5 ? 2 : 3; }
+function cardLabel(c) { if (isQuench(c)) return 'Quench 0'; if (isUsurper(c)) return (c.pair ? SUITS[PAIRS[c.pair][0]].name + '/' + SUITS[PAIRS[c.pair][1]].name + ' ' : '') + 'Usurper 3'; if (isSlag(c)) return 'Slag 7'; return SUITS[c.suit].name + ' ' + (c.value < 0 ? '−' + (-c.value) : c.value) + (c.star ? '★' : ''); }
 
 // Ranking key of a single positive card relative to a target (higher array wins, compared left to right)
 function cardKey(c, target) {
@@ -54,6 +54,10 @@ const isSlag = c => !!c && c.suit === 'slag';
 // Usurper option: one colorless 3. As the target, color doesn't count. Played with a card of the target's color, it takes the round outright;
 // played without one, it is just a colorless 3.
 const isUsurper = c => !!c && c.suit === 'usurper';
+// Three Usurpers, one per sister pair. A Usurper takes the round only when the target is one of its two colors
+// and the same play holds a positive card of the target's color. Otherwise it is a plain colorless 3.
+const PAIRS = { red: ['red', 'orange'], green: ['green', 'blue'], purple: ['purple', 'grey'] };
+const usurperLive = (c, t, play) => isUsurper(c) && (!c.pair || PAIRS[c.pair].includes(t.suit)) && play.some(x => x.suit === t.suit && x.value > 0);
 function colorCount(play, target) { return play.filter(c => c.suit === target.suit).length; }
 function topColor(play, target) { return Math.max(0, ...play.filter(c => c.value > 0 && c.suit === target.suit).map(c => c.value)); }
 function playKey(play, target) {
@@ -107,7 +111,7 @@ function newDeal(names, rng, opts = {}) {
     main.push(mkCard(s, v, cfg.doubles && v <= 5 && !(cfg.singleOnly && cfg.singleOnly.includes(s))));
     if (cfg.doubles && v <= 5 && !(cfg.singleOnly && cfg.singleOnly.includes(s))) main.push(mkCard(s, v, false));
   }
-  if (RULES.usurper) main.push(mkCard('usurper', 3, false));
+  if (RULES.usurper) for (const k of Object.keys(PAIRS)) if (cfg.suits.includes(k)) { const c = mkCard('usurper', 3, false); c.pair = k; main.push(c); }
   if (RULES.slag) main.push(mkCard('slag', 7, false));
   if (RULES.quench) for (let k = 0; k < quenchCount(n); k++) main.push(mkCard('quench', 0, false));
   shuffle(main, rng);
@@ -159,7 +163,7 @@ function resolveRound(G, plays) {
   for (const i of res.made) { const k = playKey(plays[i], t); if (!bk || cmpKey(k, bk) > 0) { best = i; bk = k; } }
   res.wouldWin = best;
   res.usurperTarget = isUsurper(t);
-  res.usurperPlayed = res.made.some(i => plays[i].some(isUsurper));
+  res.usurperPlayed = res.made.some(i => plays[i].some(c => usurperLive(c, t, plays[i])));
   if (res.quenched) res.reason = 'quenched';
   else if (res.usurperTarget) {
     // Usurper as the target: it has no color, so the highest single card wins; a tie on that card flips a new target.
@@ -172,7 +176,7 @@ function resolveRound(G, plays) {
   }
   else if (res.usurperPlayed) {
     // Usurper played: with a positive target-color card it seizes the round; otherwise it is just a colorless 3.
-    const u = res.made.find(i => plays[i].some(isUsurper));
+    const u = res.made.find(i => plays[i].some(c => usurperLive(c, t, plays[i])));
     res.usurper = u;
     const tc = plays[u].find(c => c.suit === t.suit && c.value > 0);
     const name = i => G.players[i].name;
@@ -311,7 +315,7 @@ function botPlay(hand, target, style, rng, ctx) {
     const shed = p.length * 2.2 + saved * 0.35;
     const key = playKey(p, target);
     let pWin = sims ? winShare(key, sims) : roughWin(key);
-    if (p.some(isUsurper) && !isUsurper(target)) pWin = p.some(c => c.suit === target.suit && c.value > 0) ? 0.97 : pWin;
+    if (p.some(isUsurper) && !isUsurper(target)) pWin = p.some(c => usurperLive(c, target, p)) ? 0.97 : pWin;
     let winVal = 2.2 + targetValue(rest); // the target card leaves your hand too
     if (isSlag(target)) winVal -= 4.5; // the winner of a Slag round draws a penalty card
     if (p.some(isSlag)) pWin *= 0.5; // the Slag card never counts as your high card; others pay if they win
@@ -364,5 +368,5 @@ function botTarget(hand, rng, ctx) {
   return best;
 }
 
-if (typeof module !== 'undefined') module.exports = { isSlag, isUsurper, RULES, playKey, colorCount, SUITS, SUIT_ORDER, setupFor, newDeal, resolveRound, setNextTarget, legalPlays, isLegal, bestCard, cardKey, cmpKey, scoreHand, botPlay, botTarget, botCtx, botMove, isQuench, quenchCount, STYLES, cardLabel, shuffle };
+if (typeof module !== 'undefined') module.exports = { PAIRS, usurperLive, isSlag, isUsurper, RULES, playKey, colorCount, SUITS, SUIT_ORDER, setupFor, newDeal, resolveRound, setNextTarget, legalPlays, isLegal, bestCard, cardKey, cmpKey, scoreHand, botPlay, botTarget, botCtx, botMove, isQuench, quenchCount, STYLES, cardLabel, shuffle };
 

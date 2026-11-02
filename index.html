@@ -464,6 +464,25 @@ const USURPER_IMG = 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns="http
 <text x="125" y="300" text-anchor="middle" font-family="Georgia, serif" font-size="30" letter-spacing="4" fill="#3b3e43" font-weight="700">USURPER</text>
 <text x="26" y="58" font-family="Georgia, serif" font-size="46" fill="#3b3e43" font-weight="700">3</text>
 </svg>`);
+const usurperSvg = (a, b, la, lb) => 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 350">
+<defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f1ede6"/><stop offset="1" stop-color="#dcd5c9"/></linearGradient>
+<linearGradient id="c" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9dde2"/><stop offset="1" stop-color="#8a8f96"/></linearGradient></defs>
+<rect width="250" height="350" rx="16" fill="url(#s)"/>
+<path d="M26 10h99v330H26a16 16 0 0 1-16-16V26a16 16 0 0 1 16-16z" fill="none"/>
+<rect x="10" y="10" width="230" height="330" rx="10" fill="none" stroke="#6b7078" stroke-width="5"/>
+<path d="M14 24a10 10 0 0 1 10-10h48l-58 58z" fill="${a}"/><path d="M236 326a10 10 0 0 1-10 10h-48l58-58z" fill="${b}"/>
+<g transform="rotate(-22 125 170)"><path d="M70 205 60 120l38 34 27-52 27 52 38-34-10 85z" fill="url(#c)" stroke="#3b3e43" stroke-width="5" stroke-linejoin="round"/>
+<rect x="68" y="205" width="114" height="18" rx="4" fill="url(#c)" stroke="#3b3e43" stroke-width="5"/>
+<rect x="72" y="208" width="53" height="12" fill="${a}"/><rect x="125" y="208" width="53" height="12" fill="${b}"/>
+<circle cx="60" cy="116" r="8" fill="${a}" stroke="#3b3e43" stroke-width="3"/><circle cx="125" cy="98" r="8" fill="#3b3e43"/><circle cx="190" cy="116" r="8" fill="${b}" stroke="#3b3e43" stroke-width="3"/></g>
+<path d="M96 132l22 40-12 18 20 32" fill="none" stroke="#3b3e43" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="125" y="262" text-anchor="middle" font-family="Georgia, serif" font-size="17" letter-spacing="2" font-weight="700"><tspan fill="${a}">${la}</tspan><tspan fill="#3b3e43"> · </tspan><tspan fill="${b}">${lb}</tspan></text>
+<path d="M40 276h170" stroke="#6b7078" stroke-width="3" stroke-linecap="round"/>
+<text x="125" y="310" text-anchor="middle" font-family="Georgia, serif" font-size="30" letter-spacing="4" fill="#3b3e43" font-weight="700">USURPER</text>
+<text x="40" y="104" font-family="Georgia, serif" font-size="46" fill="#3b3e43" font-weight="700">3</text>
+</svg>`);
+const USURPER_IMGS = Object.fromEntries(Object.entries(PAIRS).map(([k, [a, b]]) => [k, usurperSvg(SUITS[a].hex, SUITS[b].hex, SUITS[a].name.toUpperCase(), SUITS[b].name.toUpperCase())]));
+
 const SLAG_IMG = 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 350">
 <defs><radialGradient id="g" cx=".5" cy=".55" r=".6"><stop offset="0" stop-color="#4a2a1a"/><stop offset="1" stop-color="#161210"/></radialGradient>
 <radialGradient id="m" cx=".45" cy=".4" r=".7"><stop offset="0" stop-color="#5a4a42"/><stop offset=".7" stop-color="#2b2421"/><stop offset="1" stop-color="#1a1513"/></radialGradient>
@@ -478,7 +497,7 @@ const SLAG_IMG = 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns="http://
 <text x="125" y="322" text-anchor="middle" font-family="Georgia, serif" font-size="32" letter-spacing="6" fill="#ff9a2e" font-weight="700">SLAG</text>
 <text x="26" y="58" font-family="Georgia, serif" font-size="46" fill="#ff9a2e" font-weight="700">7</text>
 </svg>`);
-const src = c => c.suit === 'slag' ? SLAG_IMG : c.suit === 'usurper' ? USURPER_IMG : c.suit === 'quench' ? QUENCH_IMG : 'cards/' + c.suit + '_' + c.value + '.webp';
+const src = c => c.suit === 'slag' ? SLAG_IMG : c.suit === 'usurper' ? (c.pair ? USURPER_IMGS[c.pair] : USURPER_IMG) : c.suit === 'quench' ? QUENCH_IMG : 'cards/' + c.suit + '_' + c.value + '.webp';
 const suitIdx = s => s === 'black' ? 9 : SUIT_ORDER.indexOf(s);
 const sortHand = h => h.slice().sort((a, b) => a.value - b.value || suitIdx(a.suit) - suitIdx(b.suit) || (b.star - a.star));
 
@@ -686,7 +705,7 @@ function showdownHtml() {
     const cards = play ? `<div class="cards">${play.map((c, j) => `<span class="card flip" style="animation-delay:${90 * k + 70 * j}ms"><img src="${src(c)}" alt="${cardLabel(c)}">${badges(c, true)}</span>`).join('')}</div>`
       : '<span class="sd-pass">Passed</span>';
     const quenched = (res.quenchedBy || []).includes(i);
-    return `<div class="sd-tile ${won ? 'win' : ''} ${quenched ? 'quench' : ''} ${play ? '' : 'passed'}">${won ? `<span class="sd-crown">${crownSvg}Winner</span>` : ''}${quenched ? '<span class="sd-crown sd-quench">Quench</span>' : ''}${!won && !quenched && play && play.some(isUsurper) ? '<span class="sd-crown sd-usurper">Usurper</span>' : ''}${i === res.dethroned ? '<span class="sd-crown sd-usurper">Dethroned</span>' : ''}${!won && play && play.some(isSlag) ? '<span class="sd-crown sd-slag">Slag</span>' : ''}
+    return `<div class="sd-tile ${won ? 'win' : ''} ${quenched ? 'quench' : ''} ${play ? '' : 'passed'}">${won ? `<span class="sd-crown">${crownSvg}Winner</span>` : ''}${quenched ? '<span class="sd-crown sd-quench">Quench</span>' : ''}${!won && !quenched && play && play.some(c => usurperLive(c, t, play)) ? '<span class="sd-crown sd-usurper">Usurper</span>' : ''}${i === res.dethroned ? '<span class="sd-crown sd-usurper">Dethroned</span>' : ''}${!won && play && play.some(isSlag) ? '<span class="sd-crown sd-slag">Slag</span>' : ''}
       <div class="sd-label"><span class="sd-name">${p.name}</span>${cap ? `<span class="sd-cap">${cap}</span>` : ''}</div>${cards}</div>`;
   }).join('');
   const shown = preview || t;
@@ -710,7 +729,7 @@ function meterText() {
   if (isSlag(t) && sum === t.value && sel.some(c => c.value > 0)) return `${expr} <span class="ok">· makes ${t.value}</span> <span class="hint">· Slag target: highest card wins, and the winner draws a penalty card</span>`;
   if (sel.some(isSlag) && sum === t.value) return `${expr} <span class="ok">· makes ${t.value}</span> <span class="hint">· Slag: whoever wins this round draws a penalty card (unless it's you)</span>`;
   if (isUsurper(t) && sum === t.value && sel.some(c => c.value > 0)) return `${expr} <span class="ok">· makes ${t.value}</span> <span class="hint">· Usurper target: color doesn't count, highest card wins</span>`;
-  if (sel.some(isUsurper) && sum === t.value) return `${expr} <span class="ok">· makes ${t.value}</span> <span class="hint">· ${sel.some(c => c.suit === t.suit && c.value > 0) ? `Usurper with ${SUITS[t.suit].name}: you take the round` : 'Usurper without the target color: just a plain 3'}</span>`;
+  if (sel.some(isUsurper) && sum === t.value) return `${expr} <span class="ok">· makes ${t.value}</span> <span class="hint">· ${sel.some(c => usurperLive(c, t, sel)) ? `Usurper with ${SUITS[t.suit].name}: you take the round` : sel.some(c => isUsurper(c) && c.pair && PAIRS[c.pair].includes(t.suit)) ? `add a ${SUITS[t.suit].name} card and the Usurper takes the round` : 'this Usurper only works on its own colors: just a plain 3 here'}</span>`;
   if (sel.some(isQuench) && sum === t.value && sel.some(c => c.value > 0)) return `${expr} <span class="ok">· makes ${t.value}</span> <span class="hint">· with Quench: nobody wins this round</span>`;
   if (!sel.some(c => c.value > 0)) return `${expr} <span class="no">· add a positive card</span>`;
   if (sum === t.value) {
@@ -811,7 +830,7 @@ function rulesHtml() {
     <li>The best play wins. ${RULES.colorCount ? "The play with the most cards of the target's color wins (negatives count). If that's tied, the highest card of the target's color wins." : "Any play with a card of the target's color beats every play without one, then the higher card wins."}</li>
     <li>Everyone who made it discards those cards. Anyone who passed or missed draws one card.</li>
     <li>The winner sets the next target with a card from their hand.</li>
-  </ol>${RULES.slag ? `<h3>Slag card</h3><p>One colorless Slag card (worth 7) is in the deck. Play it in a combo and whoever wins that round draws a penalty card (unless that's you). It never counts as your high card. When the Slag card is the target, make 7: color doesn't count, the best play wins, and the winner draws a penalty card. A winner can set it as the next target to pass the curse along. Stuck with it at the end, it scores 7.</p>` : ''}${RULES.usurper ? `<h3>Usurper</h3><p>One colorless Usurper card (worth 3) is in the deck. Play it alongside a card of the target's color and you take the round outright. Play it without one and it's just a plain 3 with no color: it doesn't change who wins. When the Usurper is the target it has no color, so the highest single card wins; if that card is tied, nobody wins, plays still discard, misses still draw, and a new target is flipped. Held at the end, it scores 3.</p>` : ''}${RULES.quench ? `<h3>Quench cards</h3><p>Quench is a 0 card shuffled into the deck (1 at 2–4 players, 2 at 5–6, 3 at 7–8). Add it to a play that makes the number; it uses one of your 3 card slots. When a Quench is revealed, nobody wins the round: plays still discard, misses still draw, and a new target is flipped. A Quench never becomes the target, and one left in your hand at the end scores +5. If a Quench is played when the draw pile is empty, the deal ends.</p>` : ''}
+  </ol>${RULES.slag ? `<h3>Slag card</h3><p>One colorless Slag card (worth 7) is in the deck. Play it in a combo and whoever wins that round draws a penalty card (unless that's you). It never counts as your high card. When the Slag card is the target, make 7: color doesn't count, the best play wins, and the winner draws a penalty card. A winner can set it as the next target to pass the curse along. Stuck with it at the end, it scores 7.</p>` : ''}${RULES.usurper ? `<h3>Usurper</h3><p>Three Usurper cards (worth 3) are in the deck, one for each sister pair: Red/Orange, Green/Blue and Purple/Grey. When the target is one of a Usurper's two colors, play it alongside a card of the target's color and you take the round outright. Otherwise it's just a plain 3 with no color: it doesn't change who wins. When a Usurper is the target it has no color, so the highest single card wins; if that card is tied, nobody wins, plays still discard, misses still draw, and a new target is flipped. Held at the end, it scores 3.</p>` : ''}${RULES.quench ? `<h3>Quench cards</h3><p>Quench is a colorless 0 card shuffled into the deck (1 at 2–3 players, 2 at 4–5, 3 at 6–8). Add it to a play that makes the number; it uses one of your 3 card slots. When a Quench is revealed, nobody wins the round: plays still discard, misses still draw, and a new target is flipped. A Quench never becomes the target, and one left in your hand at the end scores +5. If a Quench is played when the draw pile is empty, the deal ends.</p>` : ''}
   <h3>Ties</h3>
   <p>${RULES.colorCount ? 'After the color count and the highest target-color card, compare' : 'Compare'} each play's best positive card: target color, then value, then the target's sister suit, then suit rank (Red 6, Orange 5, Green 4, Blue 3, Purple 2, Grey 1), then the starred copy.</p>
   <h3>Scoring</h3>
@@ -850,11 +869,11 @@ function splash() {
             <button data-quench="off" aria-pressed="${!S.quench}">Off</button>
             <button data-quench="on" aria-pressed="${!!S.quench}">On</button></div>
           ${S.quench ? `<span class="hint">${quenchCount(n)} Quench card${quenchCount(n) > 1 ? 's' : ''} in the deck. Tuck one into a play and nobody wins that round.</span>` : ''}</div>
-        <div class="field"><span class="lbl" id="l-usurper">Usurper card</span>
+        <div class="field"><span class="lbl" id="l-usurper">Usurper cards</span>
           <div class="seg" role="group" aria-labelledby="l-usurper">
             <button data-usurper="off" aria-pressed="${!S.usurper}">Off</button>
             <button data-usurper="on" aria-pressed="${!!S.usurper}">On</button></div>
-          ${S.usurper ? '<span class="hint">One colorless 3. Play it with the target color to take the round.</span>' : ''}</div>
+          ${S.usurper ? '<span class="hint">Three, one per sister pair. On its colors, with a card of the target color, it takes the round.</span>' : ''}</div>
       <div class="field"><span class="lbl" id="l-slag">Slag card</span>
         <div class="seg" role="group" aria-labelledby="l-slag">
           <button data-slag="off" aria-pressed="${!S.slag}">Off</button>
@@ -1077,7 +1096,7 @@ function lobbyHtml() {
         <div class="field"><span class="lbl">Match</span>${seg('mode', [['deals', 'Three deals'], ['fifty', 'Play to 50']], v.settings.mode)}</div>
         <div class="field"><span class="lbl">Who wins a round</span>${seg('rule', [['high', 'Highest card'], ['count', 'Most of the color']], v.settings.colorRule ? 'count' : 'high')}</div>
         <div class="field"><span class="lbl">Quench cards</span>${seg('quench', [['off', 'Off'], ['on', 'On']], v.settings.quench ? 'on' : 'off')}${v.settings.quench ? `<span class="hint">${quenchCount(Math.max(n, 2))} in the deck for ${n} player${n > 1 ? 's' : ''}.</span>` : ''}</div>
-        <div class="field"><span class="lbl">Usurper card</span>${seg('usurper', [['off', 'Off'], ['on', 'On']], v.settings.usurper ? 'on' : 'off')}</div>
+        <div class="field"><span class="lbl">Usurper cards</span>${seg('usurper', [['off', 'Off'], ['on', 'On']], v.settings.usurper ? 'on' : 'off')}</div>
         <div class="field"><span class="lbl">Slag card</span>${seg('slag', [['off', 'Off'], ['on', 'On']], v.settings.slag ? 'on' : 'off')}</div>
         ${host ? '' : '<span class="hint">The host sets the rules.</span>'}</div>
     </div>
