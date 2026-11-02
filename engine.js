@@ -32,7 +32,7 @@ function setupFor(n) {
 // Quench option: colorless 0-value Quench cards shuffled into the deck. One at 2–3 players, two at 4–5, three at 6–8.
 const isQuench = c => !!c && c.suit === 'quench';
 function quenchCount(n) { return n <= 3 ? 1 : n <= 5 ? 2 : 3; }
-function cardLabel(c) { if (isQuench(c)) return 'Quench 0'; if (isUsurper(c)) return (c.pair ? SUITS[PAIRS[c.pair][0]].name + '/' + SUITS[PAIRS[c.pair][1]].name + ' ' : '') + 'Usurper 3'; if (isSlag(c)) return 'Slag 8'; return SUITS[c.suit].name + ' ' + (c.value < 0 ? '−' + (-c.value) : c.value) + (c.star ? '★' : ''); }
+function cardLabel(c) { if (isQuench(c)) return 'Quench 0'; if (isUsurper(c)) return (c.pair ? SUITS[PAIRS[c.pair][0]].name + '/' + SUITS[PAIRS[c.pair][1]].name + ' ' : '') + 'Usurper 3'; if (isSlag(c)) return 'Slag 7'; return SUITS[c.suit].name + ' ' + (c.value < 0 ? '−' + (-c.value) : c.value) + (c.star ? '★' : ''); }
 
 // Ranking key of a single positive card relative to a target (higher array wins, compared left to right)
 function cardKey(c, target) {
@@ -48,7 +48,7 @@ function bestCard(play, target) {
 // Table rule: when on, the play with the most cards of the target's color wins (negatives count),
 // and the highest target-color card breaks ties. When off, only the single best card counts.
 const RULES = { colorCount: false, quench: false, usurper: false, slag: false };
-// Slag card option: one colorless 8. Played in a combo, whoever wins the round draws a penalty card (unless it's you).
+// Slag card option: one colorless 7. Played in a combo, whoever wins the round draws a penalty card (unless it's you).
 // As the target, color doesn't count, the best play wins, and the winner draws a penalty card. It never counts as the high card.
 const isSlag = c => !!c && c.suit === 'slag';
 // Usurper option: one colorless 3. As the target, color doesn't count. Played with a card of the target's color, it takes the round outright;
@@ -112,7 +112,7 @@ function newDeal(names, rng, opts = {}) {
     if (cfg.doubles && v <= 5 && !(cfg.singleOnly && cfg.singleOnly.includes(s))) main.push(mkCard(s, v, false));
   }
   if (RULES.usurper) for (const k of Object.keys(PAIRS)) if (cfg.suits.includes(k)) { const c = mkCard('usurper', 3, false); c.pair = k; main.push(c); }
-  if (RULES.slag) main.push(mkCard('slag', 8, false));
+  if (RULES.slag) main.push(mkCard('slag', 7, false));
   if (RULES.quench) for (let k = 0; k < quenchCount(n); k++) main.push(mkCard('quench', 0, false));
   shuffle(main, rng);
   const negSuits = cfg.suits.slice();
