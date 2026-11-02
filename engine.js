@@ -35,19 +35,26 @@ function quenchCount(n) { return n <= 3 ? 1 : n <= 5 ? 2 : 3; }
 function cardLabel(c) { if (isQuench(c)) return 'Quench 0'; if (isUsurper(c)) return (c.pair ? SUITS[PAIRS[c.pair][0]].name + '/' + SUITS[PAIRS[c.pair][1]].name + ' ' : '') + 'Usurper 3'; if (isSlag(c)) return 'Slag 7'; return SUITS[c.suit].name + ' ' + (c.value < 0 ? '−' + (-c.value) : c.value) + (c.star ? '★' : ''); }
 
 // Ranking key of a single positive card relative to a target (higher array wins, compared left to right)
-function cardKey(c, target) {
-  return [c.suit === target.suit ? 1 : 0, c.value, SUITS[target.suit].sister === c.suit ? 1 : 0, SUITS[c.suit].rank, c.star ? 1 : 0];
+function cardKey(c, target, alone) {
+  const real = c.suit === target.suit ? 1 : 0;
+  const k = [real || (alone && numMatch(c, target)) ? 1 : 0, c.value, SUITS[target.suit].sister === c.suit ? 1 : 0, SUITS[c.suit].rank, c.star ? 1 : 0];
+  if (RULES.matchNumber) k.splice(2, 0, real); // a real target-color card wins an exact tie with a matching number
+  return k;
 }
+// Matching number option: the sister-color card with the same number as the target, played alone, counts as the target's color.
+const numMatch = (c, t) => RULES.matchNumber && SUIT_ORDER.includes(t.suit) && c.value === t.value && c.suit === SUITS[t.suit].sister;
+const loneMatch = (play, t) => play.length === 1 && numMatch(play[0], t);
+const asColor = (c, t, play) => c.suit === t.suit || (!!play && loneMatch(play, t));
 function cmpKey(a, b) { for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] - b[i]; return 0; }
 function bestCard(play, target) {
   let best = null, bk = null;
-  for (const c of play) { if (c.value < 0 || isUsurper(c) || isQuench(c) || isSlag(c)) continue; const k = cardKey(c, target); if (!bk || cmpKey(k, bk) > 0) { best = c; bk = k; } }
+  for (const c of play) { if (c.value < 0 || isUsurper(c) || isQuench(c) || isSlag(c)) continue; const k = cardKey(c, target, play.length === 1); if (!bk || cmpKey(k, bk) > 0) { best = c; bk = k; } }
   return { card: best, key: bk };
 }
 
 // Table rule: when on, the play with the most cards of the target's color wins (negatives count),
 // and the highest target-color card breaks ties. When off, only the single best card counts.
-const RULES = { colorCount: false, quench: false, usurper: false, slag: false };
+const RULES = { colorCount: false, quench: false, usurper: false, slag: false, matchNumber: false };
 // Slag card option: one colorless 7. Played in a combo, whoever wins the round draws a penalty card (unless it's you).
 // As the target, color doesn't count, the best play wins, and the winner draws a penalty card. It never counts as the high card.
 const isSlag = c => !!c && c.suit === 'slag';
@@ -58,10 +65,10 @@ const isUsurper = c => !!c && c.suit === 'usurper';
 // otherwise it is a plain colorless 3. (A card with a .pair would only work on its sister pair; not dealt.)
 const PAIRS = { red: ['red', 'orange'], green: ['green', 'blue'], purple: ['purple', 'grey'] };
 const usurperLive = (c, t, play) => isUsurper(c) && (!c.pair || PAIRS[c.pair].includes(t.suit)) && play.some(x => x.suit === t.suit && x.value > 0);
-function colorCount(play, target) { return play.filter(c => c.suit === target.suit).length; }
-function topColor(play, target) { return Math.max(0, ...play.filter(c => c.value > 0 && c.suit === target.suit).map(c => c.value)); }
+function colorCount(play, target) { return play.filter(c => asColor(c, target, play)).length; }
+function topColor(play, target) { return Math.max(0, ...play.filter(c => c.value > 0 && asColor(c, target, play)).map(c => c.value)); }
 function playKey(play, target) {
-  const k = bestCard(play, target).key || [-1, 0, 0, 0, 0];
+  const k = bestCard(play, target).key || (RULES.matchNumber ? [-1, 0, 0, 0, 0, 0] : [-1, 0, 0, 0, 0]);
   return RULES.colorCount ? [colorCount(play, target), topColor(play, target), ...k.slice(1)] : k;
 }
 
@@ -224,6 +231,7 @@ function explain(plays, made, w, t) {
   }
   const wc = bestCard(plays[w], t).card;
   if (made.length === 1) return 'the only player to make ' + t.value;
+  if (loneMatch(plays[w], t)) return `matching number: ${cardLabel(wc)} counts as ${SUITS[t.suit].name} ${t.value}`;
   const others = made.filter(i => i !== w).map(i => bestCard(plays[i], t).card).filter(Boolean);
   const tc = SUITS[t.suit].name;
   if (wc.suit === t.suit) {
@@ -368,5 +376,5 @@ function botTarget(hand, rng, ctx) {
   return best;
 }
 
-if (typeof module !== 'undefined') module.exports = { PAIRS, usurperLive, isSlag, isUsurper, RULES, playKey, colorCount, SUITS, SUIT_ORDER, setupFor, newDeal, resolveRound, setNextTarget, legalPlays, isLegal, bestCard, cardKey, cmpKey, scoreHand, botPlay, botTarget, botCtx, botMove, isQuench, quenchCount, STYLES, cardLabel, shuffle };
+if (typeof module !== 'undefined') module.exports = { loneMatch, numMatch, asColor, PAIRS, usurperLive, isSlag, isUsurper, RULES, playKey, colorCount, SUITS, SUIT_ORDER, setupFor, newDeal, resolveRound, setNextTarget, legalPlays, isLegal, bestCard, cardKey, cmpKey, scoreHand, botPlay, botTarget, botCtx, botMove, isQuench, quenchCount, STYLES, cardLabel, shuffle };
 

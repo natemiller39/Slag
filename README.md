@@ -73,6 +73,15 @@ Turn on **Slag card** on the start screen or in the lobby to shuffle one colorle
 - If the winner goes out that round, the deal ends before they would draw.
 - Stuck with it at the end of a deal, it scores 7.
 
+## Option: Matching number
+
+Turn on **Matching number** on the start screen or in the lobby.
+
+- Played **alone**, the sister-color card with the same number as the target counts as the target's color. On a Blue 6, a Green 6 played by itself counts as a Blue 6, so it beats lower Blue cards.
+- In a combo it's just a normal card.
+- Higher cards of the real target color still beat it, and a real target-color card with the same number wins an exact tie.
+- Tip for the table: hold your chosen cards face down in your hand and everyone reveals at once, so nobody can react to how many cards someone is playing.
+
 ## Scoring
 
 - Positive cards score their value.
