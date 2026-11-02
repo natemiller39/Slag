@@ -50,14 +50,14 @@ Turn on **Quench cards** on the start screen or in the lobby to shuffle 0-value 
 - One still in your hand at the end of a deal scores +5.
 - If a Quench is played when the draw pile is empty, the deal ends.
 
-## Option: 6 combo
+## Option: Full Tang 6s
 
-Turn on **6 combo** on the start screen or in the lobby. (It replaces the old Usurper card.)
+Turn on **Full Tang 6s** on the start screen or in the lobby. (It replaces the old Usurper card.) Every 6 is a Full Tang blade.
 
-- A **6 combo** is a 6 plus at least one other card, with **no negatives**, where the 6 or another card in the play is the target's color.
-- A 6 combo **always wins the round.** On a Blue 7, Red 6 + Blue 1 beats Blue 10 + −3.
-- Add a negative and it's just a normal play.
-- If two players have a 6 combo, the normal order decides between them. A Quench still cancels the round.
+- A **Full Tang** play is a 6 plus at least one other card, with **no negatives**, where the 6 or another card in the play is the target's color.
+- A Full Tang **always wins the round.** On a Blue 7, Red 6 + Blue 1 beats Blue 10 + −3.
+- A negative cracks the blade: add one and it's just a normal play.
+- If two players have a Full Tang, the normal order decides between them. A Quench still cancels the round.
 - On screen, every 6 glows when the option is on so it's easy to spot.
 
 ## Option: Slag card
