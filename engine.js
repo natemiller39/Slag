@@ -19,7 +19,11 @@ function mkCard(suit, value, star) { return { id: 'c' + (++_uid), suit, value, s
 
 function shuffle(a, rng) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
+// Black suit deck option: six suits plus a black suit, each 1–10 with no doubles (70 cards), the same deck at every count.
+// Black has no sister and the lowest suit rank, so it never wins a tie. Black negatives pair with black cards.
+const BLACK_HANDS = { 2: 11, 3: 11, 4: 11, 5: 10, 6: 9, 7: 8, 8: 7 };
 function setupFor(n) {
+  if (RULES.blackDeck) return { suits: [...SUIT_ORDER, 'black'], doubles: false, hand: BLACK_HANDS[n], black: Math.max(0, n - 7) };
   if (n === 2) return { suits: SUIT_ORDER.slice(0, 4), doubles: false, hand: 11, black: 0 };
   if (n === 3 || n === 4) return RULES.colorCount
     ? { suits: SUIT_ORDER, doubles: true, hand: 11, black: 0, singleOnly: ['purple', 'grey'] } // Most of the color: Purple & Grey 1–10, no doubles
@@ -54,7 +58,7 @@ function bestCard(play, target) {
 
 // Table rule: when on, the play with the most cards of the target's color wins (negatives count),
 // and the highest target-color card breaks ties. When off, only the single best card counts.
-const RULES = { scoring: 'tiers', colorCount: false, quench: false, usurper: false, slag: false, matchNumber: false, six: false };
+const RULES = { blackDeck: false, scoring: 'tiers', colorCount: false, quench: false, usurper: false, slag: false, matchNumber: false, six: false };
 // Full Tang 6s option: every 6 is a blade. A 6 plus at least one other card, no negatives, with the 6 or another card in the target's color.
 // It always wins the round; between two Full Tangs the normal order decides. A Quench still cancels it.
 const isSix = c => !!c && c.value === 6 && SUIT_ORDER.includes(c.suit);
@@ -69,7 +73,7 @@ const isUsurper = c => !!c && c.suit === 'usurper';
 // otherwise it is a plain colorless 3. (A card with a .pair would only work on its sister pair; not dealt.)
 const PAIRS = { red: ['red', 'orange'], green: ['green', 'blue'], purple: ['purple', 'grey'] };
 const usurperLive = (c, t, play) => isUsurper(c) && (!c.pair || PAIRS[c.pair].includes(t.suit)) && play.some(x => x.suit === t.suit && x.value > 0);
-const negColor = (play, t) => SUIT_ORDER.includes(t.suit) && play.some(c => c.value < 0 && c.suit === t.suit);
+const negColor = (play, t) => (SUIT_ORDER.includes(t.suit) || (RULES.blackDeck && t.suit === 'black')) && play.some(c => c.value < 0 && c.suit === t.suit);
 function colorCount(play, target) { return play.filter(c => asColor(c, target, play)).length; }
 function topColor(play, target) { return Math.max(0, ...play.filter(c => c.value > 0 && asColor(c, target, play)).map(c => c.value)); }
 function playKey(play, target) {
@@ -119,7 +123,7 @@ function scoreHand(hand) {
   posLines.forEach(x => { total += x.pts; });
   const negLines = [];
   for (const c of neg) {
-    if (RULES.scoring !== 'count' && c.suit !== 'black' && avail[c.suit] > 0) { avail[c.suit]--; total += c.value; negLines.push({ card: c, pts: c.value, paired: true }); }
+    if (RULES.scoring !== 'count' && (c.suit !== 'black' || RULES.blackDeck) && avail[c.suit] > 0) { avail[c.suit]--; total += c.value; negLines.push({ card: c, pts: c.value, paired: true }); }
     else { total += negPts(); negLines.push({ card: c, pts: negPts(), paired: false }); }
   }
   const qp = RULES.scoring === 'count' || RULES.scoring === 'tiers' ? 1 : 5;
@@ -407,5 +411,5 @@ function botTarget(hand, rng, ctx) {
   return best;
 }
 
-if (typeof module !== 'undefined') module.exports = { playTo, tierPts, cardPts, negColor, isSix, sixCombo, loneMatch, numMatch, asColor, PAIRS, usurperLive, isSlag, isUsurper, RULES, playKey, colorCount, SUITS, SUIT_ORDER, setupFor, newDeal, resolveRound, setNextTarget, legalPlays, isLegal, bestCard, cardKey, cmpKey, scoreHand, botPlay, botTarget, botCtx, botMove, isQuench, quenchCount, STYLES, cardLabel, shuffle };
+if (typeof module !== 'undefined') module.exports = { BLACK_HANDS, playTo, tierPts, cardPts, negColor, isSix, sixCombo, loneMatch, numMatch, asColor, PAIRS, usurperLive, isSlag, isUsurper, RULES, playKey, colorCount, SUITS, SUIT_ORDER, setupFor, newDeal, resolveRound, setNextTarget, legalPlays, isLegal, bestCard, cardKey, cmpKey, scoreHand, botPlay, botTarget, botCtx, botMove, isQuench, quenchCount, STYLES, cardLabel, shuffle };
 

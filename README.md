@@ -39,6 +39,23 @@ Any card of the target's color beats every other color, and the highest one wins
 Sister suits: Red & Orange, Green & Blue, Purple & Grey.
 Suit rank: Red 6, Orange 5, Green 4, Blue 3, Purple 2, Grey 1.
 
+## Option: Black suit deck
+
+Choose **Deck: Black suit** on the start screen or in the lobby to play with one 70-card deck at every player count: the six suits plus a black suit, each 1–10 with **no doubles** (so no starred cards).
+
+| Players | Cards each (plus a −1, −2 and −3) |
+| --- | --- |
+| 2–4 | 11 |
+| 5 | 10 |
+| 6 | 9 |
+| 7 | 8 |
+| 8 | 7 (plus one extra black negative set) |
+
+- Black has no sister color and the lowest suit rank, so it never wins a tie.
+- When black is the target, black cards are the target color (a black negative counts too, as the lowest).
+- Black negatives pair with black cards at scoring.
+- A black 6 is not a Full Tang, and no Full Tang can be made when black is the target.
+
 ## Option: Quench cards
 
 Turn on **Quench cards** on the start screen or in the lobby to shuffle 0-value Quench cards into the deck: 1 at 2–3 players, 2 at 4–5, 3 at 6–8.
