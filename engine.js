@@ -61,8 +61,9 @@ function bestCard(play, target) {
 const RULES = { blackDeck: false, scoring: 'tiers', colorCount: false, quench: false, usurper: false, slag: false, matchNumber: false, six: false };
 // Full Tang 6s option: every 6 is a blade. A 6 plus at least one other card, no negatives, with the 6 or another card in the target's color.
 // It always wins the round; between two Full Tangs the normal order decides. A Quench still cancels it.
-const isSix = c => !!c && c.value === 6 && SUIT_ORDER.includes(c.suit);
-const sixCombo = (p, t) => RULES.six && p.length >= 2 && SUIT_ORDER.includes(t.suit) && p.some(isSix) && p.some(c => c.suit === t.suit) && !p.some(c => c.value < 0);
+const realSuit = s => SUIT_ORDER.includes(s) || (RULES.blackDeck && s === 'black');
+const isSix = c => !!c && c.value === 6 && realSuit(c.suit);
+const sixCombo = (p, t) => RULES.six && p.length >= 2 && realSuit(t.suit) && p.some(isSix) && p.some(c => c.suit === t.suit) && !p.some(c => c.value < 0);
 // Slag card option: one colorless 7. Played in a combo, whoever wins the round draws a penalty card (unless it's you).
 // As the target, color doesn't count, the best play wins, and the winner draws a penalty card. It never counts as the high card.
 const isSlag = c => !!c && c.suit === 'slag';

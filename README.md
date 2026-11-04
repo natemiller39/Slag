@@ -54,7 +54,7 @@ Choose **Deck: Black suit** on the start screen or in the lobby to play with one
 - Black has no sister color and the lowest suit rank, so it never wins a tie.
 - When black is the target, black cards are the target color (a black negative counts too, as the lowest).
 - Black negatives pair with black cards at scoring.
-- A black 6 is not a Full Tang, and no Full Tang can be made when black is the target.
+- A black 6 is a Full Tang like any other 6, and Full Tangs work when black is the target.
 
 ## Option: Quench cards
 
