@@ -3,8 +3,8 @@
 const SUITS = {
   red:    { name: 'Red',    art: 'Crossbow',    rank: 6, sister: 'orange', hex: '#d0161b' },
   orange: { name: 'Orange', art: 'Spear',       rank: 5, sister: 'red',    hex: '#f07c12' },
-  green:  { name: 'Green',  art: 'Axe',         rank: 4, sister: 'blue',   hex: '#16b85a' },
-  blue:   { name: 'Blue',   art: 'Sword',       rank: 3, sister: 'green',  hex: '#1a4fb0' },
+  blue:   { name: 'Blue',   art: 'Sword',       rank: 4, sister: 'green',  hex: '#1a4fb0' },
+  green:  { name: 'Green',  art: 'Axe',         rank: 3, sister: 'blue',   hex: '#16b85a' },
   purple: { name: 'Purple', art: 'Chest armor', rank: 2, sister: 'grey',   hex: '#8b5cf0' },
   grey:   { name: 'Grey',   art: 'Helmet',      rank: 1, sister: 'purple', hex: '#5d5d63' },
   black:  { name: 'Black',  art: 'Serpent',     rank: 0, sister: null,     hex: '#111111' },
@@ -12,7 +12,7 @@ const SUITS = {
   quench: { name: 'Quench', art: 'Water bucket', rank: 0, sister: null,    hex: '#2e86ab' },
   slag:   { name: 'Slag',   art: '',            rank: 0, sister: null,     hex: '#3a2a22' },
 };
-const SUIT_ORDER = ['red', 'orange', 'green', 'blue', 'purple', 'grey'];
+const SUIT_ORDER = ['red', 'orange', 'blue', 'green', 'purple', 'grey']; // suit rank, high to low: in each sister pair the main color outranks its partner
 
 let _uid = 0;
 function mkCard(suit, value, star) { return { id: 'c' + (++_uid), suit, value, star: !!star }; }

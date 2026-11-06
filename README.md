@@ -36,8 +36,8 @@ Any card of the target's color beats every other color, and the highest one wins
 2. Tied? The highest card of the target's color wins.
 3. Still tied, or nobody played the color? The highest card wins, then the target's sister suit, then suit rank, then the starred copy.
 
-Sister suits: Red & Orange, Green & Blue, Purple & Grey.
-Suit rank: Red 6, Orange 5, Green 4, Blue 3, Purple 2, Grey 1.
+Sister suits: Red & Orange, Blue & Green, Purple & Grey.
+Suit rank: Red 6, Orange 5, Blue 4, Green 3, Purple 2, Grey 1 (Black, in the black suit deck, is lowest). In each sister pair the main color outranks its partner.
 
 ## Option: Black suit deck
 
@@ -118,7 +118,7 @@ Choose **Scoring** on the start screen or in the lobby:
 
 | Players | Main deck | Cards each | Negative sets |
 | --- | --- | --- | --- |
-| 2 | Red, Orange, Green, Blue, no doubles (40) | 11 | Those 4 suits |
+| 2 | Red, Orange, Blue, Green, no doubles (40) | 11 | Those 4 suits |
 | 3–4, Most of the color | All six suits, Purple and Grey with no doubles (80) | 11 | All six suits |
 | 3–4, Highest card | All six suits, Purple and Grey 6–10 only (70) | 11 | All six suits |
 | 5–6 | All six suits (90) | 11 | All six suits |
