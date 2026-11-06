@@ -37,7 +37,7 @@ Any card of the target's color beats every other color, and the highest one wins
 3. Still tied, or nobody played the color? The highest card wins, then the target's sister suit, then suit rank, then the starred copy.
 
 Sister suits: Red & Orange, Blue & Green, Purple & Grey.
-Suit rank: Red 6, Orange 5, Blue 4, Green 3, Purple 2, Grey 1 (Black, in the black suit deck, is lowest). In each sister pair the main color outranks its partner.
+Suit rank: Blue 6, Red 5, Purple 4, Green 3, Orange 2, Grey 1 (Black, in the black suit deck, is lowest). The main colors (Blue, Red, Purple) outrank their partners.
 
 ## Option: Black suit deck
 
