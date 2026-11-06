@@ -109,13 +109,13 @@ function legalPlays(hand, target) {
 }
 
 // Scoring: positives score value; a negative paired with a same-suit positive subtracts, else +5. Black never pairs.
-// Scoring setting: 'face' (card values; negatives +5 unless paired), 'count' (every card 1, every negative 3, no pairing),
+// Scoring setting: 'face' (card values; negatives +5 unless paired), 'count' (every card 1, every negative 2, no pairing),
 // or 'tiers' (1–3 score 1, 4–7 score 3, 8–10 score 5; negatives as in 'face').
 // Match length for 'play to' mode, scaled to the scoring setting.
 const playTo = () => (RULES.scoring === 'tiers' ? 25 : RULES.scoring === 'count' ? 10 : 50);
 const tierPts = v => (v <= 3 ? 1 : v <= 7 ? 3 : 5);
 function cardPts(c) { const m = RULES.scoring; return m === 'count' ? 1 : m === 'tiers' ? tierPts(c.value) : c.value; }
-function negPts() { return RULES.scoring === 'count' ? 3 : 5; }
+function negPts() { return RULES.scoring === 'count' ? 2 : 5; }
 function scoreHand(hand) {
   let total = 0;
   const pos = hand.filter(c => c.value > 0), neg = hand.filter(c => c.value < 0).sort((a, b) => a.value - b.value);

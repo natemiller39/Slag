@@ -517,7 +517,7 @@ function badges(c, mini, paired) {
   if (RULES.six && isSix(c)) s += '<span class="sixmark" aria-hidden="true"></span>' + (mini ? '' : '<span class="ftband" title="Full Tang: a 6 plus another card, with the middle color and no negatives, always wins">FULL TANG<b>−</b></span>');
   if (c.value < 0) {
     s += `<span class="negmark" aria-hidden="true">${neg(c.value)}</span>`;
-    if (!mini) s += paired ? '<span class="fivemark paired" title="Paired with a same-suit card: subtracts at scoring">paired</span>' : (RULES.scoring === 'count' ? `<span class="fivemark" title="Scores +3 at the end">+3</span>` : `<span class="fivemark" title="Scores +5 at the end unless paired with a same-suit card${c.suit === 'black' ? ' (black never pairs)' : ''}">+5</span>`);
+    if (!mini) s += paired ? '<span class="fivemark paired" title="Paired with a same-suit card: subtracts at scoring">paired</span>' : (RULES.scoring === 'count' ? `<span class="fivemark" title="Scores +2 at the end">+2</span>` : `<span class="fivemark" title="Scores +5 at the end unless paired with a same-suit card${c.suit === 'black' ? ' (black never pairs)' : ''}">+5</span>`);
   }
   return s;
 }
@@ -824,7 +824,7 @@ function overlay() {
       : `Deal ${M.deals.length} scored`;
     const sub = final ? `Lowest total wins: ${minT} points.` : (M.mode === 'deals' ? `${3 - M.deals.length} deal${3 - M.deals.length > 1 ? 's' : ''} left. Lowest total wins.` : `First to ${playTo()} ends the match. Lowest total wins.`);
     return `<div class="sheet-bg"><div class="sheet rise" role="dialog" aria-modal="true" aria-labelledby="sc-h">
-      <span class="eyebrow">${S.G.endReason}</span><h2 id="sc-h">${head}</h2><p class="hint" style="margin:0">${sub} ${RULES.scoring === 'count' ? 'Every card left scores 1 and every negative scores 3.' : (RULES.scoring === 'tiers' ? 'Cards score 1 (1–3), 3 (4–7) or 5 (8–10). ' : '') + 'Negatives score +5 unless paired with a same-suit card (green).'}</p>
+      <span class="eyebrow">${S.G.endReason}</span><h2 id="sc-h">${head}</h2><p class="hint" style="margin:0">${sub} ${RULES.scoring === 'count' ? 'Every card left scores 1 and every negative scores 2.' : (RULES.scoring === 'tiers' ? 'Cards score 1 (1–3), 3 (4–7) or 5 (8–10). ' : '') + 'Negatives score +5 unless paired with a same-suit card (green).'}</p>
       ${scoreTable(final)}
       <div class="actions">${S.online && !S.online.view.host ? '<span class="hint">Waiting for the host to deal again…</span>' : final ? `<button class="btn primary" id="b-again">Play again</button><button class="btn" id="b-setup">${S.online ? 'Back to lobby' : 'Change players'}</button>` : `<button class="btn primary" id="b-deal">Deal again</button>`}</div>
     </div></div>`;
@@ -846,7 +846,7 @@ function rulesHtml() {
   <p>${RULES.colorCount ? 'After the color count and the highest target-color card, compare' : 'Compare'} each play's best positive card: target color, then value, then the target's sister suit, then suit rank (Red 6, Orange 5, Green 4, Blue 3, Purple 2, Grey 1), then the starred copy.</p>
   <h3>Scoring</h3>
   <ul><li>The deal ends when someone runs out of cards or nobody can make the target.</li>
-  <li>${RULES.scoring === 'count' ? 'Card count: every card left in your hand scores 1, and every negative scores 3. Negatives never pair.' : RULES.scoring === 'tiers' ? 'Tiers: cards 1–3 score 1, 4–7 score 3, and 8–10 score 5. A negative scores +5, unless paired with a positive card of the same suit, when it subtracts instead. Black negatives never pair.' : 'Positive cards score their value. A negative scores +5 (shown on the card), unless paired with a positive card of the same suit, when it subtracts instead. Black negatives never pair.'}</li></ul>`;
+  <li>${RULES.scoring === 'count' ? 'Card count: every card left in your hand scores 1, and every negative scores 2. Negatives never pair.' : RULES.scoring === 'tiers' ? 'Tiers: cards 1–3 score 1, 4–7 score 3, and 8–10 score 5. A negative scores +5, unless paired with a positive card of the same suit, when it subtracts instead. Black negatives never pair.' : 'Positive cards score their value. A negative scores +5 (shown on the card), unless paired with a positive card of the same suit, when it subtracts instead. Black negatives never pair.'}</li></ul>`;
 }
 
 function splash() {
@@ -880,7 +880,7 @@ function splash() {
             <button data-scoring="face" aria-pressed="${S.scoring === 'face'}">Face value</button>
             <button data-scoring="count" aria-pressed="${S.scoring === 'count'}">Card count</button>
             <button data-scoring="tiers" aria-pressed="${(S.scoring || 'tiers') === 'tiers'}">Tiers</button></div>
-          <span class="hint">${S.scoring === 'count' ? 'Every card left scores 1; every negative scores 3 (no pairing).' : S.scoring !== 'face' ? '1–3 score 1, 4–7 score 3, 8–10 score 5. Negatives score +5 unless paired.' : 'Cards score their number. Negatives score +5 unless paired with the same color.'}</span></div>
+          <span class="hint">${S.scoring === 'count' ? 'Every card left scores 1; every negative scores 2 (no pairing).' : S.scoring !== 'face' ? '1–3 score 1, 4–7 score 3, 8–10 score 5. Negatives score +5 unless paired.' : 'Cards score their number. Negatives score +5 unless paired with the same color.'}</span></div>
         <div class="field"><span class="lbl" id="l-rule">Who wins a round</span>
           <div class="seg" role="group" aria-labelledby="l-rule">
             <button data-rule="high" aria-pressed="${!S.colorRule}">Highest card</button>
