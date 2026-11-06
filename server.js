@@ -58,11 +58,11 @@ const isAway = (s, now = Date.now()) => !s.bot && !s.connected && now - (s.goneA
 const playsForSelf = s => !s.bot && (s.connected || Date.now() - (s.goneAt || 0) <= GRACE_MS);
 
 function send(ws, msg) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(msg)); }
-function useRules(room) { E.RULES.colorCount = room.settings.colorRule; E.RULES.blackDeck = !!room.settings.blackDeck; E.RULES.scoring = room.settings.scoring || 'tiers'; E.RULES.quench = !!room.settings.quench; E.RULES.usurper = false; E.RULES.six = !!room.settings.six; E.RULES.slag = !!room.settings.slag; E.RULES.matchNumber = !!room.settings.matchNumber; }
+function useRules(room) { E.RULES.colorCount = room.settings.colorRule; E.RULES.blackDeck = !!room.settings.blackDeck; E.RULES.scoring = room.settings.scoring || 'tiers'; E.RULES.quench = !!room.settings.quench; E.RULES.usurper = false; E.RULES.six = !!room.settings.six; E.RULES.pureTang = !!room.settings.pureTang; E.RULES.slag = !!room.settings.slag; E.RULES.matchNumber = !!room.settings.matchNumber; }
 
 function createRoom(name) {
   const room = {
-    code: newCode(), hostToken: null, seats: [], settings: { colorRule: false, blackDeck: false, scoring: 'tiers', mode: 'deals', quench: false, usurper: false, slag: false, matchNumber: false, six: false },
+    code: newCode(), hostToken: null, seats: [], settings: { colorRule: false, blackDeck: false, scoring: 'tiers', mode: 'deals', quench: false, usurper: false, slag: false, matchNumber: false, six: false, pureTang: false },
     phase: 'lobby', match: null, G: null, plays: [], submitted: [], last: null, picker: -1,
     ready: new Set(), revealAt: 0, dealScores: null, note: null, lastActive: Date.now(),
   };
@@ -275,6 +275,7 @@ function handle(ws, msg) {
       if (typeof msg.blackDeck === 'boolean') room.settings.blackDeck = msg.blackDeck;
       if (typeof msg.quench === 'boolean') room.settings.quench = msg.quench;
       if (typeof msg.six === 'boolean') room.settings.six = msg.six;
+      if (typeof msg.pureTang === 'boolean') room.settings.pureTang = msg.pureTang;
       if (typeof msg.slag === 'boolean') room.settings.slag = msg.slag;
       if (typeof msg.matchNumber === 'boolean') room.settings.matchNumber = msg.matchNumber;
       if (msg.mode === 'deals' || msg.mode === 'fifty') room.settings.mode = msg.mode;

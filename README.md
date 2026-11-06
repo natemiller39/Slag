@@ -77,6 +77,16 @@ Turn on **Full Tang 6s** on the start screen or in the lobby. (It replaces the o
 - If two players have a Full Tang, the normal order decides between them. A Quench still cancels the round.
 - On screen, every 6 glows when the option is on so it's easy to spot.
 
+## Option: Full Tang: one color
+
+Turn on **Full Tang: one color** on the start screen or in the lobby. (Made for the black suit deck, but works with either.)
+
+- All negatives are **neutral**: they have no color, never count as a color, never pair, and score **2** each if you're stuck with them.
+- A **Full Tang** is a play of two or more cards that are all the target's color (so no negatives).
+- A Full Tang **beats every other play**, even a higher target-color card played with a negative. On a Blue 7, Blue 4 + Blue 3 beats Blue 10 + −3.
+- Between two Full Tangs, the highest target-color card wins. A Quench still cancels the round.
+- This is separate from **Full Tang 6s**; both can be on at once, and either kind counts as a Full Tang.
+
 ## Option: Slag card
 
 Turn on **Slag card** on the start screen or in the lobby to shuffle one colorless Slag card, worth 7, into the deck.

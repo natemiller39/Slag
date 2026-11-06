@@ -8,6 +8,7 @@ const SUITS = {
   purple: { name: 'Purple', art: 'Chest armor', rank: 2, sister: 'grey',   hex: '#8b5cf0' },
   grey:   { name: 'Grey',   art: 'Helmet',      rank: 1, sister: 'purple', hex: '#5d5d63' },
   black:  { name: 'Black',  art: 'Serpent',     rank: 0, sister: null,     hex: '#111111' },
+  neutral: { name: 'Neutral', art: 'Serpent',    rank: 0, sister: null,     hex: '#6b5a49' },
   usurper: { name: 'Usurper', art: '', rank: 0, sister: null, hex: '#d9cbb0' },
   quench: { name: 'Quench', art: 'Water bucket', rank: 0, sister: null,    hex: '#2e86ab' },
   slag:   { name: 'Slag',   art: '',            rank: 0, sister: null,     hex: '#3a2a22' },
@@ -58,11 +59,14 @@ function bestCard(play, target) {
 
 // Table rule: when on, the play with the most cards of the target's color wins (negatives count),
 // and the highest target-color card breaks ties. When off, only the single best card counts.
-const RULES = { blackDeck: false, scoring: 'tiers', colorCount: false, quench: false, usurper: false, slag: false, matchNumber: false, six: false };
+const RULES = { pureTang: false, blackDeck: false, scoring: 'tiers', colorCount: false, quench: false, usurper: false, slag: false, matchNumber: false, six: false };
 // Full Tang 6s option: every 6 is a blade. A 6 plus at least one other card, no negatives, with the 6 or another card in the target's color.
 // It always wins the round; between two Full Tangs the normal order decides. A Quench still cancels it.
 const realSuit = s => SUIT_ORDER.includes(s) || (RULES.blackDeck && s === 'black');
 const isSix = c => !!c && c.value === 6 && realSuit(c.suit);
+// Full Tang (one color) option: 2+ cards, every one a positive card of the target's color. Negatives are neutral.
+const pureCombo = (p, t) => RULES.pureTang && p.length >= 2 && realSuit(t.suit) && p.every(c => c.suit === t.suit && c.value > 0);
+const isTang = (p, t) => sixCombo(p, t) || pureCombo(p, t);
 const sixCombo = (p, t) => RULES.six && p.length >= 2 && realSuit(t.suit) && p.some(isSix) && p.some(c => c.suit === t.suit) && !p.some(c => c.value < 0);
 // Slag card option: one colorless 7. Played in a combo, whoever wins the round draws a penalty card (unless it's you).
 // As the target, color doesn't count, the best play wins, and the winner draws a penalty card. It never counts as the high card.
@@ -124,6 +128,7 @@ function scoreHand(hand) {
   posLines.forEach(x => { total += x.pts; });
   const negLines = [];
   for (const c of neg) {
+    if (c.suit === 'neutral') { total += 2; negLines.push({ card: c, pts: 2, paired: false }); continue; }
     if (RULES.scoring !== 'count' && (c.suit !== 'black' || RULES.blackDeck) && avail[c.suit] > 0) { avail[c.suit]--; total += c.value; negLines.push({ card: c, pts: c.value, paired: true }); }
     else { total += negPts(); negLines.push({ card: c, pts: negPts(), paired: false }); }
   }
@@ -148,7 +153,7 @@ function newDeal(names, rng, opts = {}) {
   shuffle(main, rng);
   const negSuits = cfg.suits.slice();
   for (let b = 0; b < cfg.black; b++) negSuits.push('black');
-  const piles = [-1, -2, -3].map(v => shuffle(negSuits.map(s => mkCard(s, v, false)), rng));
+  const piles = [-1, -2, -3].map(v => shuffle((RULES.pureTang ? names.map(() => 'neutral') : negSuits).map(s => mkCard(s, v, false)), rng));
   const players = names.map((name, i) => ({ name, hand: [], seat: i }));
   for (const p of players) p.hand = main.splice(0, cfg.hand);
   for (const p of players) for (const pile of piles) p.hand.push(pile.pop());
@@ -196,10 +201,10 @@ function resolveRound(G, plays) {
   res.usurperTarget = isUsurper(t);
   res.usurperPlayed = res.made.some(i => plays[i].some(c => usurperLive(c, t, plays[i])));
   if (res.quenched) res.reason = 'quenched';
-  else if (res.made.some(i => sixCombo(plays[i], t))) {
+  else if (res.made.some(i => isTang(plays[i], t))) {
     let sb = -1, sk = null;
-    for (const i of res.made) if (sixCombo(plays[i], t)) { const k = playKey(plays[i], t); if (!sk || cmpKey(k, sk) > 0) { sb = i; sk = k; } }
-    const rivals = res.made.filter(i => i !== sb && sixCombo(plays[i], t)).length;
+    for (const i of res.made) if (isTang(plays[i], t)) { const k = playKey(plays[i], t); if (!sk || cmpKey(k, sk) > 0) { sb = i; sk = k; } }
+    const rivals = res.made.filter(i => i !== sb && isTang(plays[i], t)).length;
     res.winner = sb; res.winCard = bestCard(plays[sb], t).card; res.sixWin = true;
     res.reason = rivals ? `Full Tang, and ${cardLabel(res.winCard)} wins the clash of blades` : best === sb ? 'Full Tang' : `Full Tang beats ${G.players[best].name}'s play`;
   }
@@ -358,7 +363,7 @@ function botPlay(hand, target, style, rng, ctx) {
     const shed = p.length * 2.2 + saved * 0.35;
     const key = playKey(p, target);
     let pWin = sims ? winShare(key, sims) : roughWin(key);
-    if (sixCombo(p, target)) pWin = Math.max(pWin, 0.9);
+    if (isTang(p, target)) pWin = Math.max(pWin, 0.9);
     if (p.some(isUsurper) && !isUsurper(target)) pWin = p.some(c => usurperLive(c, target, p)) ? 0.97 : pWin;
     let winVal = 2.2 + targetValue(rest); // the target card leaves your hand too
     if (isSlag(target)) winVal -= 4.5; // the winner of a Slag round draws a penalty card
@@ -412,5 +417,5 @@ function botTarget(hand, rng, ctx) {
   return best;
 }
 
-if (typeof module !== 'undefined') module.exports = { BLACK_HANDS, playTo, tierPts, cardPts, negColor, isSix, sixCombo, loneMatch, numMatch, asColor, PAIRS, usurperLive, isSlag, isUsurper, RULES, playKey, colorCount, SUITS, SUIT_ORDER, setupFor, newDeal, resolveRound, setNextTarget, legalPlays, isLegal, bestCard, cardKey, cmpKey, scoreHand, botPlay, botTarget, botCtx, botMove, isQuench, quenchCount, STYLES, cardLabel, shuffle };
+if (typeof module !== 'undefined') module.exports = { pureCombo, isTang, BLACK_HANDS, playTo, tierPts, cardPts, negColor, isSix, sixCombo, loneMatch, numMatch, asColor, PAIRS, usurperLive, isSlag, isUsurper, RULES, playKey, colorCount, SUITS, SUIT_ORDER, setupFor, newDeal, resolveRound, setNextTarget, legalPlays, isLegal, bestCard, cardKey, cmpKey, scoreHand, botPlay, botTarget, botCtx, botMove, isQuench, quenchCount, STYLES, cardLabel, shuffle };
 
