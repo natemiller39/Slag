@@ -58,11 +58,11 @@ const isAway = (s, now = Date.now()) => !s.bot && !s.connected && now - (s.goneA
 const playsForSelf = s => !s.bot && (s.connected || Date.now() - (s.goneAt || 0) <= GRACE_MS);
 
 function send(ws, msg) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(msg)); }
-function useRules(room) { E.RULES.colorCount = room.settings.colorRule; E.RULES.blackDeck = !!room.settings.blackDeck; E.RULES.scoring = room.settings.scoring || 'tiers'; E.RULES.quench = !!room.settings.quench; E.RULES.usurper = false; E.RULES.six = !!room.settings.six; E.RULES.pureTang = !!room.settings.pureTang; E.RULES.slag = !!room.settings.slag; E.RULES.matchNumber = !!room.settings.matchNumber; }
+function useRules(room) { E.RULES.colorCount = room.settings.colorRule; E.RULES.blackDeck = !!room.settings.blackDeck; E.RULES.targetLine = !!room.settings.targetLine; E.RULES.scoring = room.settings.scoring || 'tiers'; E.RULES.quench = !!room.settings.quench; E.RULES.usurper = false; E.RULES.six = !!room.settings.six; E.RULES.pureTang = !!room.settings.pureTang; E.RULES.slag = !!room.settings.slag; E.RULES.matchNumber = !!room.settings.matchNumber; }
 
 function createRoom(name) {
   const room = {
-    code: newCode(), hostToken: null, seats: [], settings: { colorRule: false, blackDeck: false, scoring: 'tiers', mode: 'deals', quench: false, usurper: false, slag: false, matchNumber: false, six: false, pureTang: false },
+    code: newCode(), hostToken: null, seats: [], settings: { colorRule: false, targetLine: false, blackDeck: false, scoring: 'tiers', mode: 'deals', quench: false, usurper: false, slag: false, matchNumber: false, six: false, pureTang: false },
     phase: 'lobby', match: null, G: null, plays: [], submitted: [], last: null, picker: -1,
     ready: new Set(), revealAt: 0, dealScores: null, note: null, lastActive: Date.now(),
   };
@@ -152,7 +152,7 @@ function maybeAdvance(room) {
   const card = E.botTarget(G.players[w].hand, Math.random, E.botCtx(G, w));
   E.setNextTarget(G, w, card);
   if (G.over) return endDeal(room);
-  room.note = card ? { who: w, text: `{who} set the next target: ${E.cardLabel(card)}.` } : { who: w, text: '{who} only had negatives, so the target was flipped.' };
+  room.note = card ? { who: w, text: E.RULES.targetLine ? `{who} added ${E.cardLabel(card)} to the target line.` : `{who} set the next target: ${E.cardLabel(card)}.` } : { who: w, text: '{who} only had negatives, so the target was flipped.' };
   newRound(room);
 }
 function endDeal(room) {
@@ -194,7 +194,7 @@ function viewFor(room, s) {
   const relEnd = r => (r && r === `${seats[s].name} went out.` ? 'You went out.' : r);
   v.G = {
     players: rot(G.players.map((p, i) => ({ name: nameOf(i), seat: R(i), hand: i === s || showAll ? p.hand : Array(p.hand.length).fill(0) }))),
-    draw: Array(G.draw.length).fill(0), discard: G.discard, target: G.target, round: G.round,
+    draw: Array(G.draw.length).fill(0), discard: G.discard, target: G.target, queue: G.queue || null, round: G.round,
     over: G.over, endReason: relEnd(G.endReason), n, cfg: G.cfg,
   };
   const M = room.match;
@@ -220,7 +220,7 @@ function viewFor(room, s) {
     else if (L.ended) msg = relEnd(G.endReason);
     else {
       msg = `<b>${L.winner === s ? 'You win' : seats[L.winner].name + ' wins'}</b> the round: ${L.reason}.`;
-      if (room.picker === s) { phase = 'pick'; msg += ' Now pick the next target from your hand.'; }
+      if (room.picker === s) { phase = 'pick'; msg += room.settings.targetLine ? ' Now add a card to the target line.' : ' Now pick the next target from your hand.'; }
       else if (room.picker >= 0) msg += ` ${seats[room.picker].name} is choosing the next target.`;
     }
   }
@@ -273,6 +273,7 @@ function handle(ws, msg) {
       if (typeof msg.colorRule === 'boolean') room.settings.colorRule = msg.colorRule;
       if (['face', 'count', 'tiers'].includes(msg.scoring)) room.settings.scoring = msg.scoring;
       if (typeof msg.blackDeck === 'boolean') room.settings.blackDeck = msg.blackDeck;
+      if (typeof msg.targetLine === 'boolean') room.settings.targetLine = msg.targetLine;
       if (typeof msg.quench === 'boolean') room.settings.quench = msg.quench;
       if (typeof msg.six === 'boolean') room.settings.six = msg.six;
       if (typeof msg.pureTang === 'boolean') room.settings.pureTang = msg.pureTang;
@@ -316,7 +317,7 @@ function handle(ws, msg) {
       useRules(room);
       E.setNextTarget(G, s, card);
       if (G.over) return endDeal(room);
-      room.note = { who: s, text: `{who} set the next target: ${E.cardLabel(card)}.` };
+      room.note = { who: s, text: E.RULES.targetLine ? `{who} added ${E.cardLabel(card)} to the target line.` : `{who} set the next target: ${E.cardLabel(card)}.` };
       return newRound(room);
     }
     case 'ready':

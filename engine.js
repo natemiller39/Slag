@@ -59,7 +59,7 @@ function bestCard(play, target) {
 
 // Table rule: when on, the play with the most cards of the target's color wins (negatives count),
 // and the highest target-color card breaks ties. When off, only the single best card counts.
-const RULES = { pureTang: false, blackDeck: false, scoring: 'tiers', colorCount: false, quench: false, usurper: false, slag: false, matchNumber: false, six: false };
+const RULES = { targetLine: false, pureTang: false, blackDeck: false, scoring: 'tiers', colorCount: false, quench: false, usurper: false, slag: false, matchNumber: false, six: false };
 // Full Tang 6s option: every 6 is a blade. A 6 plus at least one other card, no negatives, with the 6 or another card in the target's color.
 // It always wins the round; between two Full Tangs the normal order decides. A Quench still cancels it.
 const realSuit = s => SUIT_ORDER.includes(s) || (RULES.blackDeck && s === 'black');
@@ -160,7 +160,19 @@ function newDeal(names, rng, opts = {}) {
   // a Quench never starts as the target: slide it under the pile and flip again
   let target = main.shift();
   for (let k = 0; isQuench(target) && k < main.length; k++) { main.push(target); target = main.shift(); }
-  return { players, draw: main, discard: [], target, round: 1, reflips: 0, cfg, n, over: false, endReason: null, rng, setter: -1 };
+  const G = { players, draw: main, discard: [], target, round: 1, reflips: 0, cfg, n, over: false, endReason: null, rng, setter: -1 };
+  // Target line option: a second face-up card waits behind the current target.
+  if (RULES.targetLine) { const nx = drawTarget(G); G.queue = nx ? [nx] : []; G.queueSetters = nx ? [-1] : []; }
+  return G;
+}
+
+// Target line: move the line up one card. 'add' (a card from the winner, or null) joins the back; with no card, the deck refills it.
+function advanceLine(G, add, setter) {
+  if (add) { G.queue.push(add); G.queueSetters.push(setter); }
+  else { const c = drawTarget(G); if (c) { G.queue.push(c); G.queueSetters.push(-1); } }
+  if (!G.queue.length) return null;
+  G.target = G.queue.shift(); G.setter = G.queueSetters.shift();
+  return G.target;
 }
 
 function drawTarget(G) {
@@ -187,8 +199,8 @@ function resolveRound(G, plays) {
       G.reflips++;
       // nobody draws; flip a fresh target
       G.discard.push(t);
-      const nt = drawTarget(G);
-      if (nt) { G.target = nt; G.setter = -1; res.reflip = true; G.round++; return res; }
+      const nt = RULES.targetLine ? advanceLine(G, null) : drawTarget(G);
+      if (nt) { if (!RULES.targetLine) { G.target = nt; G.setter = -1; } res.reflip = true; G.round++; return res; }
     }
     G.over = true; G.endReason = 'Nobody could make ' + cardLabel(t) + '.'; res.ended = true; return res;
   }
@@ -247,9 +259,10 @@ function resolveRound(G, plays) {
     G.discard.push(t);
     // table rule: a Quench played when the draw pile is empty ends the deal (no reshuffle for the new target)
     if (res.quenched && !G.draw.length) { G.over = true; G.endReason = 'Quenched with an empty draw pile, so the deal ends.'; res.ended = true; return res; }
-    const nt = drawTarget(G);
+    const nt = RULES.targetLine ? advanceLine(G, null) : drawTarget(G);
     if (!nt) { G.over = true; G.endReason = 'The deck ran out.'; res.ended = true; return res; }
-    G.target = nt; G.setter = -1; G.round++;
+    if (!RULES.targetLine) { G.target = nt; G.setter = -1; }
+    G.round++;
   }
   return res;
 }
@@ -290,7 +303,12 @@ function explain(plays, made, w, t) {
 function setNextTarget(G, winner, card) {
   G.discard.push(G.target);
   const p = G.players[winner];
-  if (card) { p.hand = p.hand.filter(c => c.id !== card.id); G.target = card; G.setter = winner; }
+  if (RULES.targetLine) {
+    // the winner's card joins the back of the line; the next card moves up
+    if (card) p.hand = p.hand.filter(c => c.id !== card.id);
+    if (!advanceLine(G, card || null, card ? winner : -1)) { G.over = true; G.endReason = 'The deck ran out.'; return; }
+  }
+  else if (card) { p.hand = p.hand.filter(c => c.id !== card.id); G.target = card; G.setter = winner; }
   else { const c = drawTarget(G); if (!c) { G.over = true; G.endReason = 'The deck ran out.'; return; } G.target = c; G.setter = -1; }
   G.round++;
   const out = G.players.findIndex(q => q.hand.length === 0);
@@ -308,7 +326,7 @@ function botCtx(G, i) {
   const pool = [];
   G.players.forEach((p, j) => { if (j !== i) pool.push(...p.hand); });
   pool.push(...G.draw);
-  return { pool, oppSizes: G.players.filter((_, j) => j !== i).map(p => p.hand.length) };
+  return { pool, oppSizes: G.players.filter((_, j) => j !== i).map(p => p.hand.length), next: G.queue && G.queue[0] };
 }
 // Deal random hands to the opponents from the unseen cards and see how they could answer this target.
 function sampleOpps(target, ctx, rng, samples) {
@@ -368,7 +386,13 @@ function botPlay(hand, target, style, rng, ctx) {
     let winVal = 2.2 + targetValue(rest); // the target card leaves your hand too
     if (isSlag(target)) winVal -= 4.5; // the winner of a Slag round draws a penalty card
     if (p.some(isSlag)) pWin *= 0.5; // the Slag card never counts as your high card; others pay if they win
-    const u = W.shed * shed + 2 * W.win * pWin * winVal + rng() * 0.6;
+    let ahead = 0;
+    const nx = ctx && ctx.next;
+    if (nx && nx.value > 0) { // Target line: keep cards that can make the next target, ideally in its color or as a Full Tang
+      const np = legalPlays(rest, nx);
+      ahead = np.length ? 1.2 + (np.some(q => q.some(c => c.suit === nx.suit && c.value > 0)) ? 1.0 : 0) + (np.some(q => isTang(q, nx)) ? 1.5 : 0) : -1.2;
+    }
+    const u = W.shed * shed + 2 * W.win * pWin * winVal + ahead + rng() * 0.6;
     if (u > bs) { bs = u; best = p; }
   }
   return best;
@@ -417,5 +441,5 @@ function botTarget(hand, rng, ctx) {
   return best;
 }
 
-if (typeof module !== 'undefined') module.exports = { pureCombo, isTang, BLACK_HANDS, playTo, tierPts, cardPts, negColor, isSix, sixCombo, loneMatch, numMatch, asColor, PAIRS, usurperLive, isSlag, isUsurper, RULES, playKey, colorCount, SUITS, SUIT_ORDER, setupFor, newDeal, resolveRound, setNextTarget, legalPlays, isLegal, bestCard, cardKey, cmpKey, scoreHand, botPlay, botTarget, botCtx, botMove, isQuench, quenchCount, STYLES, cardLabel, shuffle };
+if (typeof module !== 'undefined') module.exports = { advanceLine, pureCombo, isTang, BLACK_HANDS, playTo, tierPts, cardPts, negColor, isSix, sixCombo, loneMatch, numMatch, asColor, PAIRS, usurperLive, isSlag, isUsurper, RULES, playKey, colorCount, SUITS, SUIT_ORDER, setupFor, newDeal, resolveRound, setNextTarget, legalPlays, isLegal, bestCard, cardKey, cmpKey, scoreHand, botPlay, botTarget, botCtx, botMove, isQuench, quenchCount, STYLES, cardLabel, shuffle };
 

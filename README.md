@@ -39,6 +39,14 @@ Any card of the target's color beats every other color, and the highest one wins
 Sister suits: Red & Orange, Blue & Green, Purple & Grey.
 Suit rank: Blue 6, Red 5, Purple 4, Green 3, Orange 2, Grey 1 (Black, in the black suit deck, is lowest). The main colors (Blue, Red, Purple) outrank their partners.
 
+## Option: Target line
+
+Turn on **Target line** on the start screen or in the lobby so everyone can plan ahead.
+
+- Start each deal with **two** face-up target cards: the current target and the next one.
+- When you win a round, the card you choose joins the **back** of the line, and the next card moves up. So your card becomes the target after next.
+- If nobody wins (a Quench, or the 2-player re-flip), the line moves up and a card from the draw pile refills the back.
+
 ## Option: Black suit deck
 
 Choose **Deck: Black suit** on the start screen or in the lobby to play with one 70-card deck at every player count: the six suits plus a black suit, each 1–10 with **no doubles** (so no starred cards).
