@@ -66,7 +66,7 @@ Choose **Deck: Black suit** on the start screen or in the lobby to play with one
 
 ## Option: Quench cards
 
-Turn on **Quench cards** on the start screen or in the lobby to shuffle 0-value Quench cards into the deck: 1 at 2–3 players, 2 at 4–5, 3 at 6–8.
+Turn on **Quench cards** on the start screen or in the lobby to shuffle 0-value Quench cards into the deck: 1 at 2–4 players, 2 at 5, 3 at 6–8.
 
 - Add a Quench to a play that makes the number. It counts as one of your 3 cards and can't be played alone.
 - When a Quench is revealed, nobody wins the round. Everyone who made the number still discards, misses still draw, and a new target is flipped instead of being chosen by a winner.

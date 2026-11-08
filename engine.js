@@ -34,9 +34,9 @@ function setupFor(n) {
   return { suits: SUIT_ORDER, doubles: true, hand: 10, black: 2 };
 }
 
-// Quench option: colorless 0-value Quench cards shuffled into the deck. One at 2–3 players, two at 4–5, three at 6–8.
+// Quench option: colorless 0-value Quench cards shuffled into the deck. One at 2–4 players, two at 5, three at 6–8.
 const isQuench = c => !!c && c.suit === 'quench';
-function quenchCount(n) { return n <= 3 ? 1 : n <= 5 ? 2 : 3; }
+function quenchCount(n) { return n <= 4 ? 1 : n <= 5 ? 2 : 3; }
 function cardLabel(c) { if (isQuench(c)) return 'Quench 0'; if (isUsurper(c)) return (c.pair ? SUITS[PAIRS[c.pair][0]].name + '/' + SUITS[PAIRS[c.pair][1]].name + ' ' : '') + 'Usurper 3'; if (isSlag(c)) return 'Slag 7'; return SUITS[c.suit].name + ' ' + (c.value < 0 ? '−' + (-c.value) : c.value) + (c.star ? '★' : ''); }
 
 // Ranking key of a single positive card relative to a target (higher array wins, compared left to right)
