@@ -647,7 +647,7 @@ function startTutorial() {
       reveal: `<b>Ana played Grey</b>, the middle color, so she wins this one. Ben couldn't make 5, so he <b>draws a penalty card</b>. Getting stuck with cards is how you lose points. Press Continue.` },
     { ids: [yO6.id, yGr2.id, yB1.id], bots: [null, [aB10, aBn1], [bR7, bR2]], last: true,
       choose: `<b>Round 3 of 3.</b> Ana set <b>Blue 9</b>. Here's the power play: a <b>Full Tang</b> is a <b>6</b> plus a card of the middle color, with <b>no negatives</b>, and it always wins. Tap <b>Orange 6</b>, <b>Green 2</b> and <b>Blue 1</b>.`,
-      reveal: `<b>Full Tang!</b> Ana's Blue 10 would normally win, but she used a negative, and nothing beats a Full Tang. Press Continue to finish.` },
+      reveal: `<b>Full Tang!</b> Ana's Blue 10 is the highest Blue card, so it would normally win. But a Full Tang always wins, a sneaky way to steal a round. Press Continue to see how scoring works.` },
   ];
   S.tut = { r: 0, stage: 'choose', script };
   tutRound();
@@ -660,18 +660,20 @@ function coachHtml() {
   return `<div class="coach" role="status"><span class="coach-tag">Tutorial ${t.r + 1}/3</span><p>${t.stage === 'choose' ? sc.choose : sc.reveal}</p><button class="btn small" id="b-tut-skip">Skip</button></div>`;
 }
 function tutDoneHtml() {
+  const G = S.G, M = S.match;
+  if (!S.dealScores || S.tut.scored !== true) { S.dealScores = G.players.map(p => scoreHand(p.hand)); M.totals = S.dealScores.map(x => x.total); S.tut.scored = true; }
   return `<div class="sheet-bg"><div class="sheet rise" role="dialog" aria-modal="true" aria-labelledby="tut-h">
-    <span class="eyebrow">Tutorial</span><h2 id="tut-h">That's Slag!</h2>
+    <span class="eyebrow">Quick tutorial · scoring</span><h2 id="tut-h">If the deal ended now</h2>
+    <p class="hint" style="margin:0">A deal ends when someone plays their last card. Every card left in your hand scores <b>1 point</b>, every negative <b>2</b>. Lowest total after 3 deals wins.</p>
+    ${scoreTable(false)}
     <ul>
       <li><b>Win a round</b> and you choose the next target from your hand.</li>
       <li><b>Can't make the number?</b> Pass and draw a penalty card.</li>
-      <li><b>The deal ends</b> when someone plays their last card.</li>
-      <li><b>Scoring:</b> every card left in your hand is 1 point, every negative 2. <b>Lowest total after 3 deals wins.</b></li>
     </ul>
     <div class="actions"><button class="btn primary" id="b-tut-play">Play Slag</button><button class="btn" id="b-tut-back">Back to start</button></div>
   </div></div>`;
 }
-function endTutorial(play) { S.tut = null; S.last = null; if (play) startMatch(true); else { S.phase = 'splash'; S.G = null; S.match = null; render(); } }
+function endTutorial(play) { S.tut = null; S.last = null; S.dealScores = null; if (play) startMatch(true); else { S.phase = 'splash'; S.G = null; S.match = null; render(); } }
 function toChoose(msg) { if (S.tut && S.tut.r < S.tut.script.length - 1) { S.tut.r++; S.tut.stage = 'choose'; tutRound(); } S.phase = 'choose'; S.last = null; S.msg = msg; render(); }
 function pickTarget(card) {
   if (S.online) { onlineSend({ t: 'target', id: card.id }); return; }
@@ -972,7 +974,7 @@ function splash() {
             <button data-mode="deals" aria-pressed="${S.mode === 'deals'}">Three deals</button>
             <button data-mode="fifty" aria-pressed="${S.mode === 'fifty'}">Play to a target</button></div></div>
         <div class="base-set"><span class="eyebrow">Base set</span><span>${S.bots + 1} players · classic deck · Full Tang 6s · Card count scoring: every card left scores 1, every negative 2.</span></div>
-        <div class="actions"><button class="btn primary" id="b-play-base">Play Slag</button><button class="btn" id="b-learn">Learn to play (3 rounds)</button></div>
+        <div class="actions"><button class="btn primary" id="b-play-base">Play Slag</button><button class="btn" id="b-learn">Quick tutorial</button></div>
         <details class="lab" ${S.labOpen ? 'open' : ''}><summary>Playtest lab: tweak the rules</summary>
         <p class="hint">Try other decks, scoring and options. Your settings here are saved on this device and don't change the base set.</p>
         <div class="field"><span class="lbl" id="l-line">Target line</span>
