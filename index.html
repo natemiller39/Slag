@@ -603,12 +603,12 @@ function commit(play) {
       S.msg = `<b>You win</b> the round: ${res.reason}. Now ${(RULES.targetLine ? 'add a card to the target line' : 'pick the next target')} from your hand.`;
     }
   }
-  if (S.tut) { S.phase = 'reveal'; S.tut.stage = 'reveal'; }
+  if (S.tut) { S.tut.stage = 'reveal'; if (S.tut.script[S.tut.r].last) S.phase = 'reveal'; }
   render();
 }
 function quenchNames(idx, players) { const n = idx.map(i => players[i].name); return n.length > 1 ? n.slice(0, -1).join(', ') + ' and ' + n[n.length - 1] : n[0]; }
 function afterReveal() {
-  if (S.tut) { S.tut.stage = 'done'; return render(); }
+  if (S.tut && S.tut.script[S.tut.r].last) { S.tut.stage = 'done'; return render(); }
   if (S.online) { onlineSend({ t: 'ready' }); return; }
   const G = S.G, res = S.last;
   if (G.over) return endDeal();
@@ -618,35 +618,46 @@ function afterReveal() {
     S.phase = 'pick'; S.msg = RULES.targetLine ? `<b>You won.</b> Tap a card to add to the back of the target line.` : `<b>You won.</b> Tap a card from your hand to set the next target.`;
     return render();
   }
-  const w = res.winner, card = botTarget(G.players[w].hand, rng, botCtx(G, w));
+  const w = res.winner, card = S.tut ? S.tut.script[S.tut.r].botPick : botTarget(G.players[w].hand, rng, botCtx(G, w));
   setNextTarget(G, w, card);
   if (G.over) return endDeal();
   toChoose(card ? (RULES.targetLine ? `${G.players[w].name} added ${cardLabel(card)} to the target line.` : `${G.players[w].name} set the next target: ${cardLabel(card)}.`) : `${G.players[w].name} holds only negatives, so the target was flipped.`);
 }
 
-// ===== Learn to play: one scripted round =====
+// ===== Learn to play: three scripted rounds =====
 function startTutorial() {
   applyRuleSet(BASE_SET);
   const C = (s, v, st) => mkCard(s, v, st);
-  const six = C('orange', 6), one = C('blue', 1);
-  const you = [six, one, C('red', 9), C('green', 3), C('grey', 2, true), C('purple', 8), C('red', 4), C('red', -1), C('green', -2), C('purple', -3)];
-  const a10 = C('blue', 10), aNeg = C('blue', -3), b5 = C('red', 5), b2 = C('green', 2);
-  const ana = [a10, aNeg, C('grey', 7), C('green', 9), C('orange', 3), C('purple', -1), C('orange', -2)];
-  const ben = [b5, b2, C('blue', 8), C('red', 3, true), C('grey', 10), C('grey', -1), C('red', -3)];
+  const yB4 = C('blue', 4), yB3 = C('blue', 3), yG5 = C('grey', 5), yR8 = C('red', 8), yO6 = C('orange', 6), yGr2 = C('green', 2), yB1 = C('blue', 1), yRn3 = C('red', -3);
+  const you = [yB4, yB3, yG5, yR8, yO6, yGr2, yB1, C('purple', 9), yRn3, C('green', -2), C('purple', -1)];
+  const aR9 = C('red', 9), aRn2 = C('red', -2), aG3 = C('grey', 3), aG2 = C('grey', 2), aB10 = C('blue', 10), aBn1 = C('blue', -1), aB9 = C('blue', 9);
+  const ana = [aR9, aRn2, aG3, aG2, aB10, aBn1, aB9, C('orange', 7), C('purple', -3)];
+  const bGr5 = C('green', 5), bGr2 = C('green', 2, true), bR7 = C('red', 7), bR2 = C('red', 2);
+  const ben = [bGr5, bGr2, bR7, bR2, C('grey', 9), C('grey', -1), C('orange', -3)];
   const players = [{ name: 'You', hand: you, seat: 0 }, { name: 'Ana', hand: ana, seat: 1 }, { name: 'Ben', hand: ben, seat: 2 }];
-  const draw = [C('green', 4), C('purple', 6), C('orange', 9), C('blue', 2), C('red', 2), C('grey', 5)];
+  const draw = [C('green', 4), C('purple', 6), C('orange', 9), C('blue', 2), C('red', 1), C('grey', 8), C('orange', 4), C('purple', 2)];
   S.G = { players, draw, discard: [], target: C('blue', 7), round: 1, reflips: 0, cfg: setupFor(3), n: 3, over: false, endReason: null, setter: -1 };
   S.match = { names: ['You', 'Ana', 'Ben'], styles: [null, 'steady', 'steady'], totals: [0, 0, 0], deals: [], mode: 'deals' };
-  S.tut = { stage: 'choose', ids: [six.id, one.id], bots: [null, [a10, aNeg], [b5, b2]] };
+  const script = [
+    { ids: [yB4.id, yB3.id], bots: [null, [aR9, aRn2], [bGr5, bGr2]], pickId: yG5.id,
+      choose: `<b>Round 1 of 3.</b> The middle card is the target: <b>Blue 7</b>. Everyone secretly picks up to 3 cards that add up to 7. Tap your glowing <b>Blue 4</b> and <b>Blue 3</b>, then press Play.`,
+      reveal: `<b>Everyone reveals at once.</b> Any card of the middle color (<b>Blue</b>) beats every other color, so you win, even against Ana's Red 9. Winners choose the next target from their hand: tap your <b>Grey 5</b>, then Set target.` },
+    { ids: [yR8.id, yRn3.id], bots: [null, [aG3, aG2], null], botPick: aB9,
+      choose: `<b>Round 2 of 3.</b> Your Grey 5 is the target, and you have no Grey left. You can use <b>one negative</b> per play: tap <b>Red 8</b> and <b>Red −3</b> (8 − 3 = 5).`,
+      reveal: `<b>Ana played Grey</b>, the middle color, so she wins this one. Ben couldn't make 5, so he <b>draws a penalty card</b>. Getting stuck with cards is how you lose points. Press Continue.` },
+    { ids: [yO6.id, yGr2.id, yB1.id], bots: [null, [aB10, aBn1], [bR7, bR2]], last: true,
+      choose: `<b>Round 3 of 3.</b> Ana set <b>Blue 9</b>. Here's the power play: a <b>Full Tang</b> is a <b>6</b> plus a card of the middle color, with <b>no negatives</b>, and it always wins. Tap <b>Orange 6</b>, <b>Green 2</b> and <b>Blue 1</b>.`,
+      reveal: `<b>Full Tang!</b> Ana's Blue 10 would normally win, but she used a negative, and nothing beats a Full Tang. Press Continue to finish.` },
+  ];
+  S.tut = { r: 0, stage: 'choose', script };
+  tutRound();
   S.sel = []; S.last = null; S.newIds = []; S.phase = 'choose'; S.msg = '';
   render();
 }
+function tutRound() { const sc = S.tut.script[S.tut.r]; S.tut.ids = sc.ids; S.tut.bots = sc.bots; S.tut.pickId = sc.pickId || null; }
 function coachHtml() {
-  const t = S.tut;
-  const body = t.stage === 'choose'
-    ? `<b>Learn to play.</b> The middle card is the target: <b>Blue 7</b>. Everyone secretly picks up to 3 cards that add up to 7 (at most one negative). Tap your glowing <b>Orange 6</b> and <b>Blue 1</b>, then press Play.`
-    : `<b>Everyone reveals at once.</b> Normally the highest card of the middle color wins, so Ana's Blue 10 would take it. But a <b>6</b> plus a card of the middle color, with <b>no negatives</b>, is a <b>Full Tang</b>, and it always wins. You win the round!`;
-  return `<div class="coach" role="status"><span class="coach-tag">Tutorial</span><p>${body}</p><button class="btn small" id="b-tut-skip">Skip</button></div>`;
+  const t = S.tut, sc = t.script[t.r];
+  return `<div class="coach" role="status"><span class="coach-tag">Tutorial ${t.r + 1}/3</span><p>${t.stage === 'choose' ? sc.choose : sc.reveal}</p><button class="btn small" id="b-tut-skip">Skip</button></div>`;
 }
 function tutDoneHtml() {
   return `<div class="sheet-bg"><div class="sheet rise" role="dialog" aria-modal="true" aria-labelledby="tut-h">
@@ -661,7 +672,7 @@ function tutDoneHtml() {
   </div></div>`;
 }
 function endTutorial(play) { S.tut = null; S.last = null; if (play) startMatch(true); else { S.phase = 'splash'; S.G = null; S.match = null; render(); } }
-function toChoose(msg) { S.phase = 'choose'; S.last = null; S.msg = msg; render(); }
+function toChoose(msg) { if (S.tut && S.tut.r < S.tut.script.length - 1) { S.tut.r++; S.tut.stage = 'choose'; tutRound(); } S.phase = 'choose'; S.last = null; S.msg = msg; render(); }
 function pickTarget(card) {
   if (S.online) { onlineSend({ t: 'target', id: card.id }); return; }
   setNextTarget(S.G, 0, card);
@@ -862,10 +873,10 @@ function you() {
   const pairedIds = new Set(scoreHand(myHand()).neg.filter(x => x.paired).map(x => x.card.id));
   const cards = hand.map(c => {
     const sel = S.phase === 'pick' ? S.pickSel === c.id : S.sel.includes(c.id);
-    const pickable = S.phase === 'pick' && c.value > 0;
+    const pickable = S.phase === 'pick' && c.value > 0 && (!S.tut || c.id === S.tut.pickId);
     const can = (S.phase === 'choose' && !locked) || pickable;
     const dim = S.phase === 'pick' && c.value < 0;
-    return `<button class="card ${sel ? 'sel' : ''} ${pickable ? 'pickable' : ''} ${dim ? 'dim' : ''} ${S.tut && S.phase === 'choose' && S.tut.ids.includes(c.id) ? 'tut-glow' : ''}" data-id="${c.id}" ${can ? '' : 'disabled'} aria-pressed="${sel}" aria-label="${cardLabel(c)}">
+    return `<button class="card ${sel ? 'sel' : ''} ${pickable ? 'pickable' : ''} ${dim ? 'dim' : ''} ${S.tut && ((S.phase === 'choose' && S.tut.ids.includes(c.id)) || (S.phase === 'pick' && c.id === S.tut.pickId)) ? 'tut-glow' : ''}" data-id="${c.id}" ${can ? '' : 'disabled'} aria-pressed="${sel}" aria-label="${cardLabel(c)}">
       <img src="${src(c)}" alt="">${badges(c, false, pairedIds.has(c.id))}${S.newIds.includes(c.id) ? '<span class="new">new</span>' : ''}</button>`;
   }).join('');
   return `<section class="you ${S.phase === 'pick' ? 'picking' : ''}" aria-label="Your hand">
@@ -961,7 +972,7 @@ function splash() {
             <button data-mode="deals" aria-pressed="${S.mode === 'deals'}">Three deals</button>
             <button data-mode="fifty" aria-pressed="${S.mode === 'fifty'}">Play to a target</button></div></div>
         <div class="base-set"><span class="eyebrow">Base set</span><span>${S.bots + 1} players · classic deck · Full Tang 6s · Card count scoring: every card left scores 1, every negative 2.</span></div>
-        <div class="actions"><button class="btn primary" id="b-play-base">Play Slag</button><button class="btn" id="b-learn">Learn to play (1 round)</button></div>
+        <div class="actions"><button class="btn primary" id="b-play-base">Play Slag</button><button class="btn" id="b-learn">Learn to play (3 rounds)</button></div>
         <details class="lab" ${S.labOpen ? 'open' : ''}><summary>Playtest lab: tweak the rules</summary>
         <p class="hint">Try other decks, scoring and options. Your settings here are saved on this device and don't change the base set.</p>
         <div class="field"><span class="lbl" id="l-line">Target line</span>
@@ -1055,7 +1066,7 @@ function bindTable() {
       else { S.sel.shift(); S.sel.push(id); }
       render();
     } else if (S.phase === 'pick') {
-      const c = myHand().find(x => x.id === id); if (c && c.value > 0) { S.pickSel = id; render(); }
+      const c = myHand().find(x => x.id === id); if (c && c.value > 0 && (!S.tut || id === S.tut.pickId)) { S.pickSel = id; render(); }
     }
   });
   const p = $('#b-play'); if (p) p.onclick = () => { const play = S.sel.map(id => myHand().find(c => c.id === id)); if (isLegal(play, S.G.target)) { S.newIds = []; commit(play); } };
