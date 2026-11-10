@@ -153,6 +153,10 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .sd-tile .card { --w: var(--sdw); width: var(--sdw); }
 .sd-pass { font-family: var(--f-display); font-size: clamp(15px, 2vw, 20px); color: var(--parch-dim); padding: 6px 0; }
 .sd-tile.passed { opacity: .5; }
+.sd-tile .card.off { filter: brightness(.5) saturate(.4); }
+.sd-tile .card.key { box-shadow: 0 0 0 2px var(--ember-hot), 0 0 16px rgba(255, 170, 60, .75); z-index: 1; }
+.sd-why { font-size: 12.5px; line-height: 1.3; color: var(--parch-dim); text-align: center; max-width: 100%; }
+.sd-why.good { color: var(--ember-hot); font-weight: 600; }
 .showdown.tight { --div: 2.4; }
 .showdown.tight .sd-tile .card + .card { margin-left: calc(var(--sdw) * -.35 - 6px); }
 .sd-tile.win { padding-top: 22px; }
@@ -796,6 +800,22 @@ function matHtml() {
 }
 // Showdown: shown while the round is revealed. Winner first, then the other plays, then passes.
 const crownSvg = '<svg viewBox="0 0 24 18" aria-hidden="true"><path d="M1.5 16.5h21l1-11.5-6.2 4.6L12 1.2 6.7 9.6.5 5z" fill="currentColor"/></svg>';
+// One short line per tile saying why that play won or lost, shown in the showdown.
+function sdWhy(res, i, play, t) {
+  if (!play || !res.made || RULES.colorCount || res.colorless || res.slagTarget || res.quenched || res.usurperTie || res.reflip) return '';
+  const col = SUITS[t.suit] ? SUITS[t.suit].name : '';
+  if (!res.made.includes(i)) return `Doesn't make ${neg(t.value)}`;
+  const anyColor = res.made.some(j => colorCount(res.plays[j], t));
+  if (i === res.winner) return res.sixWin ? `Full Tang: a 6 with ${col}, no negatives` : anyColor ? `Highest ${col} card` : `Highest card (nobody played ${col})`;
+  if (res.sixWin) return 'A Full Tang beats every play';
+  if (res.winner < 0) return '';
+  if (!anyColor) return 'Lower card';
+  if (!colorCount(play, t)) return `No ${col}, so it can't win`;
+  const a = bestCard(play, t).card, w = res.winCard;
+  if (!a || !asColor(a, t, play)) return `Only a ${col} negative: the lowest ${col}`;
+  if (w && a.value === w.value) return 'Same number, loses the tie';
+  return w ? `Lower ${col} than ${cardLabel(w)}` : `Lower ${col}`;
+}
 function showdownHtml() {
   if (!(S.phase === 'reveal' || S.phase === 'pick') || !S.last) return '';
   const res = S.last, G = S.G, t = res.target, n = G.players.length;
@@ -824,11 +844,13 @@ function showdownHtml() {
       if (i === res.dethroned) cap += ' · dethroned';
       if (i === res.wouldWin && res.seized && res.winner !== i) cap += ' · would have won';
     } else cap = drew ? 'drew a card' : '';
-    const cards = play ? `<div class="cards">${play.map((c, j) => `<span class="card flip" style="animation-delay:${90 * k + 70 * j}ms"><img src="${src(c)}" alt="${cardLabel(c)}">${badges(c, true)}</span>`).join('')}</div>`
+    const why = sdWhy(res, i, play, t), keyCard = play && bestCard(play, t).card;
+    const cls = c => !why ? '' : (keyCard && c.id === keyCard.id ? 'key ' : '') + ((asColor(c, t, play) || (res.sixWin && isSix(c))) ? 'hit' : 'off');
+    const cards = play ? `<div class="cards">${play.map((c, j) => `<span class="card flip ${cls(c)}" style="animation-delay:${90 * k + 70 * j}ms"><img src="${src(c)}" alt="${cardLabel(c)}">${badges(c, true)}</span>`).join('')}</div>`
       : '<span class="sd-pass">Passed</span>';
     const quenched = (res.quenchedBy || []).includes(i);
     return `<div class="sd-tile ${won ? 'win' : ''} ${quenched ? 'quench' : ''} ${play ? '' : 'passed'}">${won ? `<span class="sd-crown">${crownSvg}Winner</span>` : ''}${quenched ? '<span class="sd-crown sd-quench">Quench</span>' : ''}${!won && !quenched && play && play.some(c => usurperLive(c, t, play)) ? '<span class="sd-crown sd-usurper">Usurper</span>' : ''}${i === res.dethroned ? '<span class="sd-crown sd-usurper">Dethroned</span>' : ''}${!won && play && play.some(isSlag) ? '<span class="sd-crown sd-slag">Slag</span>' : ''}
-      <div class="sd-label"><span class="sd-name">${p.name}</span>${cap ? `<span class="sd-cap">${cap}</span>` : ''}</div>${cards}</div>`;
+      <div class="sd-label"><span class="sd-name">${p.name}</span>${cap ? `<span class="sd-cap">${cap}</span>` : ''}</div>${cards}${why ? `<div class="sd-why ${won ? 'good' : ''}">${why}</div>` : ''}</div>`;
   }).join('');
   const shown = preview || t;
   const title = preview ? `${RULES.targetLine ? 'Joins the line' : 'Next target'} <b>${neg(shown.value)}</b> ${SUITS[shown.suit].name}` : res.usurperTie ? `Usurper tie · new target` : res.colorless ? `Usurper · color doesn't count · make <b>${neg(t.value)}</b>` : res.seized ? `Usurper seizes the round · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : res.dethroned >= 0 && res.dethroned !== undefined ? `Usurper · the leader is dethroned · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : res.sixWin ? `Full Tang · always the strongest · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : res.slagTarget ? `Slag · color doesn't count · make <b>${neg(t.value)}</b> · the winner draws` : res.slagHit >= 0 ? `Slag card · the winner draws · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : res.quenched ? `Quenched · nobody wins <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : `Showdown · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}`;
