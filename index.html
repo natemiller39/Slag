@@ -1089,7 +1089,8 @@ function splash() {
         <div class="field"><span class="lbl" id="l-mode">Match</span>
           <div class="seg" role="group" aria-labelledby="l-mode">
             <button data-mode="deals" aria-pressed="${S.mode === 'deals'}">Three deals</button>
-            <button data-mode="fifty" aria-pressed="${S.mode === 'fifty'}">Play to a target</button></div></div>
+            <button data-mode="fifty" aria-pressed="${S.mode === 'fifty'}">Play to 10 points</button></div>
+          <span class="hint">${S.mode === 'fifty' ? 'Keep dealing until someone reaches 10 points. Lowest total wins. (Lab scoring: 25 with Tiers, 50 with Face value.)' : 'Lowest total after three deals wins.'}</span></div>
         <div class="base-set"><span class="eyebrow">Base set</span><span>${S.bots + 1} players · classic deck · Full Tang 6s · Card count scoring: every card left scores 1, every negative 2.</span></div>
         <div class="actions"><button class="btn primary" id="b-play-base">Play Slag</button><button class="btn" id="b-learn">Quick tutorial</button></div>
         <details class="lab" ${S.labOpen ? 'open' : ''}><summary>Playtest lab: tweak the rules</summary>
