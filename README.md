@@ -10,7 +10,7 @@ The start screen has two areas:
 
 - **Play Slag** plays the base set: the classic deck, **Full Tang 6s**, and **Card count** scoring (every card left scores 1, every negative 2). Online rooms start with the base set too.
 - **How to play** (the Rules button) explains the base set in five steps with a picture of an example round. Inside a game it reflects the rules in use.
-- **Quick tutorial** runs three short rounds (play any cards you like; **Show me** suggests a play, and if you go off the suggested path the bots play for real and the coach explains what happened) against two bots with a coach box: (1) make the number, the middle color wins, and the winner picks the next target; (2) negatives and penalty draws; (3) the Full Tang. It ends on a scoring screen, as if the deal had ended.
+- **Quick tutorial** plays four guided rounds against two bots. It starts with the goal (empty your hand; what's left is slag), then: win and set yourself up with a good target, win again with a negative, set up again but lose to a bigger card, and finish with a Full Tang (a 6 plus one card) to go out. It ends on the deal's scores and explains that a game is 3 deals. Suggested cards glow, but you can play anything; off the suggested path the bots play for real and the coach explains what happened.
 - **Playtest lab** (folded away below it) holds every option and toggle for trying variants. Lab settings are saved on your device and never change the base set. In an online lobby, the same options sit under **Playtest options**.
 
 ## Playing online

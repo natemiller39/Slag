@@ -655,26 +655,29 @@ function afterReveal() {
 function startTutorial() {
   applyRuleSet(BASE_SET);
   const C = (s, v, st) => mkCard(s, v, st);
-  const yB4 = C('blue', 4), yB3 = C('blue', 3), yG5 = C('grey', 5), yR8 = C('red', 8), yO6 = C('orange', 6), yGr2 = C('green', 2), yB1 = C('blue', 1), yRn3 = C('red', -3);
-  const you = [yB4, yB3, yG5, yR8, yO6, yGr2, yB1, yRn3, C('green', -2), C('purple', -1)];
-  const aB2 = C('blue', 2), aO5 = C('orange', 5), aG3 = C('grey', 3), aG2 = C('grey', 2), aGn9 = C('green', 9), aR7 = C('red', 7), aR2 = C('red', 2);
-  const ana = [aB2, aO5, aG3, aG2, aGn9, aR7, aR2, C('grey', 1), C('red', -3), C('purple', -1)];
-  const bGr5 = C('green', 5), bGr2 = C('green', 2), bGr10 = C('green', 10), bGrn1 = C('green', -1);
-  const ben = [bGr5, bGr2, bGr10, bGrn1, C('grey', 9), C('orange', 8), C('red', -2)];
+  const yB4 = C('blue', 4), yB3 = C('blue', 3), yR9 = C('red', 9), yR10 = C('red', 10), yGn1 = C('green', -1), yP8 = C('purple', 8), yP5 = C('purple', 5), yP3 = C('purple', 3), yO6 = C('orange', 6), yGr2 = C('green', 2);
+  const you = [yB4, yB3, yR9, yR10, yGn1, yP8, yP5, yP3, yO6, yGr2];
+  const aB2 = C('blue', 2), aO5 = C('orange', 5), aR7 = C('red', 7), aR2 = C('red', 2), aG5 = C('grey', 5), aG3 = C('grey', 3), aGr10 = C('green', 10), aGn2 = C('grey', -2);
+  const ana = [aB2, aO5, aR7, aR2, aG5, aG3, aGr10, aGn2, C('orange', 9), C('blue', -3)];
+  const bGr5 = C('green', 5), bGr2 = C('green', 2), bP10 = C('purple', 10), bRn2 = C('red', -2), bGr8 = C('green', 8);
+  const ben = [bGr5, bGr2, bP10, bRn2, bGr8, C('grey', 4)];
   const players = [{ name: 'You', hand: you, seat: 0 }, { name: 'Ana', hand: ana, seat: 1 }, { name: 'Ben', hand: ben, seat: 2 }];
-  const draw = [C('green', 4), C('purple', 6), C('orange', 9), C('blue', 2), C('red', 1), C('grey', 8), C('orange', 4), C('purple', 2)];
+  const draw = [C('blue', 1), C('purple', 6), C('orange', 4), C('red', 1), C('grey', 8), C('orange', 2), C('purple', 2), C('green', 4)];
   S.G = { players, draw, discard: [], target: C('blue', 7), round: 1, reflips: 0, cfg: setupFor(3), n: 3, over: false, endReason: null, setter: -1 };
   S.match = { names: ['You', 'Ana', 'Ben'], styles: [null, 'steady', 'steady'], totals: [0, 0, 0], deals: [], mode: 'deals' };
   const script = [
-    { ids: [yB4.id, yB3.id], bots: [null, [aB2, aO5], [bGr5, bGr2]], pickId: yG5.id,
-      choose: `<b>Round 1 of 3.</b> The middle card is the target: <b>Blue 7</b>. Everyone secretly picks up to 3 cards that add up to 7. <b>Any colors work</b>: Grey 5 + Green 2, or Red 8 + Purple −1, would make 7 too. But the middle color is strongest. Pick any cards that make 7 and press Play. Stuck? Tap <b>Show me</b>.`,
-      reveal: `<b>Everyone reveals at once.</b> Any card of the middle color (<b>Blue</b>) beats every other color, and the highest one wins. Everyone made 7 in their own way. Ana played Blue too, but your Blue 4 beats her Blue 2, and Ben used Green cards, so he can't win. Winners choose the next target from their hand: tap any card, then Set target. Try your <b>Grey 5</b>: you have no Grey left, so you'll see what happens next.` },
-    { ids: [yR8.id, yRn3.id], bots: [null, [aG3, aG2], null], botPick: aGn9,
-      choose: `<b>Round 2 of 3.</b> Your Grey 5 is the target, and you have no Grey left. You can add <b>one negative</b> per play, like 8 − 3 = 5. Make 5 your way, or pass and draw a card.`,
-      reveal: `<b>Ana played Grey</b>, the middle color, so she wins this one. Ben couldn't make 5, so he <b>draws a penalty card</b>. Getting stuck with cards is how you lose points. Press Continue.` },
-    { ids: [yO6.id, yGr2.id, yB1.id], bots: [null, [aR7, aR2], [bGr10, bGrn1]], last: true,
-      choose: `<b>Round 3 of 3.</b> Ana set <b>Green 9</b>. Here's the power play: a <b>Full Tang</b> is a <b>6</b> plus a card of the middle color, with <b>no negatives</b>, and it always wins. Can you find one in your hand that makes 9?`,
-      reveal: `<b>Full Tang!</b> Ben's Green 10 is the highest Green card, so it would normally win. But a Full Tang always wins, a sneaky way to steal a round. Press Continue to see how scoring works.` },
+    { ids: [yB4.id, yB3.id], bots: [null, [aB2, aO5], [bGr5, bGr2]], pickId: yR9.id,
+      choose: `<b>Your goal: get rid of your cards.</b> Whatever's left in your hand when the deal ends is slag, and the least slag wins. The middle card is the target: <b>Blue 7</b>. Pick up to 3 cards that add up to 7. Any colors work, but the middle color is strongest. The glowing cards are a hint, but you can play anything.`,
+      reveal: `<b>You win!</b> Blue is the middle color, and your Blue 4 beats Ana's Blue 2. Ben used Green, so he couldn't win. Now the winner picks the next target from their hand. <b>Set yourself up:</b> you hold a Red 10, so pick your <b>Red 9</b>. Then tap Set target.` },
+    { ids: [yR10.id, yGn1.id], bots: [null, [aR7, aR2], null], pickId: yP8.id,
+      choose: `<b>Round 2.</b> You set Red 9, and you're holding a big Red card. You can add <b>one negative</b> to subtract: Red 10 + Green −1 = 9.`,
+      reveal: `<b>Set up for success!</b> Your Red 10 is the highest Red, so you win again. Ben couldn't make 9, so he <b>draws a penalty card</b>: more slag for him. Set yourself up again: you hold Purple 5 and Purple 3, so pick <b>Purple 8</b>.` },
+    { ids: [yP5.id, yP3.id], bots: [null, [aG5, aG3], [bP10, bRn2]], botPick: bGr8,
+      choose: `<b>Round 3.</b> Purple 8 is the target, and Purple 5 + Purple 3 makes it in Purple. Looks safe…`,
+      reveal: `<b>Ben had a bigger blade.</b> His Purple 10 beats your Purple 5. Other smiths can hold higher cards of your color, so a safe-looking target isn't always safe. You still got rid of two cards. Ben wins, so he sets the next target. Press Continue.` },
+    { ids: [yO6.id, yGr2.id], bots: [null, [aGr10, aGn2], null], last: true,
+      choose: `<b>Round 4.</b> Ben set <b>Green 8</b>, and you have two cards left. Here's your secret weapon: every <b>6</b> is a <b>Full Tang</b>. A 6 plus one other card, with the middle color and <b>no negatives</b>, always wins. Can you forge one?`,
+      reveal: `<b>Full Tang!</b> Ana's Green 10 is the highest Green, so it would normally win, but a Full Tang always wins. And those were your last cards, so <b>the deal is over</b>. Press Continue to see the scores.` },
   ];
   S.tut = { r: 0, stage: 'choose', script, onPath: true };
   tutSnap();
@@ -684,7 +687,12 @@ function startTutorial() {
 }
 // The tutorial follows its script while you play the suggested cards. Once you play anything else,
 // the bots play for real and the coach explains whatever happened.
-function tutSnap() { S.tut.show = false; S.tut.showIds = []; S.tut.showNone = false; }
+function tutSnap() {
+  // Suggested cards glow from the start of every round; they're only a hint, any legal play is allowed.
+  const t = S.tut, G = S.G;
+  const ids = t.onPath ? t.script[t.r].ids : (botPlay(myHand(), G.target, 'steady', Math.random, botCtx(G, 0)) || []).map(c => c.id);
+  t.show = true; t.showIds = ids; t.showNone = !ids.length;
+}
 function tutBotPlays() {
   const t = S.tut, sc = t.script[t.r], G = S.G;
   return G.players.map((p, i) => {
@@ -712,7 +720,7 @@ function tutExplain(res) {
 function tutChoose() {
   const t = S.tut, sc = t.script[t.r], tg = S.G.target, col = SUITS[tg.suit].name;
   if (t.onPath) return sc.choose;
-  const head = `<b>Round ${t.r + 1} of 3.</b> The target is <b>${cardLabel(tg)}</b>. `;
+  const head = `<b>Round ${t.r + 1} of ${t.script.length}.</b> The target is <b>${cardLabel(tg)}</b>. `;
   if (!sc.last) return head + `Make ${neg(tg.value)} with up to 3 cards. You can add <b>one negative</b> per play, like 8 − 3 = 5. Can't make it? Pass and draw a penalty card.`;
   const tang = legalPlays(myHand(), tg).some(p => isTang(p, tg));
   return head + `Here's the power play: a <b>Full Tang</b> is a <b>6</b> plus a card of the middle color (${col}), with <b>no negatives</b>, and it always wins. ` + (tang ? 'You have one. Can you find it?' : `You don't have one this time, so play your best ${col}.`);
@@ -725,14 +733,15 @@ function tutShow() {
 function tutRound() { const sc = S.tut.script[S.tut.r]; S.tut.ids = sc.ids; S.tut.bots = sc.bots; S.tut.pickId = sc.pickId || null; }
 function coachHtml() {
   const t = S.tut, sc = t.script[t.r];
-  return `<div class="coach" role="status"><span class="coach-tag">Tutorial ${t.r + 1}/3</span><p>${t.stage === 'choose' ? tutChoose() + (t.showNone ? ` <b>No play from your hand makes ${neg(S.G.target.value)}.</b> Pass and draw a card.` : '') : t.note}</p><div class="coach-btns">${t.stage === 'choose' && !t.show ? '<button class="btn small" id="b-tut-show">Show me</button>' : ''}<button class="btn small" id="b-tut-skip">Skip</button></div></div>`;
+  return `<div class="coach" role="status"><span class="coach-tag">Tutorial ${t.r + 1}/${t.script.length}</span><p>${t.stage === 'choose' ? tutChoose() + (t.showNone ? ` <b>No play from your hand makes ${neg(S.G.target.value)}.</b> Pass and draw a card.` : '') : t.note}</p><div class="coach-btns">${t.stage === 'choose' && !t.show ? '<button class="btn small" id="b-tut-show">Show me</button>' : ''}<button class="btn small" id="b-tut-skip">Skip</button></div></div>`;
 }
 function tutDoneHtml() {
   const G = S.G, M = S.match;
   if (!S.dealScores || S.tut.scored !== true) { S.dealScores = G.players.map(p => scoreHand(p.hand)); M.totals = S.dealScores.map(x => x.total); S.tut.scored = true; }
   return `<div class="sheet-bg"><div class="sheet rise" role="dialog" aria-modal="true" aria-labelledby="tut-h">
-    <span class="eyebrow">Quick tutorial · scoring</span><h2 id="tut-h">If the deal ended now</h2>
-    <p class="hint" style="margin:0">A deal ends when someone plays their last card. Every card left in your hand scores <b>1 point</b>, every negative <b>2</b>. Lowest total after 3 deals wins.</p>
+    <span class="eyebrow">Quick tutorial · scoring</span><h2 id="tut-h">${G.over ? 'The deal is over' : 'If the deal ended now'}</h2>
+    <p class="hint" style="margin:0">${G.players[0].hand.length ? '' : 'You went out with no slag: <b>0 points</b>. '}A deal ends when someone plays their last card. Every card left in a hand is slag: <b>1 point</b> each, <b>2</b> for a negative.</p>
+    <p style="margin:0"><b>That was one deal.</b> A game is <b>3 deals</b>, and the lowest total score at the end wins.</p>
     ${scoreTable(false)}
     <ul>
       <li><b>Win a round</b> and you choose the next target from your hand.</li>
