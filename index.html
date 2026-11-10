@@ -629,25 +629,25 @@ function startTutorial() {
   applyRuleSet(BASE_SET);
   const C = (s, v, st) => mkCard(s, v, st);
   const yB4 = C('blue', 4), yB3 = C('blue', 3), yG5 = C('grey', 5), yR8 = C('red', 8), yO6 = C('orange', 6), yGr2 = C('green', 2), yB1 = C('blue', 1), yRn3 = C('red', -3);
-  const you = [yB4, yB3, yG5, yR8, yO6, yGr2, yB1, C('purple', 9), yRn3, C('green', -2), C('purple', -1)];
-  const aR9 = C('red', 9), aRn2 = C('red', -2), aG3 = C('grey', 3), aG2 = C('grey', 2), aB10 = C('blue', 10), aBn1 = C('blue', -1), aB9 = C('blue', 9);
-  const ana = [aR9, aRn2, aG3, aG2, aB10, aBn1, aB9, C('orange', 7), C('purple', -3)];
-  const bGr5 = C('green', 5), bGr2 = C('green', 2, true), bR7 = C('red', 7), bR2 = C('red', 2);
-  const ben = [bGr5, bGr2, bR7, bR2, C('grey', 9), C('grey', -1), C('orange', -3)];
+  const you = [yB4, yB3, yG5, yR8, yO6, yGr2, yB1, yRn3, C('green', -2), C('purple', -1)];
+  const aB2 = C('blue', 2), aO5 = C('orange', 5), aG3 = C('grey', 3), aG2 = C('grey', 2), aGn9 = C('green', 9), aR7 = C('red', 7), aR2 = C('red', 2);
+  const ana = [aB2, aO5, aG3, aG2, aGn9, aR7, aR2, C('grey', 1), C('red', -3), C('purple', -1)];
+  const bGr5 = C('green', 5), bGr2 = C('green', 2), bGr10 = C('green', 10), bGrn1 = C('green', -1);
+  const ben = [bGr5, bGr2, bGr10, bGrn1, C('grey', 9), C('orange', 8), C('red', -2)];
   const players = [{ name: 'You', hand: you, seat: 0 }, { name: 'Ana', hand: ana, seat: 1 }, { name: 'Ben', hand: ben, seat: 2 }];
   const draw = [C('green', 4), C('purple', 6), C('orange', 9), C('blue', 2), C('red', 1), C('grey', 8), C('orange', 4), C('purple', 2)];
   S.G = { players, draw, discard: [], target: C('blue', 7), round: 1, reflips: 0, cfg: setupFor(3), n: 3, over: false, endReason: null, setter: -1 };
   S.match = { names: ['You', 'Ana', 'Ben'], styles: [null, 'steady', 'steady'], totals: [0, 0, 0], deals: [], mode: 'deals' };
   const script = [
-    { ids: [yB4.id, yB3.id], bots: [null, [aR9, aRn2], [bGr5, bGr2]], pickId: yG5.id,
-      choose: `<b>Round 1 of 3.</b> The middle card is the target: <b>Blue 7</b>. Everyone secretly picks up to 3 cards that add up to 7. Tap your glowing <b>Blue 4</b> and <b>Blue 3</b>, then press Play.`,
-      reveal: `<b>Everyone reveals at once.</b> Any card of the middle color (<b>Blue</b>) beats every other color, so you win, even against Ana's Red 9. Winners choose the next target from their hand: tap your <b>Grey 5</b>, then Set target.` },
-    { ids: [yR8.id, yRn3.id], bots: [null, [aG3, aG2], null], botPick: aB9,
+    { ids: [yB4.id, yB3.id], bots: [null, [aB2, aO5], [bGr5, bGr2]], pickId: yG5.id,
+      choose: `<b>Round 1 of 3.</b> The middle card is the target: <b>Blue 7</b>. Everyone secretly picks up to 3 cards that add up to 7. <b>Any colors work</b>: Grey 5 + Green 2, or Red 8 + Purple −1, would make 7 too. But the middle color is strongest, so tap your glowing <b>Blue 4</b> and <b>Blue 3</b>, then press Play.`,
+      reveal: `<b>Everyone reveals at once.</b> Any card of the middle color (<b>Blue</b>) beats every other color, and the highest one wins. Everyone made 7 in their own way. Ana played Blue too, but your Blue 4 beats her Blue 2, and Ben used Green cards, so he can't win. Winners choose the next target from their hand: tap your <b>Grey 5</b>, then Set target.` },
+    { ids: [yR8.id, yRn3.id], bots: [null, [aG3, aG2], null], botPick: aGn9,
       choose: `<b>Round 2 of 3.</b> Your Grey 5 is the target, and you have no Grey left. You can use <b>one negative</b> per play: tap <b>Red 8</b> and <b>Red −3</b> (8 − 3 = 5).`,
       reveal: `<b>Ana played Grey</b>, the middle color, so she wins this one. Ben couldn't make 5, so he <b>draws a penalty card</b>. Getting stuck with cards is how you lose points. Press Continue.` },
-    { ids: [yO6.id, yGr2.id, yB1.id], bots: [null, [aB10, aBn1], [bR7, bR2]], last: true,
-      choose: `<b>Round 3 of 3.</b> Ana set <b>Blue 9</b>. Here's the power play: a <b>Full Tang</b> is a <b>6</b> plus a card of the middle color, with <b>no negatives</b>, and it always wins. Tap <b>Orange 6</b>, <b>Green 2</b> and <b>Blue 1</b>.`,
-      reveal: `<b>Full Tang!</b> Ana's Blue 10 is the highest Blue card, so it would normally win. But a Full Tang always wins, a sneaky way to steal a round. Press Continue to see how scoring works.` },
+    { ids: [yO6.id, yGr2.id, yB1.id], bots: [null, [aR7, aR2], [bGr10, bGrn1]], last: true,
+      choose: `<b>Round 3 of 3.</b> Ana set <b>Green 9</b>. Here's the power play: a <b>Full Tang</b> is a <b>6</b> plus a card of the middle color, with <b>no negatives</b>, and it always wins. Tap <b>Orange 6</b>, <b>Green 2</b> and <b>Blue 1</b>.`,
+      reveal: `<b>Full Tang!</b> Ben's Green 10 is the highest Green card, so it would normally win. But a Full Tang always wins, a sneaky way to steal a round. Press Continue to see how scoring works.` },
   ];
   S.tut = { r: 0, stage: 'choose', script };
   tutRound();
