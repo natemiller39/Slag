@@ -120,7 +120,7 @@ Turn on **Matching number** on the start screen or in the lobby.
 - Positive cards score their value.
 - Each negative scores +5, unless it pairs with a positive card of the same suit in your hand. Then it subtracts its value instead (Blue 8 + Blue −3 = 5).
 - Black negatives never pair.
-- Lowest score wins. Play three deals, or play until someone reaches 50.
+- Lowest score wins. Play three deals, or play until someone reaches the target score. If the lowest totals are tied at the end, play a tiebreaker deal, and keep going until one player has the lowest total.
 
 ### Scoring options
 

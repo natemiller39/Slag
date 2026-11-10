@@ -161,7 +161,10 @@ function endDeal(room) {
   const scores = G.players.map(p => E.scoreHand(p.hand));
   scores.forEach((s, i) => { M.totals[i] += s.total; });
   M.deals.push(scores.map(s => s.total));
-  const done = M.mode === 'deals' ? M.deals.length >= 3 : M.totals.some(t => t >= E.playTo());
+  const minT = Math.min(...M.totals), tied = M.totals.filter(t => t === minT).length > 1;
+  const reached = M.mode === 'deals' ? M.deals.length >= 3 : M.totals.some(t => t >= E.playTo());
+  const done = reached && !tied; // a tie for the lead plays a tiebreaker deal
+  M.tiebreak = reached && tied;
   room.dealScores = scores;
   room.phase = done ? 'matchEnd' : 'dealEnd';
   broadcast(room);
@@ -198,7 +201,7 @@ function viewFor(room, s) {
     over: G.over, endReason: relEnd(G.endReason), n, cfg: G.cfg,
   };
   const M = room.match;
-  v.match = { names: rot(M.names).map((x, k) => (k === 0 ? 'You' : x)), styles: rot(M.styles), totals: rot(M.totals), deals: M.deals.map(rot), mode: M.mode };
+  v.match = { names: rot(M.names).map((x, k) => (k === 0 ? 'You' : x)), styles: rot(M.styles), totals: rot(M.totals), deals: M.deals.map(rot), mode: M.mode, tiebreak: !!M.tiebreak };
   const L = room.last;
   v.last = L ? {
     target: L.target, plays: rot(L.plays), made: L.made.map(R), winner: L.winner >= 0 ? R(L.winner) : -1, reason: L.reason, quenched: !!L.quenched, usurperTie: !!L.usurperTie, colorless: !!L.colorless, usurperTop: L.usurperTop || 0, dethroned: L.dethroned >= 0 ? R(L.dethroned) : -1, seized: !!L.seized, slagTarget: !!L.slagTarget, slagHit: L.slagHit >= 0 ? R(L.slagHit) : -1, slagBy: L.slagBy >= 0 ? R(L.slagBy) : -1, quenchedBy: (L.quenchedBy || []).map(R), wouldWin: L.wouldWin >= 0 ? R(L.wouldWin) : -1,
