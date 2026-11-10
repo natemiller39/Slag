@@ -180,6 +180,23 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .card .ftband b { font-family: var(--f-body); font-weight: 800; color: #fff3df; background: #b3261e; border-radius: .3em; padding: 0 .35em; letter-spacing: 0; text-decoration: line-through; text-decoration-thickness: .14em; }
 @media (max-width: 640px) { .hand .card .ftband { font-size: 0; gap: 0; } .hand .card .ftband b { font-size: 9px; } }
 .card .sixmark { position: absolute; inset: 0; border-radius: inherit; pointer-events: none; box-shadow: inset 0 0 0 3px #ffc067, inset 0 0 14px rgba(255, 150, 40, .85); }
+/* Portrait phones: the showdown becomes a list, one player per row, so every play is readable without turning the phone. */
+.showdown.list { padding: 8px 10px 10px; gap: 4px; }
+.showdown.list .sd-head { min-height: 36px; gap: 8px; }
+.showdown.list .sd-head .card { --w: 24px; }
+.showdown.list .sd-title { font-size: 16px; letter-spacing: .03em; text-align: center; }
+.showdown.list .sd-grid { grid-template-columns: 1fr; grid-template-rows: none; grid-auto-rows: max-content; align-content: start; overflow-y: auto; gap: 8px; padding: 12px 2px 4px; }
+.showdown.list .sd-tile { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "label cards" "why cards"; align-items: center; justify-items: start; gap: 2px 10px; padding: 8px 10px; }
+.showdown.list .sd-tile.win, .showdown.list .sd-tile.quench { padding-top: 12px; }
+.showdown.list .sd-label { grid-area: label; flex-direction: column; align-items: flex-start; gap: 0; white-space: normal; }
+.showdown.list .sd-name { font-size: 16px; }
+.showdown.list .sd-cap { font-size: 12px; }
+.showdown.list .cards, .showdown.list .sd-pass { grid-area: cards; }
+.showdown.list .sd-tile .card { --w: var(--lw, 42px); width: var(--lw, 42px); }
+.showdown.list .sd-why { grid-area: why; text-align: left; font-size: 12px; }
+.showdown.list .sd-crown { top: -11px; left: 12px; transform: none; animation: none; font-size: 11px; padding: 2px 10px 2px 7px; }
+.showdown.list .sd-tile { min-height: max-content; }
+.showdown.list .sd-crown svg { width: 16px; height: 12px; }
 .sd-crown.sd-six { background: linear-gradient(180deg, #ffe08a, #ff8a1a); color: #2a1406; }
 .sd-crown.sd-quench { background: linear-gradient(180deg, #a8e3f5, #2e86ab); color: #0b2633; box-shadow: 0 4px 14px rgba(0, 0, 0, .55), 0 0 22px rgba(80, 180, 230, .6); }
 .sd-tile.quench { border: 2px solid #5fb8dc; background: radial-gradient(ellipse at 50% 0%, rgba(120, 200, 240, .22), rgba(46, 134, 171, .06) 70%); box-shadow: 0 0 30px rgba(80, 180, 230, .35); padding-top: 22px; }
@@ -862,7 +879,7 @@ function sdWhy(res, i, play, t) {
   if (!res.made.includes(i)) return `Doesn't make ${neg(t.value)}`;
   const anyColor = res.made.some(j => colorCount(res.plays[j], t));
   if (i === res.winner) return res.sixWin ? `Full Tang: a 6 with ${col}, no negatives` : anyColor ? `Highest ${col} card` : `Highest card (nobody played ${col})`;
-  if (res.sixWin) return 'A Full Tang beats every play';
+  if (res.sixWin) return isTang(play, t) ? `Full Tang too, but a lower ${col}` : 'A Full Tang beats every play';
   if (res.winner < 0) return '';
   if (!anyColor) return 'Lower card';
   if (!colorCount(play, t)) return `No ${col}, so it can't win`;
@@ -909,7 +926,8 @@ function showdownHtml() {
   }).join('');
   const shown = preview || t;
   const title = preview ? `${RULES.targetLine ? 'Joins the line' : 'Next target'} <b>${neg(shown.value)}</b> ${SUITS[shown.suit].name}` : res.clash ? `Clash · nobody wins <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : res.usurperTie ? `Usurper tie · new target` : res.colorless ? `Usurper · color doesn't count · make <b>${neg(t.value)}</b>` : res.seized ? `Usurper seizes the round · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : res.dethroned >= 0 && res.dethroned !== undefined ? `Usurper · the leader is dethroned · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : res.sixWin ? `Full Tang · always the strongest · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : res.slagTarget ? `Slag · color doesn't count · make <b>${neg(t.value)}</b> · the winner draws` : res.slagHit >= 0 ? `Slag card · the winner draws · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : res.quenched ? `Quenched · nobody wins <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : `Showdown · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}`;
-  return `<section class="showdown ${wide ? '' : 'tight'}" style="--cols:${cols};--rows:${rows}" aria-label="Round results">
+  const list = !wide && window.matchMedia('(orientation: portrait)').matches;
+  return `<section class="showdown ${wide ? '' : list ? 'list' : 'tight'}" style="--cols:${cols};--rows:${rows};--lw:${n >= 7 ? 34 : n >= 5 ? 38 : 44}px" aria-label="Round results">
     <div class="sd-head">${cardEl(shown, '')}<span class="sd-title">${title}</span></div>
     <div class="sd-grid">${tiles}</div></section>`;
 }

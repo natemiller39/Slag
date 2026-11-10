@@ -218,7 +218,7 @@ function resolveRound(G, plays) {
     for (const i of res.made) if (isTang(plays[i], t)) { const k = playKey(plays[i], t); if (!sk || cmpKey(k, sk) > 0) { sb = i; sk = k; } }
     const rivals = res.made.filter(i => i !== sb && isTang(plays[i], t)).length;
     res.winner = sb; res.winCard = bestCard(plays[sb], t).card; res.sixWin = true;
-    res.reason = rivals ? `Full Tang, and ${cardLabel(res.winCard)} wins the clash of blades` : best === sb ? 'Full Tang' : `Full Tang beats ${G.players[best].name}'s play`;
+    res.reason = rivals ? `Full Tang, and ${cardLabel(res.winCard)} wins the clash of blades` : best === sb ? 'Full Tang' : `Full Tang beats ${G.players[best].name === 'You' ? 'your' : G.players[best].name + "'s"} play`;
   }
   else if (res.usurperTarget) {
     // Usurper as the target: it has no color, so the highest single card wins; a tie on that card flips a new target.
