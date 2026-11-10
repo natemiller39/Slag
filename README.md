@@ -4,6 +4,13 @@ A card-shedding game for 2 to 8 players. Match the target number, dump your card
 
 This repo is a playable web version at a forge-lit table. Play against 1 to 7 computer players, or host an online game with friends.
 
+## Base set and the playtest lab
+
+The start screen has two areas:
+
+- **Play Slag** plays the base set: the classic deck, **Full Tang 6s**, and **Card count** scoring (every card left scores 1, every negative 2). Online rooms start with the base set too.
+- **Playtest lab** (folded away below it) holds every option and toggle for trying variants. Lab settings are saved on your device and never change the base set. In an online lobby, the same options sit under **Playtest options**.
+
 ## Playing online
 
 1. On the start screen, enter your name and choose **Host a game**. You get a 4-letter room code and an invite link.

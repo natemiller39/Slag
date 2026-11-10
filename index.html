@@ -383,6 +383,11 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .champ.tie::after { display: none; }
 @keyframes sparkfall { from { background-position: 10% -20%, 30% -40%; } to { background-position: 10% 120%, 30% 140%; } }
 @keyframes crown-pop-big { from { transform: scale(0) rotate(-14deg); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.base-set { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 12px; background: rgba(255, 138, 42, .08); border: 1px solid rgba(255, 190, 110, .3); font-size: 14px; }
+details.lab { margin-top: 6px; border-top: 1px solid var(--line); padding-top: 10px; display: flex; flex-direction: column; gap: 14px; }
+details.lab > summary { cursor: pointer; font-weight: 700; color: var(--parch-dim); list-style: none; padding: 6px 0; }
+details.lab > summary::before { content: "▸ "; } details.lab[open] > summary::before { content: "▾ "; }
+details.lab[open] > * + * { margin-top: 14px; }
 .dealwin { display: flex; flex-wrap: wrap; gap: 4px 18px; padding: 8px 12px; border-radius: 12px; background: rgba(255, 138, 42, .1); border: 1px solid rgba(255, 190, 110, .35); font-size: 15px; }
 .dealwin b { color: var(--ember-hot); }
 @media (prefers-reduced-motion: reduce) { .champ, .champ-crown svg, .champ::after { animation: none; } }
@@ -551,8 +556,11 @@ const hammerSvg = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4.5h1
   document.body.prepend(box); })();
 
 // ===== flow =====
-function startMatch() {
-  RULES.colorCount = S.colorRule; RULES.targetLine = !!S.targetLine; RULES.blackDeck = !!S.blackDeck; RULES.scoring = S.scoring || 'tiers'; RULES.quench = !!S.quench; RULES.usurper = false; RULES.six = !!S.six; RULES.pureTang = !!S.pureTang; RULES.slag = !!S.slag; RULES.matchNumber = !!S.matchNumber;
+const BASE_SET = { colorRule: false, targetLine: false, blackDeck: false, scoring: 'count', quench: false, six: true, pureTang: false, slag: false, matchNumber: false };
+function applyRuleSet(o) { RULES.colorCount = !!o.colorRule; RULES.targetLine = !!o.targetLine; RULES.blackDeck = !!o.blackDeck; RULES.scoring = o.scoring || 'tiers'; RULES.quench = !!o.quench; RULES.usurper = false; RULES.six = !!o.six; RULES.pureTang = !!o.pureTang; RULES.slag = !!o.slag; RULES.matchNumber = !!o.matchNumber; }
+function startMatch(base) {
+  if (typeof base !== 'boolean') base = !!S.lastBase;
+  S.lastBase = base; applyRuleSet(base ? BASE_SET : S);
   const names = ['You', ...BOTS.slice(0, S.bots)];
   const styles = names.map((_, i) => i === 0 ? null : STYLES[(i - 1) % 3]);
   S.match = { names, styles, totals: names.map(() => 0), deals: [], mode: S.mode };
@@ -883,6 +891,7 @@ function rulesHtml() {
 }
 
 function splash() {
+  applyRuleSet(S);
   const fanCards = [{ suit: 'red', value: 10 }, { suit: 'orange', value: 7 }, { suit: 'green', value: 5 }, { suit: 'blue', value: 8 }, { suit: 'purple', value: -3 }, { suit: 'grey', value: 4 }];
   const mid = (fanCards.length - 1) / 2;
   const fan = fanCards.map((c, i) => { const o = i - mid; return `<span class="card" style="transform:translateX(calc(${o} * var(--spread))) translateY(${Math.abs(o) * Math.abs(o) * 5}px) rotate(${o * 7}deg)"><img src="${src(c)}" alt="">${badges(c, true)}</span>`; }).join('');
@@ -898,11 +907,15 @@ function splash() {
       <div class="panel mode"><h2 class="ph">Play the computer</h2>
         <div class="field"><span class="lbl" id="l-bots">Opponents</span>
           <div class="seg" role="group" aria-labelledby="l-bots">${[1, 2, 3, 4, 5, 6, 7].map(k => `<button data-bots="${k}" aria-pressed="${S.bots === k}">${k}</button>`).join('')}</div>
-          <span class="hint">${n} players: ${deck}, ${cfg.hand} cards each plus a −1, −2 and −3.</span></div>
+          <span class="hint">${n} players: ${n === 8 ? 10 : 11} cards each plus a −1, −2 and −3.</span></div>
         <div class="field"><span class="lbl" id="l-mode">Match</span>
           <div class="seg" role="group" aria-labelledby="l-mode">
             <button data-mode="deals" aria-pressed="${S.mode === 'deals'}">Three deals</button>
-            <button data-mode="fifty" aria-pressed="${S.mode === 'fifty'}">Play to ${playTo()}</button></div></div>
+            <button data-mode="fifty" aria-pressed="${S.mode === 'fifty'}">Play to a target</button></div></div>
+        <div class="base-set"><span class="eyebrow">Base set</span><span>${S.bots + 1} players · classic deck · Full Tang 6s · Card count scoring: every card left scores 1, every negative 2.</span></div>
+        <div class="actions"><button class="btn primary" id="b-play-base">Play Slag</button></div>
+        <details class="lab" ${S.labOpen ? 'open' : ''}><summary>Playtest lab: tweak the rules</summary>
+        <p class="hint">Try other decks, scoring and options. Your settings here are saved on this device and don't change the base set.</p>
         <div class="field"><span class="lbl" id="l-line">Target line</span>
           <div class="seg" role="group" aria-labelledby="l-line">
             <button data-line="off" aria-pressed="${!S.targetLine}">Off</button>
@@ -949,7 +962,8 @@ function splash() {
           <button data-match="off" aria-pressed="${!S.matchNumber}">Off</button>
           <button data-match="on" aria-pressed="${!!S.matchNumber}">On</button></div>
         ${S.matchNumber ? '<span class="hint">Played alone, the sister-color card with the same number as the middle card counts as the middle color.</span>' : ''}</div>
-        <div class="actions"><button class="btn primary" id="b-start">Play the computer</button></div>
+        <div class="actions"><button class="btn" id="b-start">Play with these rules</button></div>
+        </details>
       </div>
       ${onlineSection()}
     </div>
@@ -967,7 +981,9 @@ function bindSplash() {
   document.querySelectorAll('[data-pure]').forEach(b => b.onclick = () => { S.pureTang = b.dataset.pure === 'on'; RULES.pureTang = S.pureTang; save(); render(); });
   document.querySelectorAll('[data-slag]').forEach(b => b.onclick = () => { S.slag = b.dataset.slag === 'on'; RULES.slag = S.slag; save(); render(); });
   document.querySelectorAll('[data-match]').forEach(b => b.onclick = () => { S.matchNumber = b.dataset.match === 'on'; RULES.matchNumber = S.matchNumber; save(); render(); });
-  $('#b-start').onclick = startMatch;
+  $('#b-start').onclick = () => startMatch(false);
+  $('#b-play-base').onclick = () => startMatch(true);
+  const lab = document.querySelector('details.lab'); if (lab) lab.ontoggle = () => { S.labOpen = lab.open; };
   bindOnlineSection();
   $('#b-rules').onclick = () => { S.showRules = true; render(); };
   bindOverlay();
@@ -1170,6 +1186,8 @@ function lobbyHtml() {
         ${host ? `<div class="actions"><button class="btn small" id="b-addbot" ${n >= 8 ? 'disabled' : ''}>Add a bot</button></div>` : ''}</div>
       <div class="panel rules-panel"><h2 class="ph">Rules</h2>
         <div class="field"><span class="lbl">Match</span>${seg('mode', [['deals', 'Three deals'], ['fifty', 'Play to ' + playTo()]], v.settings.mode)}</div>
+        <p class="hint" style="margin:0">Base set: classic deck, Full Tang 6s, Card count scoring.</p>
+        <details class="lab"><summary>Playtest options</summary>
         <div class="field"><span class="lbl">Target line</span>${seg('line', [['off', 'Off'], ['on', 'On']], v.settings.targetLine ? 'on' : 'off')}</div>
         <div class="field"><span class="lbl">Deck</span>${seg('deck', [['classic', 'Classic'], ['black', 'Black suit']], v.settings.blackDeck ? 'black' : 'classic')}</div>
         <div class="field"><span class="lbl">Scoring</span>${seg('scoring', [['face', 'Face value'], ['count', 'Card count'], ['tiers', 'Tiers']], v.settings.scoring || 'tiers')}</div>
@@ -1179,6 +1197,7 @@ function lobbyHtml() {
         <div class="field"><span class="lbl">Full Tang: one color</span>${seg('pure', [['off', 'Off'], ['on', 'On']], v.settings.pureTang ? 'on' : 'off')}</div>
         <div class="field"><span class="lbl">Slag card</span>${seg('slag', [['off', 'Off'], ['on', 'On']], v.settings.slag ? 'on' : 'off')}</div>
         <div class="field"><span class="lbl">Matching number</span>${seg('match', [['off', 'Off'], ['on', 'On']], v.settings.matchNumber ? 'on' : 'off')}</div>
+        </details>
         ${host ? '' : '<span class="hint">The host sets the rules.</span>'}</div>
     </div>
   </section>${overlay()}`;
