@@ -59,7 +59,7 @@ function bestCard(play, target) {
 
 // Table rule: when on, the play with the most cards of the target's color wins (negatives count),
 // and the highest target-color card breaks ties. When off, only the single best card counts.
-const RULES = { targetLine: false, pureTang: false, blackDeck: false, scoring: 'tiers', colorCount: false, quench: false, usurper: false, slag: false, matchNumber: false, six: false };
+const RULES = { clash: false, targetLine: false, pureTang: false, blackDeck: false, scoring: 'tiers', colorCount: false, quench: false, usurper: false, slag: false, matchNumber: false, six: false };
 // Full Tang 6s option: every 6 is a blade. A 6 plus at least one other card, no negatives, with the 6 or another card in the target's color.
 // It always wins the round; between two Full Tangs the normal order decides. A Quench still cancels it.
 const realSuit = s => SUIT_ORDER.includes(s) || (RULES.blackDeck && s === 'black');
@@ -241,6 +241,18 @@ function resolveRound(G, plays) {
     } else { res.winner = best; res.winCard = bestCard(plays[best], t).card; res.reason = explain(plays, res.made, best, t); }
   }
   else { res.winner = best; res.winCard = bestCard(plays[best], t).card; res.reason = explain(plays, res.made, best, t); }
+  // Clash ties (option): suit rank and the star no longer break ties. If the winning play ties another contender on
+  // color, number and sister suit, the blades clash: nobody wins and a new target is flipped.
+  if (RULES.clash && res.winner >= 0 && !res.quenched) {
+    const pool = res.sixWin ? res.made.filter(i => isTang(plays[i], t)) : res.made;
+    const wk = playKey(plays[res.winner], t).slice(0, -2);
+    const tied = pool.filter(i => i !== res.winner && cmpKey(playKey(plays[i], t).slice(0, -2), wk) === 0);
+    if (tied.length) {
+      res.clash = true; res.clashWith = [res.winner, ...tied]; res.wouldWin = res.winner;
+      res.reason = `${[res.winner, ...tied].map(i => G.players[i].name).join(' and ')} tied${res.winCard ? ' on ' + res.winCard.value : ''}, so nobody wins`;
+      res.winner = -1; res.winCard = null; res.sixWin = false;
+    }
+  }
   // Slag card: as the target, or played by someone other than the winner, the winner draws a penalty card.
   res.slagTarget = isSlag(t);
   const sb = res.made.find(i => plays[i].some(isSlag));
@@ -255,7 +267,7 @@ function resolveRound(G, plays) {
   if (out >= 0) { G.over = true; G.endReason = G.players[out].name + ' went out.'; res.ended = true; G.discard.push(t); return res; }
   G.players.forEach((p, i) => { if (!res.made.includes(i)) { const c = drawOne(G); if (c) { p.hand.push(c); res.penalties.push({ i, card: c }); } } });
   if (res.slagHit >= 0) { const c = drawOne(G); res.reason += res.slagTarget ? '. The Slag target burns the winner, who draws a penalty card' : `. ${G.players[res.slagBy].name}'s Slag card burns the winner, who draws a penalty card`; if (c) { G.players[res.slagHit].hand.push(c); res.penalties.push({ i: res.slagHit, card: c, slag: true }); } }
-  if (res.quenched || res.usurperTie) {
+  if (res.quenched || res.usurperTie || res.clash) {
     G.discard.push(t);
     // table rule: a Quench played when the draw pile is empty ends the deal (no reshuffle for the new target)
     if (res.quenched && !G.draw.length) { G.over = true; G.endReason = 'Quenched with an empty draw pile, so the deal ends.'; res.ended = true; return res; }

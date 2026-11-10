@@ -588,8 +588,8 @@ const hammerSvg = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4.5h1
   document.body.prepend(box); })();
 
 // ===== flow =====
-const BASE_SET = { colorRule: false, targetLine: false, blackDeck: false, scoring: 'count', quench: false, six: true, pureTang: false, slag: false, matchNumber: false };
-function applyRuleSet(o) { RULES.colorCount = !!o.colorRule; RULES.targetLine = !!o.targetLine; RULES.blackDeck = !!o.blackDeck; RULES.scoring = o.scoring || 'tiers'; RULES.quench = !!o.quench; RULES.usurper = false; RULES.six = !!o.six; RULES.pureTang = !!o.pureTang; RULES.slag = !!o.slag; RULES.matchNumber = !!o.matchNumber; }
+const BASE_SET = { colorRule: false, targetLine: false, blackDeck: false, scoring: 'count', quench: false, six: true, pureTang: false, slag: false, matchNumber: false, clash: false };
+function applyRuleSet(o) { RULES.colorCount = !!o.colorRule; RULES.targetLine = !!o.targetLine; RULES.blackDeck = !!o.blackDeck; RULES.scoring = o.scoring || 'tiers'; RULES.quench = !!o.quench; RULES.usurper = false; RULES.six = !!o.six; RULES.pureTang = !!o.pureTang; RULES.slag = !!o.slag; RULES.matchNumber = !!o.matchNumber; RULES.clash = !!o.clash; }
 function startMatch(base) {
   if (typeof base !== 'boolean') base = !!S.lastBase;
   S.lastBase = base; applyRuleSet(base ? BASE_SET : S);
@@ -618,6 +618,7 @@ function commit(play) {
   S.phase = 'reveal';
   const t2 = res.target;
   if (res.reflip) S.msg = `Nobody made ${t2.value}. In a 2-player game the first miss flips a new target.`;
+  else if (res.clash && !res.ended) S.msg = `<b>Clash!</b> ${res.reason}. A new target is flipped.`;
   else if (res.usurperTie && !res.ended) S.msg = `<b>Usurper tie!</b> ${res.usurperTop ? 'Two plays tied on ' + res.usurperTop + '. ' : ''}Nobody wins, and a new target is flipped.`;
   else if (res.quenched && !res.ended) S.msg = `<b>Quenched!</b> ${quenchNames(res.quenchedBy, G.players)} doused the round. Nobody wins, and a new target is flipped.`;
   else if (res.ended) S.msg = G.endReason;
@@ -638,7 +639,7 @@ function afterReveal() {
   if (S.online) { onlineSend({ t: 'ready' }); return; }
   const G = S.G, res = S.last;
   if (G.over) return endDeal();
-  if (res.reflip || res.quenched || res.usurperTie) { S.phase = 'choose'; S.last = null; S.msg = `New target flipped. Make ${G.target.value}.`; return render(); }
+  if (res.reflip || res.quenched || res.usurperTie || res.clash) { S.phase = 'choose'; S.last = null; S.msg = `New target flipped. Make ${G.target.value}.`; return render(); }
   if (res.winner === 0) {
     if (!myHand().some(c => c.value > 0)) { setNextTarget(G, 0, null); return toChoose(`You hold only negatives, so the target was flipped from the draw pile.`); }
     S.phase = 'pick'; S.msg = RULES.targetLine ? `<b>You won.</b> Tap a card to add to the back of the target line.` : `<b>You won.</b> Tap a card from your hand to set the next target.`;
@@ -846,6 +847,7 @@ function matHtml() {
 const crownSvg = '<svg viewBox="0 0 24 18" aria-hidden="true"><path d="M1.5 16.5h21l1-11.5-6.2 4.6L12 1.2 6.7 9.6.5 5z" fill="currentColor"/></svg>';
 // One short line per tile saying why that play won or lost, shown in the showdown.
 function sdWhy(res, i, play, t) {
+  if (res.clash) return play && (res.clashWith || []).includes(i) ? 'Tied blades: nobody wins' : '';
   if (!play || !res.made || RULES.colorCount || res.colorless || res.slagTarget || res.quenched || res.usurperTie || res.reflip) return '';
   const col = SUITS[t.suit] ? SUITS[t.suit].name : '';
   if (!res.made.includes(i)) return `Doesn't make ${neg(t.value)}`;
@@ -893,11 +895,11 @@ function showdownHtml() {
     const cards = play ? `<div class="cards">${play.map((c, j) => `<span class="card flip ${cls(c)}" style="animation-delay:${90 * k + 70 * j}ms"><img src="${src(c)}" alt="${cardLabel(c)}">${badges(c, true)}</span>`).join('')}</div>`
       : '<span class="sd-pass">Passed</span>';
     const quenched = (res.quenchedBy || []).includes(i);
-    return `<div class="sd-tile ${won ? 'win' : ''} ${quenched ? 'quench' : ''} ${play ? '' : 'passed'}">${won ? `<span class="sd-crown">${crownSvg}Winner</span>` : ''}${quenched ? '<span class="sd-crown sd-quench">Quench</span>' : ''}${!won && !quenched && play && play.some(c => usurperLive(c, t, play)) ? '<span class="sd-crown sd-usurper">Usurper</span>' : ''}${i === res.dethroned ? '<span class="sd-crown sd-usurper">Dethroned</span>' : ''}${!won && play && play.some(isSlag) ? '<span class="sd-crown sd-slag">Slag</span>' : ''}
+    return `<div class="sd-tile ${won ? 'win' : ''} ${quenched ? 'quench' : ''} ${play ? '' : 'passed'}">${won ? `<span class="sd-crown">${crownSvg}Winner</span>` : ''}${quenched ? '<span class="sd-crown sd-quench">Quench</span>' : ''}${res.clash && (res.clashWith || []).includes(i) ? '<span class="sd-crown sd-six">Clash</span>' : ''}${!won && !quenched && play && play.some(c => usurperLive(c, t, play)) ? '<span class="sd-crown sd-usurper">Usurper</span>' : ''}${i === res.dethroned ? '<span class="sd-crown sd-usurper">Dethroned</span>' : ''}${!won && play && play.some(isSlag) ? '<span class="sd-crown sd-slag">Slag</span>' : ''}
       <div class="sd-label"><span class="sd-name">${p.name}</span>${cap ? `<span class="sd-cap">${cap}</span>` : ''}</div>${cards}${why ? `<div class="sd-why ${won ? 'good' : ''}">${why}</div>` : ''}</div>`;
   }).join('');
   const shown = preview || t;
-  const title = preview ? `${RULES.targetLine ? 'Joins the line' : 'Next target'} <b>${neg(shown.value)}</b> ${SUITS[shown.suit].name}` : res.usurperTie ? `Usurper tie · new target` : res.colorless ? `Usurper · color doesn't count · make <b>${neg(t.value)}</b>` : res.seized ? `Usurper seizes the round · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : res.dethroned >= 0 && res.dethroned !== undefined ? `Usurper · the leader is dethroned · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : res.sixWin ? `Full Tang · always the strongest · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : res.slagTarget ? `Slag · color doesn't count · make <b>${neg(t.value)}</b> · the winner draws` : res.slagHit >= 0 ? `Slag card · the winner draws · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : res.quenched ? `Quenched · nobody wins <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : `Showdown · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}`;
+  const title = preview ? `${RULES.targetLine ? 'Joins the line' : 'Next target'} <b>${neg(shown.value)}</b> ${SUITS[shown.suit].name}` : res.clash ? `Clash · nobody wins <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : res.usurperTie ? `Usurper tie · new target` : res.colorless ? `Usurper · color doesn't count · make <b>${neg(t.value)}</b>` : res.seized ? `Usurper seizes the round · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : res.dethroned >= 0 && res.dethroned !== undefined ? `Usurper · the leader is dethroned · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : res.sixWin ? `Full Tang · always the strongest · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : res.slagTarget ? `Slag · color doesn't count · make <b>${neg(t.value)}</b> · the winner draws` : res.slagHit >= 0 ? `Slag card · the winner draws · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : res.quenched ? `Quenched · nobody wins <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : `Showdown · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}`;
   return `<section class="showdown ${wide ? '' : 'tight'}" style="--cols:${cols};--rows:${rows}" aria-label="Round results">
     <div class="sd-head">${cardEl(shown, '')}<span class="sd-title">${title}</span></div>
     <div class="sd-grid">${tiles}</div></section>`;
@@ -1060,7 +1062,7 @@ function rulesBody() {
   ${example}
   ${RULES.six ? `<h3>Full Tang 6s</h3><p>Every 6 is a solid blade. Play a <b>6 plus another card</b>, with the middle color in it and <b>no negatives</b>, and you win the round, no matter what. Add a negative and the blade cracks: it's just a normal play.</p>` : ''}
   <h3>Ties</h3>
-  <p>Same number? The middle card's sister color wins (Red &amp; Orange, Blue &amp; Green, Purple &amp; Grey). Still tied: Blue, Red, Purple, Green, Orange, Grey${RULES.blackDeck ? ', Black' : ''}. Then the starred card.</p>
+  <p>Same number? The middle card's sister color wins (Red &amp; Orange, Blue &amp; Green, Purple &amp; Grey). ${RULES.clash ? '<b>Still tied? Clash!</b> Nobody wins, and the next draw-pile card becomes the target.' : `Still tied: Blue, Red, Purple, Green, Orange, Grey${RULES.blackDeck ? ', Black' : ''}. Then the starred card.`}</p>
   <h3>Winning</h3>
   <p>The deal ends when someone plays their last card, or nobody can make the number. ${score} Lowest total after three deals wins.</p>
   ${opts ? `<h3>Playtest options on</h3>${opts}` : ''}`;
@@ -1138,6 +1140,11 @@ function splash() {
           <button data-match="off" aria-pressed="${!S.matchNumber}">Off</button>
           <button data-match="on" aria-pressed="${!!S.matchNumber}">On</button></div>
         ${S.matchNumber ? '<span class="hint">Played alone, the sister-color card with the same number as the middle card counts as the middle color.</span>' : ''}</div>
+      <div class="field"><span class="lbl" id="l-clash">Clash ties</span>
+        <div class="seg" role="group" aria-labelledby="l-clash">
+          <button data-clash="off" aria-pressed="${!S.clash}">Off</button>
+          <button data-clash="on" aria-pressed="${!!S.clash}">On</button></div>
+        ${S.clash ? '<span class="hint">No suit rank or stars. Same number and the sister color can\'t split it? The blades clash: nobody wins, and a new target is flipped.</span>' : ''}</div>
         <div class="actions"><button class="btn" id="b-start">Play with these rules</button></div>
         </details>
       </div>
@@ -1157,6 +1164,7 @@ function bindSplash() {
   document.querySelectorAll('[data-pure]').forEach(b => b.onclick = () => { S.pureTang = b.dataset.pure === 'on'; RULES.pureTang = S.pureTang; save(); render(); });
   document.querySelectorAll('[data-slag]').forEach(b => b.onclick = () => { S.slag = b.dataset.slag === 'on'; RULES.slag = S.slag; save(); render(); });
   document.querySelectorAll('[data-match]').forEach(b => b.onclick = () => { S.matchNumber = b.dataset.match === 'on'; RULES.matchNumber = S.matchNumber; save(); render(); });
+  document.querySelectorAll('[data-clash]').forEach(b => b.onclick = () => { S.clash = b.dataset.clash === 'on'; RULES.clash = S.clash; save(); render(); });
   $('#b-start').onclick = () => startMatch(false);
   $('#b-play-base').onclick = () => startMatch(true);
   $('#b-learn').onclick = startTutorial;
@@ -1283,6 +1291,7 @@ function applyView(v) {
   RULES.usurper = false; RULES.six = !!v.settings.six; RULES.pureTang = !!v.settings.pureTang;
   RULES.slag = !!v.settings.slag;
   RULES.matchNumber = !!v.settings.matchNumber;
+  RULES.clash = !!v.settings.clash;
   if (v.phase === 'lobby') { S.phase = 'lobby'; S.G = null; S.match = null; S.last = null; S.confirmQuit = false; return render(); }
   const prevPhase = S.phase, prevRound = S.G ? S.G.round : 0;
   S.G = v.G; S.match = v.match; S.last = v.last; S.dealScores = v.dealScores; S.msg = v.msg;
@@ -1378,6 +1387,7 @@ function lobbyHtml() {
         <div class="field"><span class="lbl">Full Tang: one color</span>${seg('pure', [['off', 'Off'], ['on', 'On']], v.settings.pureTang ? 'on' : 'off')}</div>
         <div class="field"><span class="lbl">Slag card</span>${seg('slag', [['off', 'Off'], ['on', 'On']], v.settings.slag ? 'on' : 'off')}</div>
         <div class="field"><span class="lbl">Matching number</span>${seg('match', [['off', 'Off'], ['on', 'On']], v.settings.matchNumber ? 'on' : 'off')}</div>
+        <div class="field"><span class="lbl">Clash ties</span>${seg('clash', [['off', 'Off'], ['on', 'On']], v.settings.clash ? 'on' : 'off')}</div>
         </details>
         ${host ? '' : '<span class="hint">The host sets the rules.</span>'}</div>
     </div>
@@ -1406,12 +1416,13 @@ function bindLobby() {
   document.querySelectorAll('[data-pure]').forEach(b => b.onclick = () => onlineSend({ t: 'settings', pureTang: b.dataset.pure === 'on' }));
   document.querySelectorAll('[data-slag]').forEach(b => b.onclick = () => onlineSend({ t: 'settings', slag: b.dataset.slag === 'on' }));
   document.querySelectorAll('[data-match]').forEach(b => b.onclick = () => onlineSend({ t: 'settings', matchNumber: b.dataset.match === 'on' }));
+  document.querySelectorAll('[data-clash]').forEach(b => b.onclick = () => onlineSend({ t: 'settings', clash: b.dataset.clash === 'on' }));
   bindOverlay();
 }
 
 // remember setup choices for this viewer only
-function save() { try { localStorage.setItem('slag-setup', JSON.stringify({ bots: S.bots, mode: S.mode, colorRule: S.colorRule, blackDeck: !!S.blackDeck, targetLine: !!S.targetLine, scoring: S.scoring || 'tiers', ruleChosen: !!S.ruleChosen, quench: !!S.quench, six: !!S.six, pureTang: !!S.pureTang, slag: !!S.slag, matchNumber: !!S.matchNumber, oname: S.oname || '' })); } catch (e) {} }
-function load() { try { const v = JSON.parse(localStorage.getItem('slag-setup') || 'null'); if (v) { S.bots = v.bots || 3; S.mode = v.mode || 'deals'; S.scoring = ['face', 'count', 'tiers'].includes(v.scoring) ? v.scoring : 'tiers'; S.blackDeck = !!v.blackDeck; S.targetLine = !!v.targetLine; if (v.ruleChosen && typeof v.colorRule === 'boolean') { S.colorRule = v.colorRule; S.ruleChosen = true; } S.quench = !!v.quench; S.six = !!v.six; S.pureTang = !!v.pureTang; S.slag = !!v.slag; S.matchNumber = !!v.matchNumber; if (v.oname) S.oname = v.oname; } } catch (e) {} }
+function save() { try { localStorage.setItem('slag-setup', JSON.stringify({ bots: S.bots, mode: S.mode, colorRule: S.colorRule, blackDeck: !!S.blackDeck, targetLine: !!S.targetLine, scoring: S.scoring || 'tiers', ruleChosen: !!S.ruleChosen, quench: !!S.quench, six: !!S.six, pureTang: !!S.pureTang, slag: !!S.slag, matchNumber: !!S.matchNumber, clash: !!S.clash, oname: S.oname || '' })); } catch (e) {} }
+function load() { try { const v = JSON.parse(localStorage.getItem('slag-setup') || 'null'); if (v) { S.bots = v.bots || 3; S.mode = v.mode || 'deals'; S.scoring = ['face', 'count', 'tiers'].includes(v.scoring) ? v.scoring : 'tiers'; S.blackDeck = !!v.blackDeck; S.targetLine = !!v.targetLine; if (v.ruleChosen && typeof v.colorRule === 'boolean') { S.colorRule = v.colorRule; S.ruleChosen = true; } S.quench = !!v.quench; S.six = !!v.six; S.pureTang = !!v.pureTang; S.slag = !!v.slag; S.matchNumber = !!v.matchNumber; S.clash = !!v.clash; if (v.oname) S.oname = v.oname; } } catch (e) {} }
 
 // keep a game in progress across page updates
 const hot = window.claude && window.claude.hot;
@@ -1427,6 +1438,7 @@ function start(data) {
   RULES.usurper = false; RULES.six = !!S.six; RULES.pureTang = !!S.pureTang;
   RULES.slag = !!S.slag;
   RULES.matchNumber = !!S.matchNumber;
+  RULES.clash = !!S.clash;
   const q = new URLSearchParams(location.search).get('join');
   if (q) S.joinCode = q.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
   // wake the game server now, so hosting or joining is quick when the player gets there

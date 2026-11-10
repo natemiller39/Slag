@@ -115,6 +115,15 @@ Turn on **Slag card** on the start screen or in the lobby to shuffle one colorle
 - If the winner goes out that round, the deal ends before they would draw.
 - Stuck with it at the end of a deal, it scores 7.
 
+## Option: Clash ties
+
+Turn on **Clash ties** in the playtest lab or the lobby to simplify ties.
+
+- Suit rank and the starred copies no longer break ties.
+- Same number? The target's sister color still wins.
+- Still tied? The blades clash: nobody wins the round, plays still discard, misses still draw, and the next draw-pile card becomes the target.
+- In bot simulations this happens in about 7% of rounds at 3 to 6 players.
+
 ## Option: Matching number
 
 Turn on **Matching number** on the start screen or in the lobby.
