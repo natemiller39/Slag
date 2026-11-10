@@ -1018,9 +1018,9 @@ function rulesHtml() {
 
 function splash() {
   applyRuleSet(S);
-  const fanCards = [{ suit: 'red', value: 10 }, { suit: 'orange', value: 7 }, { suit: 'green', value: 5 }, { suit: 'blue', value: 8 }, { suit: 'purple', value: -3 }, { suit: 'grey', value: 4 }];
+  const fanCards = [{ suit: 'red', value: 10 }, { suit: 'orange', value: 7 }, { suit: 'green', value: 5 }, { suit: 'blue', value: 8 }, { suit: 'purple', value: 9 }, { suit: 'grey', value: 4 }];
   const mid = (fanCards.length - 1) / 2;
-  const fan = fanCards.map((c, i) => { const o = i - mid; return `<span class="card" style="transform:translateX(calc(${o} * var(--spread))) translateY(${Math.abs(o) * Math.abs(o) * 5}px) rotate(${o * 7}deg)"><img src="${src(c)}" alt="">${badges(c, true)}</span>`; }).join('');
+  const fan = fanCards.map((c, i) => { const o = i - mid; return `<span class="card" style="transform:translateX(calc(${o} * var(--spread))) translateY(${Math.abs(o) * Math.abs(o) * 5}px) rotate(${o * 7}deg)"><img src="${src(c)}" alt=""></span>`; }).join('');
   const n = S.bots + 1, cfg = setupFor(n);
   const deck = RULES.blackDeck ? 'six suits plus a black suit, 1 to 10 with no doubles (70 cards)' + (cfg.black ? ' plus 1 extra black negative set' : '') : n === 2 ? 'Red, Orange, Blue and Green with no doubles (40 cards)' : (n === 3 || n === 4) ? (S.colorRule ? 'all six suits, with no doubles in Purple and Grey (80 cards)' : 'all six suits, with Purple and Grey only 6 to 10 (70 cards)') : 'all six suits (90 cards)' + (cfg.black ? ` plus ${cfg.black} black negative set${cfg.black > 1 ? 's' : ''}` : '');
   return `<section class="splash">
