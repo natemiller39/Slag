@@ -390,7 +390,7 @@ details.lab > summary::before { content: "▸ "; } details.lab[open] > summary::
 details.lab[open] > * + * { margin-top: 14px; }
 .coach { flex: none; display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap; margin: 0 auto; max-width: 820px; padding: 10px 14px; border-radius: 14px;
   background: linear-gradient(180deg, rgba(255, 192, 103, .16), rgba(255, 138, 42, .08)); border: 1.5px solid var(--ember); box-shadow: 0 0 22px rgba(255, 138, 42, .25); font-size: 15px; }
-.coach p { margin: 0; flex: 1 1 300px; } .coach b { color: var(--ember-hot); }
+.coach p { margin: 0; flex: 1 1 300px; } .coach-btns { display: flex; gap: 8px; flex: none; } .coach b { color: var(--ember-hot); }
 .coach-tag { font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; background: var(--ember-hot); color: var(--ink); padding: 2px 8px; border-radius: 999px; }
 .hand .card.tut-glow:not(.sel) { box-shadow: 0 0 0 3px var(--ember-hot), 0 0 18px rgba(255, 170, 60, .8); animation: tutpulse 1.2s ease-in-out infinite; }
 @keyframes tutpulse { 50% { transform: translateY(-6px); } }
@@ -603,7 +603,7 @@ function commit(play) {
       S.msg = `<b>You win</b> the round: ${res.reason}. Now ${(RULES.targetLine ? 'add a card to the target line' : 'pick the next target')} from your hand.`;
     }
   }
-  if (S.tut) { S.tut.stage = 'reveal'; if (S.tut.script[S.tut.r].last) S.phase = 'reveal'; }
+  if (S.tut) { S.tut.stage = 'reveal'; tutCheck(play, res); if (S.tut.script[S.tut.r].last || S.tut.retry) S.phase = 'reveal'; }
   render();
 }
 function quenchNames(idx, players) { const n = idx.map(i => players[i].name); return n.length > 1 ? n.slice(0, -1).join(', ') + ' and ' + n[n.length - 1] : n[0]; }
@@ -639,25 +639,45 @@ function startTutorial() {
   S.G = { players, draw, discard: [], target: C('blue', 7), round: 1, reflips: 0, cfg: setupFor(3), n: 3, over: false, endReason: null, setter: -1 };
   S.match = { names: ['You', 'Ana', 'Ben'], styles: [null, 'steady', 'steady'], totals: [0, 0, 0], deals: [], mode: 'deals' };
   const script = [
-    { ids: [yB4.id, yB3.id], bots: [null, [aB2, aO5], [bGr5, bGr2]], pickId: yG5.id,
-      choose: `<b>Round 1 of 3.</b> The middle card is the target: <b>Blue 7</b>. Everyone secretly picks up to 3 cards that add up to 7. <b>Any colors work</b>: Grey 5 + Green 2, or Red 8 + Purple −1, would make 7 too. But the middle color is strongest, so tap your glowing <b>Blue 4</b> and <b>Blue 3</b>, then press Play.`,
+    { ids: [yB4.id, yB3.id], needWin: true, keep: [yG5, yO6, yGr2, yB1], bots: [null, [aB2, aO5], [bGr5, bGr2]], pickId: yG5.id,
+      choose: `<b>Round 1 of 3.</b> The middle card is the target: <b>Blue 7</b>. Everyone secretly picks up to 3 cards that add up to 7. <b>Any colors work</b>: Grey 5 + Green 2, or Red 8 + Purple −1, would make 7 too. But the middle color is strongest. Pick any cards that make 7 and press Play. Stuck? Tap <b>Show me</b>.`,
       reveal: `<b>Everyone reveals at once.</b> Any card of the middle color (<b>Blue</b>) beats every other color, and the highest one wins. Everyone made 7 in their own way. Ana played Blue too, but your Blue 4 beats her Blue 2, and Ben used Green cards, so he can't win. Winners choose the next target from their hand: tap your <b>Grey 5</b>, then Set target.` },
-    { ids: [yR8.id, yRn3.id], bots: [null, [aG3, aG2], null], botPick: aGn9,
-      choose: `<b>Round 2 of 3.</b> Your Grey 5 is the target, and you have no Grey left. You can use <b>one negative</b> per play: tap <b>Red 8</b> and <b>Red −3</b> (8 − 3 = 5).`,
+    { ids: [yR8.id, yRn3.id], keep: [yO6, yGr2, yB1], bots: [null, [aG3, aG2], null], botPick: aGn9,
+      choose: `<b>Round 2 of 3.</b> Your Grey 5 is the target, and you have no Grey left. You can add <b>one negative</b> per play, like 8 − 3 = 5. Make 5 your way, or pass and draw a card.`,
       reveal: `<b>Ana played Grey</b>, the middle color, so she wins this one. Ben couldn't make 5, so he <b>draws a penalty card</b>. Getting stuck with cards is how you lose points. Press Continue.` },
-    { ids: [yO6.id, yGr2.id, yB1.id], bots: [null, [aR7, aR2], [bGr10, bGrn1]], last: true,
-      choose: `<b>Round 3 of 3.</b> Ana set <b>Green 9</b>. Here's the power play: a <b>Full Tang</b> is a <b>6</b> plus a card of the middle color, with <b>no negatives</b>, and it always wins. Tap <b>Orange 6</b>, <b>Green 2</b> and <b>Blue 1</b>.`,
+    { ids: [yO6.id, yGr2.id, yB1.id], needWin: true, bots: [null, [aR7, aR2], [bGr10, bGrn1]], last: true,
+      choose: `<b>Round 3 of 3.</b> Ana set <b>Green 9</b>. Here's the power play: a <b>Full Tang</b> is a <b>6</b> plus a card of the middle color, with <b>no negatives</b>, and it always wins. Can you find one in your hand that makes 9?`,
       reveal: `<b>Full Tang!</b> Ben's Green 10 is the highest Green card, so it would normally win. But a Full Tang always wins, a sneaky way to steal a round. Press Continue to see how scoring works.` },
   ];
   S.tut = { r: 0, stage: 'choose', script };
+  tutSnap();
   tutRound();
   S.sel = []; S.last = null; S.newIds = []; S.phase = 'choose'; S.msg = '';
   render();
 }
+const tutClone = o => JSON.parse(JSON.stringify(o));
+function tutSnap() { S.tut.snap = tutClone(S.G); S.tut.show = false; S.tut.retry = false; }
+function tutRetry() { S.G = tutClone(S.tut.snap); S.sel = []; S.last = null; S.newIds = []; S.phase = 'choose'; S.tut.stage = 'choose'; S.tut.show = false; S.tut.retry = false; S.tut.note = ''; render(); }
+// After a free-choice play: does the tutorial stay on its path? If not, explain and offer a retry.
+function tutCheck(play, res) {
+  const t = S.tut, sc = t.script[t.r], G = S.G, ids = (play || []).map(c => c.id);
+  const nm = i => G.players[i].name, used = (sc.keep || []).filter(c => ids.includes(c.id)).map(c => cardLabel(c));
+  const why = res.winner >= 0 ? `<b>${res.winner === 0 ? 'You win' : nm(res.winner) + ' wins'}</b>: ${res.reason}. ` : '';
+  t.retry = false; t.note = '';
+  if (sc.needWin && res.winner !== 0) {
+    t.retry = true;
+    t.note = (play ? why : `You passed, so you draw a penalty card. ${why}`) + (t.r === 0
+      ? `The middle color is Blue, and the highest Blue card wins. Can you beat Ana's Blue 2?`
+      : `A Full Tang would beat it: a 6 plus a Green card, no negatives. Try again, or tap Continue to see scoring.`);
+  } else if (used.length) {
+    t.retry = true;
+    t.note = `${why}That works! But the tutorial needs your ${used.join(' and ')} later, so try another play.`;
+  }
+}
 function tutRound() { const sc = S.tut.script[S.tut.r]; S.tut.ids = sc.ids; S.tut.bots = sc.bots; S.tut.pickId = sc.pickId || null; }
 function coachHtml() {
   const t = S.tut, sc = t.script[t.r];
-  return `<div class="coach" role="status"><span class="coach-tag">Tutorial ${t.r + 1}/3</span><p>${t.stage === 'choose' ? sc.choose : sc.reveal}</p><button class="btn small" id="b-tut-skip">Skip</button></div>`;
+  return `<div class="coach" role="status"><span class="coach-tag">Tutorial ${t.r + 1}/3</span><p>${t.stage === 'choose' ? sc.choose : t.retry ? t.note : sc.reveal}</p><div class="coach-btns">${t.stage === 'choose' && !t.show ? '<button class="btn small" id="b-tut-show">Show me</button>' : ''}${t.retry ? '<button class="btn small primary" id="b-tut-retry">Try again</button>' : ''}<button class="btn small" id="b-tut-skip">Skip</button></div></div>`;
 }
 function tutDoneHtml() {
   const G = S.G, M = S.match;
@@ -674,7 +694,7 @@ function tutDoneHtml() {
   </div></div>`;
 }
 function endTutorial(play) { S.tut = null; S.last = null; S.dealScores = null; if (play) startMatch(true); else { S.phase = 'splash'; S.G = null; S.match = null; render(); } }
-function toChoose(msg) { if (S.tut && S.tut.r < S.tut.script.length - 1) { S.tut.r++; S.tut.stage = 'choose'; tutRound(); } S.phase = 'choose'; S.last = null; S.msg = msg; render(); }
+function toChoose(msg) { if (S.tut && S.tut.r < S.tut.script.length - 1) { S.tut.r++; S.tut.stage = 'choose'; tutRound(); tutSnap(); } S.phase = 'choose'; S.last = null; S.msg = msg; render(); }
 function pickTarget(card) {
   if (S.online) { onlineSend({ t: 'target', id: card.id }); return; }
   setNextTarget(S.G, 0, card);
@@ -847,13 +867,13 @@ function meterText() {
 }
 function you() {
   const G = S.G, hand = sortHand(myHand()), res = S.last;
-  const legal = S.phase === 'choose' && isLegal(S.sel.map(id => myHand().find(c => c.id === id)).filter(Boolean), G.target) && (!S.tut || (S.sel.length === S.tut.ids.length && S.tut.ids.every(id => S.sel.includes(id))));
+  const legal = S.phase === 'choose' && isLegal(S.sel.map(id => myHand().find(c => c.id === id)).filter(Boolean), G.target);
   let top = '', actions = '';
   if (S.phase === 'choose') {
     top = `<div class="meter" id="meter">${meterText()}</div>`;
     actions = `<button class="btn primary" id="b-play" ${legal ? '' : 'disabled'}>Play ${S.sel.length ? S.sel.length + ' card' + (S.sel.length > 1 ? 's' : '') : ''}</button>
-      ${S.tut ? '' : `<button class="btn" id="b-pass">Pass and draw 1</button>
-      <button class="btn small" id="b-hint">Hint</button>`}`;
+      <button class="btn" id="b-pass">Pass and draw 1</button>
+      ${S.tut ? '' : `<button class="btn small" id="b-hint">Hint</button>`}`;
   } else if (S.phase === 'reveal') {
     const drewCard = res.penalties.find(q => q.i === 0);
     const line = res.winner === 0 ? '<span class="ok">You won the round.</span>' + (drewCard && drewCard.card ? ` <span class="no">The Slag burned you: you drew ${cardLabel(drewCard.card)}.</span>` : '')
@@ -861,7 +881,7 @@ function you() {
       : res.plays[0] ? 'Your cards are on the table.' : '';
     top = `<div class="meter">${line}</div>`;
     const ov = S.online && S.online.view;
-    actions = !ov ? `<button class="btn primary" id="b-next">${G.over ? 'See scores' : 'Continue'}</button>`
+    actions = S.tut && S.tut.retry && !S.tut.script[S.tut.r].last ? '' : !ov ? `<button class="btn primary" id="b-next">${G.over ? 'See scores' : 'Continue'}</button>`
       : ov.pickerOther ? '' : ov.readyDone ? '<button class="btn" disabled>Waiting for others…</button>'
       : `<button class="btn primary" id="b-next">${G.over ? 'See scores' : 'Next round'}</button>`;
   } else if (S.phase === 'pick') {
@@ -878,7 +898,7 @@ function you() {
     const pickable = S.phase === 'pick' && c.value > 0 && (!S.tut || c.id === S.tut.pickId);
     const can = (S.phase === 'choose' && !locked) || pickable;
     const dim = S.phase === 'pick' && c.value < 0;
-    return `<button class="card ${sel ? 'sel' : ''} ${pickable ? 'pickable' : ''} ${dim ? 'dim' : ''} ${S.tut && ((S.phase === 'choose' && S.tut.ids.includes(c.id)) || (S.phase === 'pick' && c.id === S.tut.pickId)) ? 'tut-glow' : ''}" data-id="${c.id}" ${can ? '' : 'disabled'} aria-pressed="${sel}" aria-label="${cardLabel(c)}">
+    return `<button class="card ${sel ? 'sel' : ''} ${pickable ? 'pickable' : ''} ${dim ? 'dim' : ''} ${S.tut && ((S.phase === 'choose' && S.tut.show && S.tut.ids.includes(c.id)) || (S.phase === 'pick' && c.id === S.tut.pickId)) ? 'tut-glow' : ''}" data-id="${c.id}" ${can ? '' : 'disabled'} aria-pressed="${sel}" aria-label="${cardLabel(c)}">
       <img src="${src(c)}" alt="">${badges(c, false, pairedIds.has(c.id))}${S.newIds.includes(c.id) ? '<span class="new">new</span>' : ''}</button>`;
   }).join('');
   return `<section class="you ${S.phase === 'pick' ? 'picking' : ''}" aria-label="Your hand">
@@ -1085,6 +1105,8 @@ function bindTable() {
     render();
   };
   const n = $('#b-next'); if (n) n.onclick = afterReveal;
+  const ts = $('#b-tut-show'); if (ts) ts.onclick = () => { S.tut.show = true; render(); };
+  const tr = $('#b-tut-retry'); if (tr) tr.onclick = tutRetry;
   const tk = $('#b-tut-skip'); if (tk) tk.onclick = () => { S.tut.stage = 'done'; render(); };
   const tp = $('#b-tut-play'); if (tp) tp.onclick = () => endTutorial(true);
   const tb = $('#b-tut-back'); if (tb) tb.onclick = () => endTutorial(false);
