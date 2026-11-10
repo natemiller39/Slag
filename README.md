@@ -1,6 +1,6 @@
 # Slag
 
-A card-shedding game for 2 to 8 players. Match the target number, dump your cards, and keep your score low.
+A forging card game for 2 to 8. Match the target to forge your weapon, outdo the other smiths, and leave the least slag behind. Every card left in your hand at the end is slag, and the smith with the least wins.
 
 This repo is a playable web version at a forge-lit table. Play against 1 to 7 computer players, or host an online game with friends.
 

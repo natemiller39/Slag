@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Slag: a card-shedding game for 2 to 8 players. Match the target, dump your cards, keep your score low.">
+<meta name="description" content="Slag: A forging card game for 2 to 8. Match the target to forge your weapon, outdo the other smiths, and leave the least slag behind.">
 <style>
 :root { box-sizing: border-box; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
 body { margin: 0; }
@@ -1025,7 +1025,7 @@ function splash() {
   const deck = RULES.blackDeck ? 'six suits plus a black suit, 1 to 10 with no doubles (70 cards)' + (cfg.black ? ' plus 1 extra black negative set' : '') : n === 2 ? 'Red, Orange, Blue and Green with no doubles (40 cards)' : (n === 3 || n === 4) ? (S.colorRule ? 'all six suits, with no doubles in Purple and Grey (80 cards)' : 'all six suits, with Purple and Grey only 6 to 10 (70 cards)') : 'all six suits (90 cards)' + (cfg.black ? ` plus ${cfg.black} black negative set${cfg.black > 1 ? 's' : ''}` : '');
   return `<section class="splash">
     <div class="splash-top">
-      <div><h1>Slag</h1><p class="lead">A shedding game for 2 to 8. Match the target, dump your cards, keep your score low.</p>
+      <div><h1>Slag</h1><p class="lead">A forging card game for 2 to 8. Match the target to forge your weapon, outdo the other smiths, and leave the least slag behind.</p>
         <div class="actions"><button class="btn small" id="b-rules">How to play</button></div></div>
       <div class="fan" aria-hidden="true">${fan}</div>
     </div>
