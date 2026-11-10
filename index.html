@@ -324,6 +324,27 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .sheet h2 { font-family: var(--f-display); font-weight: 400; font-size: 28px; margin: 0; letter-spacing: .03em; text-wrap: balance; }
 .sheet h3 { margin: 6px 0 0; font-size: 15px; letter-spacing: .1em; text-transform: uppercase; color: var(--parch-dim); }
 .sheet p, .sheet li { max-width: 65ch; }
+.rx-lead { font-size: 17px; line-height: 1.5; color: var(--parch); }
+.rx-lead b { color: var(--ember-hot); font-weight: 600; }
+.sheet ol.rx-steps { list-style: none; padding: 0; counter-reset: rx; gap: 10px; }
+.rx-steps li { counter-increment: rx; position: relative; padding-left: 40px; line-height: 1.45; }
+.rx-steps li::before { content: counter(rx); position: absolute; left: 0; top: -2px; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 14px; color: #2a1406; background: linear-gradient(180deg, #ffd08a, #ff8a1a); box-shadow: 0 0 12px rgba(255, 138, 42, .45); }
+.rx { margin: 4px 0 0; display: flex; gap: 16px; align-items: center; padding: 14px; border-radius: 14px; background: rgba(0, 0, 0, .28); border: 1px solid var(--iron-hi); flex-wrap: wrap; }
+.rx .card { --w: 48px; width: var(--w); flex: none; }
+.rx-target { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.rx-target .card { --w: 60px; }
+.rx-tag { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--parch-dim); }
+.rx-rows { flex: 1 1 300px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.rx-row { display: grid; grid-template-columns: 40px auto 1fr; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 10px; }
+.rx-row.win { background: rgba(255, 138, 42, .14); box-shadow: inset 0 0 0 1.5px var(--ember-hot); }
+.rx-who { font-family: var(--f-display); font-size: 15px; }
+.rx-cards { display: flex; align-items: center; gap: 4px; }
+.rx-op { color: var(--parch-dim); font-weight: 700; padding: 0 1px; }
+.rx-sum { color: var(--ember-hot); font-size: 18px; }
+.rx-note { font-size: 13.5px; line-height: 1.35; color: var(--parch-dim); }
+.rx-row.win .rx-note { color: var(--ember-hot); font-weight: 600; }
+.sheet h4 { margin: 4px 0 -4px; font-size: 14px; color: var(--parch); }
+@media (max-width: 480px) { .rx-row { grid-template-columns: 34px auto; } .rx-note { grid-column: 1 / -1; } .rx .card { --w: 40px; } .rx-target { flex-direction: row; gap: 10px; } .rx-target .card { --w: 44px; } }
 .sheet ol, .sheet ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
 .seg { display: flex; flex-wrap: wrap; gap: 6px; }
 .seg button { border: 1.5px solid #5d6269; background: linear-gradient(180deg, #34373c, #222428); border-radius: 10px; min-width: 44px; min-height: 44px; padding: 0 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -999,21 +1020,50 @@ function overlay() {
   return '';
 }
 function rulesHtml() {
+  // Outside a game, explain the base set rather than whatever the playtest lab is set to.
+  if (!S.G && !S.online && typeof BASE_SET !== 'undefined') { const saved = { ...RULES }; applyRuleSet(BASE_SET); const h = rulesBody(); Object.assign(RULES, saved); return h; }
+  return rulesBody();
+}
+function rulesBody() {
+  const mk = (s, v) => ({ suit: s, value: v, id: 'rx' + s + v }), t = mk('blue', 7);
+  const cardsOf = arr => arr.map((c, j) => (j ? '<span class="rx-op">+</span>' : '') + `<span class="card"><img src="${src(c)}" alt="${cardLabel(c)}">${badges(c, true)}</span>`).join('');
+  const rows = [
+    ['You', [mk('red', 10), mk('green', -3)], 'Made it with one negative, but no Blue.', ''],
+    ['Ana', [mk('blue', 4), mk('blue', 3)], RULES.six ? 'Blue is the middle color, so Ana beats you…' : 'Blue is the middle color. Ana wins!', RULES.six ? '' : 'win'],
+  ];
+  if (RULES.six) rows.push(['Ben', [mk('red', 6), mk('blue', 1)], '…but Ben forged a Full Tang. Ben wins!', 'win']);
+  const example = `<figure class="rx" aria-label="Example round">
+    <div class="rx-target"><span class="rx-tag">Make</span><span class="card"><img src="${src(t)}" alt="Blue 7"></span><span class="rx-tag">7 Blue</span></div>
+    <div class="rx-rows">${rows.map(([who, cs, note, cls]) => `<div class="rx-row ${cls}"><span class="rx-who">${who}</span><span class="rx-cards">${cardsOf(cs)}<span class="rx-op">=</span><b class="rx-sum">7</b></span><span class="rx-note">${note}</span></div>`).join('')}</div>
+  </figure>`;
+  const score = RULES.scoring === 'count' ? 'Every card left in your hand is slag: <b>1 point</b> each, <b>2</b> for a negative.'
+    : RULES.scoring === 'tiers' ? 'Cards left score 1 (for 1–3), 3 (4–7) or 5 (8–10). A negative scores 5, unless it pairs with a same-suit card, when it subtracts instead.'
+    : 'Cards left score their number. A negative scores 5, unless it pairs with a same-suit card, when it subtracts instead.';
+  const opts = (RULES.targetLine ? `<h4>Target line</h4><p>Two targets are face up, the current one and the next. When you win, your card joins the back of the line. If nobody wins, the line moves up and a card from the draw pile refills it.</p>` : '')
+    + (RULES.colorCount ? `<h4>Most of the color</h4><p>The play with the most cards of the middle color wins (negatives count). Tied? The highest card of that color wins.</p>` : '')
+    + (RULES.pureTang ? `<h4>Full Tang: one color</h4><p>Negatives are neutral: no color, never pair, 2 points each. Two or more cards all of the middle color is a Full Tang and beats every other play. Between two, the highest card wins.</p>` : '')
+    + (RULES.blackDeck ? `<h4>Black suit deck</h4><p>Seven suits, 1 to 10, no doubles. Black has no sister and the lowest rank, so it never wins a tie. When black is the target, black is the middle color.</p>` : '')
+    + (RULES.matchNumber ? `<h4>Matching number</h4><p>Played alone, the sister-color card with the target's number counts as the middle color. On a Blue 6, a lone Green 6 counts as a Blue 6.</p>` : '')
+    + (RULES.slag ? `<h4>Slag card</h4><p>A colorless 7. Play it in a combo and whoever wins draws a penalty card (unless that's you). As the target, make 7: color doesn't count and the winner draws. Stuck with it at the end, it scores 7.</p>` : '')
+    + (RULES.quench ? `<h4>Quench cards</h4><p>A 0 card you add to a play. When one is revealed, nobody wins: plays still shed, misses still draw, and a new target is flipped. Held at the end, it scores 5.</p>` : '');
   return `<h2 id="rules-h">How to play Slag</h2>
-  <p>Race to match the target number. Lowest score at the end wins.</p>
+  <p class="rx-lead">You're a smith at the forge. Match the number in the middle to forge a weapon and get rid of your cards. Whatever's left in your hand at the end is <b>slag</b>. <b>Least slag wins.</b></p>
   <h3>Each round</h3>
-  <ol>
-    <li>Everyone secretly picks up to 3 cards that add up exactly to the target. At most one may be a negative. Or pass.</li>
-    <li>Plays are revealed together. If nobody made it, the deal ends.</li>
-    <li>The best play wins. ${RULES.colorCount ? "The play with the most cards of the target's color wins (negatives count). If that's tied, the highest card of the target's color wins." : "Any play with a card of the target's color beats every play without one, then the higher card wins. A negative of the target's color counts as playing the color, but as its lowest card."}</li>
-    <li>Everyone who made it discards those cards. Anyone who passed or missed draws one card.</li>
-    <li>The winner sets the next target with a card from their hand.</li>
-  </ol>${RULES.targetLine ? `<h3>Target line</h3><p>Two target cards are face up: the current target and the next one, so everyone can plan ahead. When you win a round, the card you choose joins the back of the line, and the next card moves up. If nobody wins (a Quench, or a re-flip), the line moves up and a card from the draw pile refills the back.</p>` : ''}${RULES.pureTang ? `<h3>Full Tang: one color</h3><p>All negatives are neutral: they have no color, never pair, and score 2 each if you're stuck with them. A Full Tang is a play of two or more cards that are all the middle color (so no negatives). It beats every other play, even a higher middle-color card played with a negative. On a Blue 7, Blue 4 + Blue 3 beats Blue 10 + −3. Between two Full Tangs, the highest middle-color card wins. A Quench still cancels it.</p>` : ''}${RULES.blackDeck ? `<h3>Black suit deck</h3><p>Six suits plus a black suit, each 1 to 10 with no doubles (70 cards), used at every player count. Hands: 11 cards at 2 to 4 players, 10 at 5, 9 at 6, 8 at 7, 7 at 8, plus a −1, −2 and −3. Black has no sister color and the lowest suit rank, so it never wins a tie. When black is the target, black cards are the target color. Black negatives pair with black cards at scoring. A black 6 is a Full Tang like any other 6, and Full Tangs work when black is the target.</p>` : ''}${RULES.matchNumber ? `<h3>Matching number</h3><p>Played alone, the sister-color card with the same number as the middle card counts as the middle color. On a Blue 6, a Green 6 played by itself counts as a Blue 6, so it beats lower Blue cards. In a combo it is just a Green 6. Higher Blue cards still beat it, and a real Blue 6 wins an exact tie.</p>` : ''}${RULES.slag ? `<h3>Slag card</h3><p>One colorless Slag card (worth 7) is in the deck. Play it in a combo and whoever wins that round draws a penalty card (unless that's you). It never counts as your high card. When the Slag card is the target, make 7: color doesn't count, the best play wins, and the winner draws a penalty card. A winner can set it as the next target to pass the curse along. Stuck with it at the end, it scores 7.</p>` : ''}${RULES.six ? `<h3>Full Tang 6s</h3><p>Every 6 is a Full Tang blade. A Full Tang play is a 6 plus at least one other card, with no negatives, where the 6 or another card is the middle color. It always wins the round. On a Blue 7, Red 6 + Blue 1 beats Blue 10 + −3. A negative cracks the blade: add one and it's just a normal play. If two players have a Full Tang, the normal order decides. A Quench still cancels it.</p>` : ''}${RULES.quench ? `<h3>Quench cards</h3><p>Quench is a colorless 0 card shuffled into the deck (1 at 2–4 players, 2 at 5, 3 at 6–8). Add it to a play that makes the number; it uses one of your 3 card slots. When a Quench is revealed, nobody wins the round: plays still discard, misses still draw, and a new target is flipped. A Quench never becomes the target, and one left in your hand at the end scores +5. If a Quench is played when the draw pile is empty, the deal ends.</p>` : ''}
+  <ol class="rx-steps">
+    <li><b>Make the number.</b> Secretly pick 1 to 3 cards that add up to the middle card. Any colors work. You may add <b>one negative</b> to subtract.</li>
+    <li><b>Reveal together.</b> Everyone flips at once.</li>
+    <li><b>The middle color wins.</b> ${RULES.colorCount ? 'The play with the most cards of the middle color wins.' : "A card of the middle card's color beats every other color. Highest one takes it."}</li>
+    <li><b>Shed or draw.</b> Made the number? Those cards are gone. Passed or missed? Draw a card.</li>
+    <li><b>Winner sets the next target</b> with a card from their hand.</li>
+  </ol>
+  <h3>Example</h3>
+  ${example}
+  ${RULES.six ? `<h3>Full Tang 6s</h3><p>Every 6 is a solid blade. Play a <b>6 plus another card</b>, with the middle color in it and <b>no negatives</b>, and you win the round, no matter what. Add a negative and the blade cracks: it's just a normal play.</p>` : ''}
   <h3>Ties</h3>
-  <p>${RULES.colorCount ? 'After the color count and the highest target-color card, compare' : 'Compare'} each play's best positive card: target color, then value, then the target's sister suit, then suit rank (Blue 6, Red 5, Purple 4, Green 3, Orange 2, Grey 1${RULES.blackDeck ? ', Black lowest' : ''}), then the starred copy.</p>
-  <h3>Scoring</h3>
-  <ul><li>The deal ends when someone runs out of cards or nobody can make the target.</li>
-  <li>${RULES.scoring === 'count' ? 'Card count: every card left in your hand scores 1, and every negative scores 2. Negatives never pair.' : RULES.scoring === 'tiers' ? 'Tiers: cards 1–3 score 1, 4–7 score 3, and 8–10 score 5. A negative scores +5, unless paired with a positive card of the same suit, when it subtracts instead. Black negatives never pair.' : 'Positive cards score their value. A negative scores +5 (shown on the card), unless paired with a positive card of the same suit, when it subtracts instead. Black negatives never pair.'}</li></ul>`;
+  <p>Same number? The middle card's sister color wins (Red &amp; Orange, Blue &amp; Green, Purple &amp; Grey). Still tied: Blue, Red, Purple, Green, Orange, Grey${RULES.blackDeck ? ', Black' : ''}. Then the starred card.</p>
+  <h3>Winning</h3>
+  <p>The deal ends when someone plays their last card, or nobody can make the number. ${score} Lowest total after three deals wins.</p>
+  ${opts ? `<h3>Playtest options on</h3>${opts}` : ''}`;
 }
 
 function splash() {

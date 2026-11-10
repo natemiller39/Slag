@@ -9,6 +9,7 @@ This repo is a playable web version at a forge-lit table. Play against 1 to 7 co
 The start screen has two areas:
 
 - **Play Slag** plays the base set: the classic deck, **Full Tang 6s**, and **Card count** scoring (every card left scores 1, every negative 2). Online rooms start with the base set too.
+- **How to play** (the Rules button) explains the base set in five steps with a picture of an example round. Inside a game it reflects the rules in use.
 - **Quick tutorial** runs three short rounds (play any cards you like; **Show me** suggests a play, and if you go off the suggested path the bots play for real and the coach explains what happened) against two bots with a coach box: (1) make the number, the middle color wins, and the winner picks the next target; (2) negatives and penalty draws; (3) the Full Tang. It ends on a scoring screen, as if the deal had ended.
 - **Playtest lab** (folded away below it) holds every option and toggle for trying variants. Lab settings are saved on your device and never change the base set. In an online lobby, the same options sit under **Playtest options**.
 
