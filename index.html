@@ -388,6 +388,13 @@ details.lab { margin-top: 6px; border-top: 1px solid var(--line); padding-top: 1
 details.lab > summary { cursor: pointer; font-weight: 700; color: var(--parch-dim); list-style: none; padding: 6px 0; }
 details.lab > summary::before { content: "▸ "; } details.lab[open] > summary::before { content: "▾ "; }
 details.lab[open] > * + * { margin-top: 14px; }
+.coach { flex: none; display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap; margin: 0 auto; max-width: 820px; padding: 10px 14px; border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255, 192, 103, .16), rgba(255, 138, 42, .08)); border: 1.5px solid var(--ember); box-shadow: 0 0 22px rgba(255, 138, 42, .25); font-size: 15px; }
+.coach p { margin: 0; flex: 1 1 300px; } .coach b { color: var(--ember-hot); }
+.coach-tag { font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; background: var(--ember-hot); color: var(--ink); padding: 2px 8px; border-radius: 999px; }
+.hand .card.tut-glow:not(.sel) { box-shadow: 0 0 0 3px var(--ember-hot), 0 0 18px rgba(255, 170, 60, .8); animation: tutpulse 1.2s ease-in-out infinite; }
+@keyframes tutpulse { 50% { transform: translateY(-6px); } }
+@media (prefers-reduced-motion: reduce) { .hand .card.tut-glow { animation: none; } }
 .dealwin { display: flex; flex-wrap: wrap; gap: 4px 18px; padding: 8px 12px; border-radius: 12px; background: rgba(255, 138, 42, .1); border: 1px solid rgba(255, 190, 110, .35); font-size: 15px; }
 .dealwin b { color: var(--ember-hot); }
 @media (prefers-reduced-motion: reduce) { .champ, .champ-crown svg, .champ::after { animation: none; } }
@@ -577,7 +584,7 @@ function myHand() { return S.G.players[0].hand; }
 function commit(play) {
   if (S.online) { S.confirmPass = false; onlineSend({ t: 'play', ids: play ? play.map(c => c.id) : null }); return; }
   const G = S.G, t = G.target;
-  const plays = G.players.map((p, i) => i === 0 ? play : botMove(G, i, S.match.styles[i], rng));
+  const plays = G.players.map((p, i) => i === 0 ? play : S.tut ? S.tut.bots[i] : botMove(G, i, S.match.styles[i], rng));
   const before = G.players.map(p => p.hand.length);
   const res = resolveRound(G, plays);
   S.last = res; S.sel = [];
@@ -596,10 +603,12 @@ function commit(play) {
       S.msg = `<b>You win</b> the round: ${res.reason}. Now ${(RULES.targetLine ? 'add a card to the target line' : 'pick the next target')} from your hand.`;
     }
   }
+  if (S.tut) { S.phase = 'reveal'; S.tut.stage = 'reveal'; }
   render();
 }
 function quenchNames(idx, players) { const n = idx.map(i => players[i].name); return n.length > 1 ? n.slice(0, -1).join(', ') + ' and ' + n[n.length - 1] : n[0]; }
 function afterReveal() {
+  if (S.tut) { S.tut.stage = 'done'; return render(); }
   if (S.online) { onlineSend({ t: 'ready' }); return; }
   const G = S.G, res = S.last;
   if (G.over) return endDeal();
@@ -614,6 +623,44 @@ function afterReveal() {
   if (G.over) return endDeal();
   toChoose(card ? (RULES.targetLine ? `${G.players[w].name} added ${cardLabel(card)} to the target line.` : `${G.players[w].name} set the next target: ${cardLabel(card)}.`) : `${G.players[w].name} holds only negatives, so the target was flipped.`);
 }
+
+// ===== Learn to play: one scripted round =====
+function startTutorial() {
+  applyRuleSet(BASE_SET);
+  const C = (s, v, st) => mkCard(s, v, st);
+  const six = C('orange', 6), one = C('blue', 1);
+  const you = [six, one, C('red', 9), C('green', 3), C('grey', 2, true), C('purple', 8), C('red', 4), C('red', -1), C('green', -2), C('purple', -3)];
+  const a10 = C('blue', 10), aNeg = C('blue', -3), b5 = C('red', 5), b2 = C('green', 2);
+  const ana = [a10, aNeg, C('grey', 7), C('green', 9), C('orange', 3), C('purple', -1), C('orange', -2)];
+  const ben = [b5, b2, C('blue', 8), C('red', 3, true), C('grey', 10), C('grey', -1), C('red', -3)];
+  const players = [{ name: 'You', hand: you, seat: 0 }, { name: 'Ana', hand: ana, seat: 1 }, { name: 'Ben', hand: ben, seat: 2 }];
+  const draw = [C('green', 4), C('purple', 6), C('orange', 9), C('blue', 2), C('red', 2), C('grey', 5)];
+  S.G = { players, draw, discard: [], target: C('blue', 7), round: 1, reflips: 0, cfg: setupFor(3), n: 3, over: false, endReason: null, setter: -1 };
+  S.match = { names: ['You', 'Ana', 'Ben'], styles: [null, 'steady', 'steady'], totals: [0, 0, 0], deals: [], mode: 'deals' };
+  S.tut = { stage: 'choose', ids: [six.id, one.id], bots: [null, [a10, aNeg], [b5, b2]] };
+  S.sel = []; S.last = null; S.newIds = []; S.phase = 'choose'; S.msg = '';
+  render();
+}
+function coachHtml() {
+  const t = S.tut;
+  const body = t.stage === 'choose'
+    ? `<b>Learn to play.</b> The middle card is the target: <b>Blue 7</b>. Everyone secretly picks up to 3 cards that add up to 7 (at most one negative). Tap your glowing <b>Orange 6</b> and <b>Blue 1</b>, then press Play.`
+    : `<b>Everyone reveals at once.</b> Normally the highest card of the middle color wins, so Ana's Blue 10 would take it. But a <b>6</b> plus a card of the middle color, with <b>no negatives</b>, is a <b>Full Tang</b>, and it always wins. You win the round!`;
+  return `<div class="coach" role="status"><span class="coach-tag">Tutorial</span><p>${body}</p><button class="btn small" id="b-tut-skip">Skip</button></div>`;
+}
+function tutDoneHtml() {
+  return `<div class="sheet-bg"><div class="sheet rise" role="dialog" aria-modal="true" aria-labelledby="tut-h">
+    <span class="eyebrow">Tutorial</span><h2 id="tut-h">That's Slag!</h2>
+    <ul>
+      <li><b>Win a round</b> and you choose the next target from your hand.</li>
+      <li><b>Can't make the number?</b> Pass and draw a penalty card.</li>
+      <li><b>The deal ends</b> when someone plays their last card.</li>
+      <li><b>Scoring:</b> every card left in your hand is 1 point, every negative 2. <b>Lowest total after 3 deals wins.</b></li>
+    </ul>
+    <div class="actions"><button class="btn primary" id="b-tut-play">Play Slag</button><button class="btn" id="b-tut-back">Back to start</button></div>
+  </div></div>`;
+}
+function endTutorial(play) { S.tut = null; S.last = null; if (play) startMatch(true); else { S.phase = 'splash'; S.G = null; S.match = null; render(); } }
 function toChoose(msg) { S.phase = 'choose'; S.last = null; S.msg = msg; render(); }
 function pickTarget(card) {
   if (S.online) { onlineSend({ t: 'target', id: card.id }); return; }
@@ -640,7 +687,7 @@ function render() {
   if (S.phase === 'splash') { app.classList.remove('fit'); app.innerHTML = splash(); bindSplash(); return; }
   if (S.phase === 'lobby' && S.online && S.online.view) { app.classList.remove('fit'); app.innerHTML = lobbyHtml(); bindLobby(); return; }
   app.classList.add('fit');
-  app.innerHTML = header() + `<div class="stage-box">${tableHtml()}${showdownHtml()}</div>` + `<p class="herald" role="status">${S.msg}</p>` + you() + overlay();
+  app.innerHTML = header() + `<div class="stage-box">${tableHtml()}${showdownHtml()}</div>` + (S.tut && S.tut.stage !== 'done' ? coachHtml() : `<p class="herald" role="status">${S.msg}</p>`) + you() + overlay();
   bindTable();
 }
 function header() {
@@ -787,13 +834,13 @@ function meterText() {
 }
 function you() {
   const G = S.G, hand = sortHand(myHand()), res = S.last;
-  const legal = S.phase === 'choose' && isLegal(S.sel.map(id => myHand().find(c => c.id === id)).filter(Boolean), G.target);
+  const legal = S.phase === 'choose' && isLegal(S.sel.map(id => myHand().find(c => c.id === id)).filter(Boolean), G.target) && (!S.tut || (S.sel.length === S.tut.ids.length && S.tut.ids.every(id => S.sel.includes(id))));
   let top = '', actions = '';
   if (S.phase === 'choose') {
     top = `<div class="meter" id="meter">${meterText()}</div>`;
     actions = `<button class="btn primary" id="b-play" ${legal ? '' : 'disabled'}>Play ${S.sel.length ? S.sel.length + ' card' + (S.sel.length > 1 ? 's' : '') : ''}</button>
-      <button class="btn" id="b-pass">Pass and draw 1</button>
-      <button class="btn small" id="b-hint">Hint</button>`;
+      ${S.tut ? '' : `<button class="btn" id="b-pass">Pass and draw 1</button>
+      <button class="btn small" id="b-hint">Hint</button>`}`;
   } else if (S.phase === 'reveal') {
     const drewCard = res.penalties.find(q => q.i === 0);
     const line = res.winner === 0 ? '<span class="ok">You won the round.</span>' + (drewCard && drewCard.card ? ` <span class="no">The Slag burned you: you drew ${cardLabel(drewCard.card)}.</span>` : '')
@@ -818,7 +865,7 @@ function you() {
     const pickable = S.phase === 'pick' && c.value > 0;
     const can = (S.phase === 'choose' && !locked) || pickable;
     const dim = S.phase === 'pick' && c.value < 0;
-    return `<button class="card ${sel ? 'sel' : ''} ${pickable ? 'pickable' : ''} ${dim ? 'dim' : ''}" data-id="${c.id}" ${can ? '' : 'disabled'} aria-pressed="${sel}" aria-label="${cardLabel(c)}">
+    return `<button class="card ${sel ? 'sel' : ''} ${pickable ? 'pickable' : ''} ${dim ? 'dim' : ''} ${S.tut && S.phase === 'choose' && S.tut.ids.includes(c.id) ? 'tut-glow' : ''}" data-id="${c.id}" ${can ? '' : 'disabled'} aria-pressed="${sel}" aria-label="${cardLabel(c)}">
       <img src="${src(c)}" alt="">${badges(c, false, pairedIds.has(c.id))}${S.newIds.includes(c.id) ? '<span class="new">new</span>' : ''}</button>`;
   }).join('');
   return `<section class="you ${S.phase === 'pick' ? 'picking' : ''}" aria-label="Your hand">
@@ -849,6 +896,7 @@ function overlay() {
   if (S.showRules) return `<div class="sheet-bg" id="bg-rules"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="rules-h">${rulesHtml()}<div class="actions"><button class="btn primary" id="b-close">Back to the table</button></div></div></div>`;
   if (S.confirmPass) return `<div class="sheet-bg"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="pass-h"><h2 id="pass-h">Pass this round?</h2><p>You'll draw a penalty card. You have a play that makes ${S.G.target.value}.</p><div class="actions"><button class="btn primary" id="b-pass-yes">Yes, pass</button><button class="btn" id="b-pass-no">Keep playing</button></div></div></div>`;
   if (S.confirmQuit) return `<div class="sheet-bg"><div class="sheet" role="dialog" aria-modal="true"><h2>${S.online ? 'Leave this game?' : 'Start a new game?'}</h2><p>${S.online ? 'A bot will play your seat. You can rejoin with the same code.' : 'This match will be lost.'}</p><div class="actions"><button class="btn primary" id="b-quit-yes">${S.online ? 'Leave' : 'New game'}</button><button class="btn" id="b-quit-no">Keep playing</button></div></div></div>`;
+  if (S.tut && S.tut.stage === 'done') return tutDoneHtml();
   if (S.phase === 'dealEnd' || S.phase === 'matchEnd') {
     const M = S.match, final = S.phase === 'matchEnd';
     const minT = Math.min(...M.totals);
@@ -913,7 +961,7 @@ function splash() {
             <button data-mode="deals" aria-pressed="${S.mode === 'deals'}">Three deals</button>
             <button data-mode="fifty" aria-pressed="${S.mode === 'fifty'}">Play to a target</button></div></div>
         <div class="base-set"><span class="eyebrow">Base set</span><span>${S.bots + 1} players · classic deck · Full Tang 6s · Card count scoring: every card left scores 1, every negative 2.</span></div>
-        <div class="actions"><button class="btn primary" id="b-play-base">Play Slag</button></div>
+        <div class="actions"><button class="btn primary" id="b-play-base">Play Slag</button><button class="btn" id="b-learn">Learn to play (1 round)</button></div>
         <details class="lab" ${S.labOpen ? 'open' : ''}><summary>Playtest lab: tweak the rules</summary>
         <p class="hint">Try other decks, scoring and options. Your settings here are saved on this device and don't change the base set.</p>
         <div class="field"><span class="lbl" id="l-line">Target line</span>
@@ -983,6 +1031,7 @@ function bindSplash() {
   document.querySelectorAll('[data-match]').forEach(b => b.onclick = () => { S.matchNumber = b.dataset.match === 'on'; RULES.matchNumber = S.matchNumber; save(); render(); });
   $('#b-start').onclick = () => startMatch(false);
   $('#b-play-base').onclick = () => startMatch(true);
+  $('#b-learn').onclick = startTutorial;
   const lab = document.querySelector('details.lab'); if (lab) lab.ontoggle = () => { S.labOpen = lab.open; };
   bindOnlineSection();
   $('#b-rules').onclick = () => { S.showRules = true; render(); };
@@ -996,7 +1045,7 @@ function bindTable() {
   $('#b-rules').onclick = () => { S.showRules = true; render(); };
   $('#b-quit').onclick = () => { S.confirmQuit = true; render(); };
   bindOverlay();
-  const qy = $('#b-quit-yes'); if (qy) qy.onclick = () => { if (S.online) return leaveOnline(); S.confirmQuit = false; S.phase = 'splash'; S.G = null; S.match = null; render(); };
+  const qy = $('#b-quit-yes'); if (qy) qy.onclick = () => { if (S.online) return leaveOnline(); S.confirmQuit = false; S.tut = null; S.phase = 'splash'; S.G = null; S.match = null; render(); };
   const qn = $('#b-quit-no'); if (qn) qn.onclick = () => { S.confirmQuit = false; render(); };
   document.querySelectorAll('.hand .card').forEach(b => b.onclick = () => {
     const id = b.dataset.id;
@@ -1023,6 +1072,9 @@ function bindTable() {
     render();
   };
   const n = $('#b-next'); if (n) n.onclick = afterReveal;
+  const tk = $('#b-tut-skip'); if (tk) tk.onclick = () => { S.tut.stage = 'done'; render(); };
+  const tp = $('#b-tut-play'); if (tp) tp.onclick = () => endTutorial(true);
+  const tb = $('#b-tut-back'); if (tb) tb.onclick = () => endTutorial(false);
   const stb = $('#b-settarget'); if (stb) stb.onclick = () => { const c = myHand().find(x => x.id === S.pickSel); if (c) { S.pickSel = null; pickTarget(c); } };
   const d = $('#b-deal'); if (d) d.onclick = () => S.online ? onlineSend({ t: 'next' }) : startDeal();
   const a = $('#b-again'); if (a) a.onclick = () => S.online ? onlineSend({ t: 'next' }) : startMatch();
