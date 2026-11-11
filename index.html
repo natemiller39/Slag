@@ -1279,6 +1279,11 @@ function goOnline(first, connecting) {
   ws.onclose = () => {
     if (S.online !== o || o.leaving) return;
     const sess = getSession();
+    // Hosting or joining while the free server is still waking up: keep trying for up to 90 seconds.
+    if (!sess && S.connecting && Date.now() - S.connecting.since < 90000) {
+      o.tries++; S.connecting.slow = true; render();
+      return setTimeout(() => { if (S.online === o && S.connecting) goOnline(first, null); }, Math.min(1000 + 700 * o.tries, 4000));
+    }
     if (!sess || o.tries >= 8) return onlineFail(S.connecting ? "Couldn't reach the game server. Check your connection and try again." : 'Lost the connection to the game.');
     o.lost = true; o.tries++;
     if (S.phase !== 'splash') render();
@@ -1343,13 +1348,13 @@ function onlineSection() {
       ${inviting ? `<p class="invite">You're invited to room <b>${esc(code)}</b>. Enter your name to take a seat.</p>` : '<p class="hint">Host a room and share the code, or join a friend\'s room. Empty seats can be filled with bots.</p>'}
       <div class="name-row"><label class="lbl" for="o-name">Your name</label>
         <input id="o-name" class="inp" maxlength="16" autocomplete="nickname" placeholder="Your name" value="${esc(S.oname || '')}"></div>
+      ${S.oerr ? `<span class="hint bad" role="alert">${esc(S.oerr)}</span>` : ''}
       ${inviting
         ? `<div class="actions"><button class="btn primary" id="b-join">Join room ${esc(code)}</button><button class="btn small" id="b-notinvite">Host my own game</button></div>`
         : `<div class="actions"><button class="btn primary" id="b-host">Host a game</button></div>
            <div class="actions join-row"><label class="hint" for="o-code">Have a code?</label>
              <input id="o-code" class="inp code" maxlength="4" autocomplete="off" placeholder="CODE" value="${esc(code)}">
              <button class="btn" id="b-join">Join</button></div>`}
-      ${S.oerr ? `<span class="hint bad" role="alert">${esc(S.oerr)}</span>` : ''}
     </div>`;
 }
 function connectingHtml() {
