@@ -60,11 +60,11 @@ function bestCard(play, target) {
 // Table rule: when on, the play with the most cards of the target's color wins (negatives count),
 // and the highest target-color card breaks ties. When off, only the single best card counts.
 const RULES = { clash: false, targetLine: false, pureTang: false, blackDeck: false, scoring: 'tiers', colorCount: false, quench: false, usurper: false, slag: false, matchNumber: false, six: false };
-// Full Tang 6s option: every 6 is a blade. A 6 plus at least one other card, no negatives, with the 6 or another card in the target's color.
-// It always wins the round; between two Full Tangs the normal order decides. A Quench still cancels it.
+// Enforced Metal 6s option: every 6 is a blade. A 6 plus at least one other card, no negatives, with the 6 or another card in the target's color.
+// It always wins the round; between two Enforced Metals the normal order decides. A Quench still cancels it.
 const realSuit = s => SUIT_ORDER.includes(s) || (RULES.blackDeck && s === 'black');
 const isSix = c => !!c && c.value === 6 && realSuit(c.suit);
-// Full Tang (one color) option: 2+ cards, every one a positive card of the target's color. Negatives are neutral.
+// Enforced Metal (one color) option: 2+ cards, every one a positive card of the target's color. Negatives are neutral.
 const pureCombo = (p, t) => RULES.pureTang && p.length >= 2 && realSuit(t.suit) && p.every(c => c.suit === t.suit && c.value > 0);
 const isTang = (p, t) => sixCombo(p, t) || pureCombo(p, t);
 const sixCombo = (p, t) => RULES.six && p.length >= 2 && realSuit(t.suit) && p.some(isSix) && p.some(c => c.suit === t.suit) && !p.some(c => c.value < 0);
@@ -218,7 +218,7 @@ function resolveRound(G, plays) {
     for (const i of res.made) if (isTang(plays[i], t)) { const k = playKey(plays[i], t); if (!sk || cmpKey(k, sk) > 0) { sb = i; sk = k; } }
     const rivals = res.made.filter(i => i !== sb && isTang(plays[i], t)).length;
     res.winner = sb; res.winCard = bestCard(plays[sb], t).card; res.sixWin = true;
-    res.reason = rivals ? `Full Tang, and ${cardLabel(res.winCard)} wins the clash of blades` : best === sb ? 'Full Tang' : `Full Tang beats ${G.players[best].name === 'You' ? 'your' : G.players[best].name + "'s"} play`;
+    res.reason = rivals ? `Enforced Metal, and ${cardLabel(res.winCard)} wins the clash of blades` : best === sb ? 'Enforced Metal' : `Enforced Metal beats ${G.players[best].name === 'You' ? 'your' : G.players[best].name + "'s"} play`;
   }
   else if (res.usurperTarget) {
     // Usurper as the target: it has no color, so the highest single card wins; a tie on that card flips a new target.
@@ -400,7 +400,7 @@ function botPlay(hand, target, style, rng, ctx) {
     if (p.some(isSlag)) pWin *= 0.5; // the Slag card never counts as your high card; others pay if they win
     let ahead = 0;
     const nx = ctx && ctx.next;
-    if (nx && nx.value > 0) { // Target line: keep cards that can make the next target, ideally in its color or as a Full Tang
+    if (nx && nx.value > 0) { // Target line: keep cards that can make the next target, ideally in its color or as an Enforced Metal
       const np = legalPlays(rest, nx);
       ahead = np.length ? 1.2 + (np.some(q => q.some(c => c.suit === nx.suit && c.value > 0)) ? 1.0 : 0) + (np.some(q => isTang(q, nx)) ? 1.5 : 0) : -1.2;
     }

@@ -590,7 +590,7 @@ function cardEl(c, cls = '', extra = '') {
 }
 function badges(c, mini, paired) {
   let s = c.star ? '<span class="star" aria-hidden="true">★</span>' : '';
-  if (RULES.six && isSix(c)) s += '<span class="sixmark" aria-hidden="true"></span>' + (mini ? '' : '<span class="ftband" title="Full Tang: a 6 plus another card, with the middle color and no negatives, always wins">FULL TANG<b>−</b></span>');
+  if (RULES.six && isSix(c)) s += '<span class="sixmark" aria-hidden="true"></span>' + (mini ? '' : '<span class="ftband" title="Enforced Metal: a 6 plus another card, with the middle color and no negatives, always wins">ENFORCED METAL<b>−</b></span>');
   if (c.value < 0) {
     s += `<span class="negmark" aria-hidden="true">${neg(c.value)}</span>`;
     if (!mini) s += paired ? '<span class="fivemark paired" title="Paired with a same-suit card: subtracts at scoring">paired</span>' : (RULES.scoring === 'count' || c.suit === 'neutral' ? `<span class="fivemark" title="Scores +2 at the end">+2</span>` : `<span class="fivemark" title="Scores +5 at the end unless paired with a same-suit card${c.suit === 'black' ? ' (black never pairs)' : ''}">+5</span>`);
@@ -693,8 +693,8 @@ function startTutorial() {
       choose: `<b>Round 3.</b> Purple 8 is the target, and Purple 5 + Purple 3 makes it in Purple. Looks safe…`,
       reveal: `<b>Ben had a bigger blade.</b> His Purple 10 beats your Purple 5. Other smiths can hold higher cards of your color, so a safe-looking target isn't always safe. You still got rid of two cards. Ben wins, so he sets the next target. Press Continue.` },
     { ids: [yO6.id, yGr2.id], bots: [null, [aGr10, aGn2], null], last: true,
-      choose: `<b>Round 4.</b> Ben set <b>Green 8</b>, and you have two cards left. Here's your secret weapon: every <b>6</b> is a <b>Full Tang</b>. A 6 plus one other card, with the middle color and <b>no negatives</b>, always wins. Can you forge one?`,
-      reveal: `<b>Full Tang!</b> Ana's Green 10 is the highest Green, so it would normally win, but a Full Tang always wins. And those were your last cards, so <b>the deal is over</b>. Press Continue to see the scores.` },
+      choose: `<b>Round 4.</b> Ben set <b>Green 8</b>, and you have two cards left. Here's your secret weapon: every <b>6</b> is an <b>Enforced Metal</b>. A 6 plus one other card, with the middle color and <b>no negatives</b>, always wins. Can you forge one?`,
+      reveal: `<b>Enforced Metal!</b> Ana's Green 10 is the highest Green, so it would normally win, but an Enforced Metal always wins. And those were your last cards, so <b>the deal is over</b>. Press Continue to see the scores.` },
   ];
   S.tut = { r: 0, stage: 'choose', script, onPath: true };
   tutSnap();
@@ -728,7 +728,7 @@ function tutExplain(res) {
   let s = '';
   if (res.winner >= 0) s += `<b>${res.winner === 0 ? 'You win' : nm(res.winner) + ' wins'}</b>: ${res.reason}. `;
   else if (res.ended) s += `<b>Nobody made ${neg(tg.value)}.</b> `;
-  if (res.winner >= 0) s += res.sixWin ? 'A Full Tang (a 6 with the middle color, no negatives) always wins. ' : `The middle color (${col}) beats every other color, and the highest one wins. `;
+  if (res.winner >= 0) s += res.sixWin ? 'An Enforced Metal (a 6 with the middle color, no negatives) always wins. ' : `The middle color (${col}) beats every other color, and the highest one wins. `;
   const drew = res.penalties.map(p => p.i);
   if (drew.length && !res.ended) s += `${quenchNames(drew, G.players)} didn't make ${neg(tg.value)} and ${drew.length === 1 && drew[0] !== 0 ? 'draws' : 'draw'} a penalty card. Cards left in your hand cost points. `;
   if (res.ended || G.over || last) return s + 'Press Continue to see how scoring works.';
@@ -740,7 +740,7 @@ function tutChoose() {
   const head = `<b>Round ${t.r + 1} of ${t.script.length}.</b> The target is <b>${cardLabel(tg)}</b>. `;
   if (!sc.last) return head + `Make ${neg(tg.value)} with up to 3 cards. You can add <b>one negative</b> per play, like 8 − 3 = 5. Can't make it? Pass and draw a penalty card.`;
   const tang = legalPlays(myHand(), tg).some(p => isTang(p, tg));
-  return head + `Here's the power play: a <b>Full Tang</b> is a <b>6</b> plus a card of the middle color (${col}), with <b>no negatives</b>, and it always wins. ` + (tang ? 'You have one. Can you find it?' : `You don't have one this time, so play your best ${col}.`);
+  return head + `Here's the power play: an <b>Enforced Metal</b> is a <b>6</b> plus a card of the middle color (${col}), with <b>no negatives</b>, and it always wins. ` + (tang ? 'You have one. Can you find it?' : `You don't have one this time, so play your best ${col}.`);
 }
 function tutShow() {
   const t = S.tut, G = S.G;
@@ -878,8 +878,8 @@ function sdWhy(res, i, play, t) {
   const col = SUITS[t.suit] ? SUITS[t.suit].name : '';
   if (!res.made.includes(i)) return `Doesn't make ${neg(t.value)}`;
   const anyColor = res.made.some(j => colorCount(res.plays[j], t));
-  if (i === res.winner) return res.sixWin ? `Full Tang: a 6 with ${col}, no negatives` : anyColor ? `Highest ${col} card` : `Highest card (nobody played ${col})`;
-  if (res.sixWin) return isTang(play, t) ? `Full Tang too, but a lower ${col}` : 'A Full Tang beats every play';
+  if (i === res.winner) return res.sixWin ? `Enforced Metal: a 6 with ${col}, no negatives` : anyColor ? `Highest ${col} card` : `Highest card (nobody played ${col})`;
+  if (res.sixWin) return isTang(play, t) ? `Enforced Metal too, but a lower ${col}` : 'An Enforced Metal beats every play';
   if (res.winner < 0) return '';
   if (!anyColor) return 'Lower card';
   if (!colorCount(play, t)) return `No ${col}, so it can't win`;
@@ -925,7 +925,7 @@ function showdownHtml() {
       <div class="sd-label"><span class="sd-name">${p.name}</span>${cap ? `<span class="sd-cap">${cap}</span>` : ''}</div>${cards}${why ? `<div class="sd-why ${won ? 'good' : ''}">${why}</div>` : ''}</div>`;
   }).join('');
   const shown = preview || t;
-  const title = preview ? `${RULES.targetLine ? 'Joins the line' : 'Next target'} <b>${neg(shown.value)}</b> ${SUITS[shown.suit].name}` : res.clash ? `Clash · nobody wins <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : res.usurperTie ? `Usurper tie · new target` : res.colorless ? `Usurper · color doesn't count · make <b>${neg(t.value)}</b>` : res.seized ? `Usurper seizes the round · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : res.dethroned >= 0 && res.dethroned !== undefined ? `Usurper · the leader is dethroned · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : res.sixWin ? `Full Tang · always the strongest · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : res.slagTarget ? `Slag · color doesn't count · make <b>${neg(t.value)}</b> · the winner draws` : res.slagHit >= 0 ? `Slag card · the winner draws · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : res.quenched ? `Quenched · nobody wins <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : `Showdown · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}`;
+  const title = preview ? `${RULES.targetLine ? 'Joins the line' : 'Next target'} <b>${neg(shown.value)}</b> ${SUITS[shown.suit].name}` : res.clash ? `Clash · nobody wins <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : res.usurperTie ? `Usurper tie · new target` : res.colorless ? `Usurper · color doesn't count · make <b>${neg(t.value)}</b>` : res.seized ? `Usurper seizes the round · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : res.dethroned >= 0 && res.dethroned !== undefined ? `Usurper · the leader is dethroned · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : res.sixWin ? `Enforced Metal · always the strongest · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : res.slagTarget ? `Slag · color doesn't count · make <b>${neg(t.value)}</b> · the winner draws` : res.slagHit >= 0 ? `Slag card · the winner draws · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : res.quenched ? `Quenched · nobody wins <b>${neg(t.value)}</b> ${SUITS[t.suit].name}` : `Showdown · make <b>${neg(t.value)}</b> ${SUITS[t.suit].name}`;
   const list = !wide && window.matchMedia('(orientation: portrait)').matches;
   return `<section class="showdown ${wide ? '' : list ? 'list' : 'tight'}" style="--cols:${cols};--rows:${rows};--lw:${n >= 7 ? 34 : n >= 5 ? 38 : 44}px" aria-label="Round results">
     <div class="sd-head">${cardEl(shown, '')}<span class="sd-title">${title}</span></div>
@@ -944,8 +944,8 @@ function meterText() {
   if (sel.filter(c => c.value < 0).length > 1) return `${expr} <span class="no">· only one negative per play</span>`;
   if (sel.filter(isQuench).length > 1) return `${expr} <span class="no">· only one Quench per play</span>`;
   if (loneMatch(sel, t)) return `${expr} <span class="ok">· makes ${t.value}</span> <span class="hint">· matching number: your ${cardLabel(sel[0])} counts as ${SUITS[t.suit].name}</span>`;
-  if (sum === t.value && isTang(sel, t)) return `${expr} <span class="ok">· makes ${t.value}</span> <span class="hint">· Full Tang: this always wins (unless a better Full Tang shows up)</span>`;
-  if (RULES.six && sum === t.value && sel.some(isSix) && sel.some(c => c.value < 0) && sel.length >= 2) return `${expr} <span class="ok">· makes ${t.value}</span> <span class="hint">· the negative cracks the Full Tang</span>`;
+  if (sum === t.value && isTang(sel, t)) return `${expr} <span class="ok">· makes ${t.value}</span> <span class="hint">· Enforced Metal: this always wins (unless a better Enforced Metal shows up)</span>`;
+  if (RULES.six && sum === t.value && sel.some(isSix) && sel.some(c => c.value < 0) && sel.length >= 2) return `${expr} <span class="ok">· makes ${t.value}</span> <span class="hint">· the negative cracks the Enforced Metal</span>`;
   if (isSlag(t) && sum === t.value && sel.some(c => c.value > 0)) return `${expr} <span class="ok">· makes ${t.value}</span> <span class="hint">· Slag target: highest card wins, and the winner draws a penalty card</span>`;
   if (sel.some(isSlag) && sum === t.value) return `${expr} <span class="ok">· makes ${t.value}</span> <span class="hint">· Slag: whoever wins this round draws a penalty card (unless it's you)</span>`;
   if (isUsurper(t) && sum === t.value && sel.some(c => c.value > 0)) return `${expr} <span class="ok">· makes ${t.value}</span> <span class="hint">· Usurper target: color doesn't count, highest card wins</span>`;
@@ -1060,7 +1060,7 @@ function rulesBody() {
     ['You', [mk('red', 10), mk('green', -3)], 'Made it with one negative, but no Blue.', ''],
     ['Ana', [mk('blue', 4), mk('blue', 3)], RULES.six ? 'Blue is the middle color, so Ana beats you…' : 'Blue is the middle color. Ana wins!', RULES.six ? '' : 'win'],
   ];
-  if (RULES.six) rows.push(['Ben', [mk('red', 6), mk('blue', 1)], '…but Ben forged a Full Tang. Ben wins!', 'win']);
+  if (RULES.six) rows.push(['Ben', [mk('red', 6), mk('blue', 1)], '…but Ben forged an Enforced Metal. Ben wins!', 'win']);
   const example = `<figure class="rx" aria-label="Example round">
     <div class="rx-target"><span class="rx-tag">Make</span><span class="card"><img src="${src(t)}" alt="Blue 7"></span><span class="rx-tag">7 Blue</span></div>
     <div class="rx-rows">${rows.map(([who, cs, note, cls]) => `<div class="rx-row ${cls}"><span class="rx-who">${who}</span><span class="rx-cards">${cardsOf(cs)}<span class="rx-op">=</span><b class="rx-sum">7</b></span><span class="rx-note">${note}</span></div>`).join('')}</div>
@@ -1070,7 +1070,7 @@ function rulesBody() {
     : 'Cards left score their number. A negative scores 5, unless it pairs with a same-suit card, when it subtracts instead.';
   const opts = (RULES.targetLine ? `<h4>Target line</h4><p>Two targets are face up, the current one and the next. When you win, your card joins the back of the line. If nobody wins, the line moves up and a card from the draw pile refills it.</p>` : '')
     + (RULES.colorCount ? `<h4>Most of the color</h4><p>The play with the most cards of the middle color wins (negatives count). Tied? The highest card of that color wins.</p>` : '')
-    + (RULES.pureTang ? `<h4>Full Tang: one color</h4><p>Negatives are neutral: no color, never pair, 2 points each. Two or more cards all of the middle color is a Full Tang and beats every other play. Between two, the highest card wins.</p>` : '')
+    + (RULES.pureTang ? `<h4>Enforced Metal: one color</h4><p>Negatives are neutral: no color, never pair, 2 points each. Two or more cards all of the middle color is an Enforced Metal and beats every other play. Between two, the highest card wins.</p>` : '')
     + (RULES.blackDeck ? `<h4>Black suit deck</h4><p>Seven suits, 1 to 10, no doubles. Black has no sister and the lowest rank, so it never wins a tie. When black is the target, black is the middle color.</p>` : '')
     + (RULES.matchNumber ? `<h4>Matching number</h4><p>Played alone, the sister-color card with the target's number counts as the middle color. On a Blue 6, a lone Green 6 counts as a Blue 6.</p>` : '')
     + (RULES.slag ? `<h4>Slag card</h4><p>A colorless 7. Play it in a combo and whoever wins draws a penalty card (unless that's you). As the target, make 7: color doesn't count and the winner draws. Stuck with it at the end, it scores 7.</p>` : '')
@@ -1087,7 +1087,7 @@ function rulesBody() {
   </ol>
   <h3>Example</h3>
   ${example}
-  ${RULES.six ? `<h3>Full Tang 6s</h3><p>Every 6 is a solid blade. Play a <b>6 plus another card</b>, with the middle color in it and <b>no negatives</b>, and you win the round, no matter what. Add a negative and the blade cracks: it's just a normal play.</p>` : ''}
+  ${RULES.six ? `<h3>Enforced Metal 6s</h3><p>Every 6 is a solid blade. Play a <b>6 plus another card</b>, with the middle color in it and <b>no negatives</b>, and you win the round, no matter what. Add a negative and the blade cracks: it's just a normal play.</p>` : ''}
   <h3>Ties</h3>
   <p>Same number? The middle card's sister color wins (Red &amp; Orange, Blue &amp; Green, Purple &amp; Grey). ${RULES.clash ? '<b>Still tied? Clash!</b> Nobody wins, and the next draw-pile card becomes the target.' : `Still tied: Blue, Red, Purple, Green, Orange, Grey${RULES.blackDeck ? ', Black' : ''}. Then the starred card.`}</p>
   <h3>Winning</h3>
@@ -1118,7 +1118,7 @@ function splash() {
             <button data-mode="deals" aria-pressed="${S.mode === 'deals'}">Three deals</button>
             <button data-mode="fifty" aria-pressed="${S.mode === 'fifty'}">Play to 10 points</button></div>
           <span class="hint">${S.mode === 'fifty' ? 'Keep dealing until someone reaches 10 points. Lowest total wins. (Lab scoring: 25 with Tiers, 50 with Face value.)' : 'Lowest total after three deals wins.'}</span></div>
-        <div class="base-set"><span class="eyebrow">Base set</span><span>${S.bots + 1} players · classic deck · Full Tang 6s · Card count scoring: every card left scores 1, every negative 2.</span></div>
+        <div class="base-set"><span class="eyebrow">Base set</span><span>${S.bots + 1} players · classic deck · Enforced Metal 6s · Card count scoring: every card left scores 1, every negative 2.</span></div>
         <div class="actions"><button class="btn primary" id="b-play-base">Play Slag</button><button class="btn" id="b-learn">Quick tutorial</button></div>
         <details class="lab" ${S.labOpen ? 'open' : ''}><summary>Playtest lab: tweak the rules</summary>
         <p class="hint">Try other decks, scoring and options. Your settings here are saved on this device and don't change the base set.</p>
@@ -1148,12 +1148,12 @@ function splash() {
             <button data-quench="off" aria-pressed="${!S.quench}">Off</button>
             <button data-quench="on" aria-pressed="${!!S.quench}">On</button></div>
           ${S.quench ? `<span class="hint">${quenchCount(n)} Quench card${quenchCount(n) > 1 ? 's' : ''} in the deck. Tuck one into a play and nobody wins that round.</span>` : ''}</div>
-        <div class="field"><span class="lbl" id="l-six">Full Tang 6s</span>
+        <div class="field"><span class="lbl" id="l-six">Enforced Metal 6s</span>
           <div class="seg" role="group" aria-labelledby="l-six">
             <button data-six="off" aria-pressed="${!S.six}">Off</button>
             <button data-six="on" aria-pressed="${!!S.six}">On</button></div>
-          ${S.six ? '<span class="hint">Every 6 is a Full Tang blade. A 6 plus another card, with the middle color and no negatives, always wins.</span>' : ''}</div>
-        <div class="field"><span class="lbl" id="l-pure">Full Tang: one color</span>
+          ${S.six ? '<span class="hint">Every 6 is an Enforced Metal blade. A 6 plus another card, with the middle color and no negatives, always wins.</span>' : ''}</div>
+        <div class="field"><span class="lbl" id="l-pure">Enforced Metal: one color</span>
           <div class="seg" role="group" aria-labelledby="l-pure">
             <button data-pure="off" aria-pressed="${!S.pureTang}">Off</button>
             <button data-pure="on" aria-pressed="${!!S.pureTang}">On</button></div>
@@ -1409,15 +1409,15 @@ function lobbyHtml() {
         ${host ? `<div class="actions"><button class="btn small" id="b-addbot" ${n >= 8 ? 'disabled' : ''}>Add a bot</button></div>` : ''}</div>
       <div class="panel rules-panel"><h2 class="ph">Rules</h2>
         <div class="field"><span class="lbl">Match</span>${seg('mode', [['deals', 'Three deals'], ['fifty', 'Play to ' + playTo()]], v.settings.mode)}</div>
-        <p class="hint" style="margin:0">Base set: classic deck, Full Tang 6s, Card count scoring.</p>
+        <p class="hint" style="margin:0">Base set: classic deck, Enforced Metal 6s, Card count scoring.</p>
         <details class="lab"><summary>Playtest options</summary>
         <div class="field"><span class="lbl">Target line</span>${seg('line', [['off', 'Off'], ['on', 'On']], v.settings.targetLine ? 'on' : 'off')}</div>
         <div class="field"><span class="lbl">Deck</span>${seg('deck', [['classic', 'Classic'], ['black', 'Black suit']], v.settings.blackDeck ? 'black' : 'classic')}</div>
         <div class="field"><span class="lbl">Scoring</span>${seg('scoring', [['face', 'Face value'], ['count', 'Card count'], ['tiers', 'Tiers']], v.settings.scoring || 'tiers')}</div>
         <div class="field"><span class="lbl">Who wins a round</span>${seg('rule', [['high', 'Highest card'], ['count', 'Most of the color']], v.settings.colorRule ? 'count' : 'high')}</div>
         <div class="field"><span class="lbl">Quench cards</span>${seg('quench', [['off', 'Off'], ['on', 'On']], v.settings.quench ? 'on' : 'off')}${v.settings.quench ? `<span class="hint">${quenchCount(Math.max(n, 2))} in the deck for ${n} player${n > 1 ? 's' : ''}.</span>` : ''}</div>
-        <div class="field"><span class="lbl">Full Tang 6s</span>${seg('six', [['off', 'Off'], ['on', 'On']], v.settings.six ? 'on' : 'off')}</div>
-        <div class="field"><span class="lbl">Full Tang: one color</span>${seg('pure', [['off', 'Off'], ['on', 'On']], v.settings.pureTang ? 'on' : 'off')}</div>
+        <div class="field"><span class="lbl">Enforced Metal 6s</span>${seg('six', [['off', 'Off'], ['on', 'On']], v.settings.six ? 'on' : 'off')}</div>
+        <div class="field"><span class="lbl">Enforced Metal: one color</span>${seg('pure', [['off', 'Off'], ['on', 'On']], v.settings.pureTang ? 'on' : 'off')}</div>
         <div class="field"><span class="lbl">Slag card</span>${seg('slag', [['off', 'Off'], ['on', 'On']], v.settings.slag ? 'on' : 'off')}</div>
         <div class="field"><span class="lbl">Matching number</span>${seg('match', [['off', 'Off'], ['on', 'On']], v.settings.matchNumber ? 'on' : 'off')}</div>
         <div class="field"><span class="lbl">Clash ties</span>${seg('clash', [['off', 'Off'], ['on', 'On']], v.settings.clash ? 'on' : 'off')}</div>

@@ -8,9 +8,9 @@ This repo is a playable web version at a forge-lit table. Play against 1 to 7 co
 
 The start screen has two areas:
 
-- **Play Slag** plays the base set: the classic deck, **Full Tang 6s**, and **Card count** scoring (every card left scores 1, every negative 2). Online rooms start with the base set too.
+- **Play Slag** plays the base set: the classic deck, **Enforced Metal 6s**, and **Card count** scoring (every card left scores 1, every negative 2). Online rooms start with the base set too.
 - **How to play** (the Rules button) explains the base set in five steps with a picture of an example round. Inside a game it reflects the rules in use.
-- **Quick tutorial** plays four guided rounds against two bots. It starts with the goal (empty your hand; what's left is slag), then: win and set yourself up with a good target, win again with a negative, set up again but lose to a bigger card, and finish with a Full Tang (a 6 plus one card) to go out. It ends on the deal's scores and explains that a game is 3 deals. Suggested cards glow, but you can play anything; off the suggested path the bots play for real and the coach explains what happened.
+- **Quick tutorial** plays four guided rounds against two bots. It starts with the goal (empty your hand; what's left is slag), then: win and set yourself up with a good target, win again with a negative, set up again but lose to a bigger card, and finish with an Enforced Metal (a 6 plus one card) to go out. It ends on the deal's scores and explains that a game is 3 deals. Suggested cards glow, but you can play anything; off the suggested path the bots play for real and the coach explains what happened.
 - **Playtest lab** (folded away below it) holds every option and toggle for trying variants. Lab settings are saved on your device and never change the base set. In an online lobby, the same options sit under **Playtest options**.
 
 ## Playing online
@@ -71,7 +71,7 @@ Choose **Deck: Black suit** on the start screen or in the lobby to play with one
 - Black has no sister color and the lowest suit rank, so it never wins a tie.
 - When black is the target, black cards are the target color (a black negative counts too, as the lowest).
 - Black negatives pair with black cards at scoring.
-- A black 6 is a Full Tang like any other 6, and Full Tangs work when black is the target.
+- A black 6 is an Enforced Metal like any other 6, and Enforced Metals work when black is the target.
 
 ## Option: Quench cards
 
@@ -84,25 +84,25 @@ Turn on **Quench cards** on the start screen or in the lobby to shuffle 0-value 
 - One still in your hand at the end of a deal scores +5.
 - If a Quench is played when the draw pile is empty, the deal ends.
 
-## Option: Full Tang 6s
+## Option: Enforced Metal 6s
 
-Turn on **Full Tang 6s** on the start screen or in the lobby. (It replaces the old Usurper card.) Every 6 is a Full Tang blade.
+Turn on **Enforced Metal 6s** on the start screen or in the lobby. (It replaces the old Usurper card.) Every 6 is an Enforced Metal blade.
 
-- A **Full Tang** play is a 6 plus at least one other card, with **no negatives**, where the 6 or another card in the play is the target's color.
-- A Full Tang **always wins the round.** On a Blue 7, Red 6 + Blue 1 beats Blue 10 + −3.
+- An **Enforced Metal** play is a 6 plus at least one other card, with **no negatives**, where the 6 or another card in the play is the target's color.
+- An Enforced Metal **always wins the round.** On a Blue 7, Red 6 + Blue 1 beats Blue 10 + −3.
 - A negative cracks the blade: add one and it's just a normal play.
-- If two players have a Full Tang, the normal order decides between them. A Quench still cancels the round.
+- If two players have an Enforced Metal, the normal order decides between them. A Quench still cancels the round.
 - On screen, every 6 glows when the option is on so it's easy to spot.
 
-## Option: Full Tang: one color
+## Option: Enforced Metal: one color
 
-Turn on **Full Tang: one color** on the start screen or in the lobby. (Made for the black suit deck, but works with either.)
+Turn on **Enforced Metal: one color** on the start screen or in the lobby. (Made for the black suit deck, but works with either.)
 
 - All negatives are **neutral**: they have no color, never count as a color, never pair, and score **2** each if you're stuck with them.
-- A **Full Tang** is a play of two or more cards that are all the target's color (so no negatives).
-- A Full Tang **beats every other play**, even a higher target-color card played with a negative. On a Blue 7, Blue 4 + Blue 3 beats Blue 10 + −3.
-- Between two Full Tangs, the highest target-color card wins. A Quench still cancels the round.
-- This is separate from **Full Tang 6s**; both can be on at once, and either kind counts as a Full Tang.
+- An **Enforced Metal** is a play of two or more cards that are all the target's color (so no negatives).
+- An Enforced Metal **beats every other play**, even a higher target-color card played with a negative. On a Blue 7, Blue 4 + Blue 3 beats Blue 10 + −3.
+- Between two Enforced Metals, the highest target-color card wins. A Quench still cancels the round.
+- This is separate from **Enforced Metal 6s**; both can be on at once, and either kind counts as an Enforced Metal.
 
 ## Option: Slag card
 
