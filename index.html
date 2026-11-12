@@ -664,6 +664,34 @@ body.table .pile .ftband, body.table .pile .sixmark { display: none; }
 @media (min-width: 641px) { body.table .board .mat { top: 54%; } body.table .stage { --pw: clamp(32px, min(9.5cqw, 11.5cqh), 84px); } body.table .stage[data-n="m"] { --pw: clamp(28px, min(7.6cqw, 9.6cqh), 68px); } body.table .stage[data-n="l"] { --pw: clamp(24px, min(5.8cqw, 7.6cqh), 54px); } body.table .mat .card.big { --w: clamp(56px, min(9vw, 18cqh), 130px); } body.table .hand { --cw: clamp(56px, min(6.4vw, 13dvh), 92px); padding-inline: 34px; } }
 body.table .tplay.fx:not(.fd) .tcard.key.off { animation: turn .5s .75s ease-in-out both, glowin .35s 1.3s both, dimin .3s 1.3s both; }
 body.table #app:has(.you.picking) .herald { display: none; }
+
+/* middle area: lower and larger */
+body.table .board .mat { top: 55.5%; padding: clamp(12px, 1.8vw, 22px) clamp(14px, 2.2vw, 28px); }
+body.table .mat .card.big { --w: clamp(64px, min(10.5vw, 19cqh), 150px); }
+body.table .mat .plate { padding: 8px 16px; }
+body.table .mat .pl-l { font-size: 13px; }
+body.table .mat .pl-n { font-size: clamp(34px, 4.8vw, 60px); }
+@media (max-width: 640px) {
+  body.table .board .mat { top: 58%; padding: 10px 12px; gap: 10px; }
+  body.table .mat .tcol { flex-direction: row; gap: 8px; }
+  body.table .mat .tcol .plate { margin-top: 0; padding: 6px 10px; }
+  body.table .mat .tcol .pl-row { flex-direction: column; align-items: center; gap: 0; }
+  body.table .mat .card.big { --w: clamp(60px, min(19cqw, 15cqh), 88px); }
+  body.table .mat .pl-n { font-size: 34px; }
+  body.table .mat .pl-l { font-size: 11px; }
+  body.table .pile { --w: clamp(24px, 7cqw, 32px); }
+}
+body.table .stage[data-ph="pick"] .seat.me .played { visibility: hidden; }
+@media (max-width: 640px) {
+  body.table .mat, body.table .mat.line { grid-template-columns: auto auto; grid-template-areas: "draw tcol" "disc tcol"; row-gap: 6px; }
+  body.table .mat.line { grid-template-columns: auto auto auto; grid-template-areas: "draw tcol next" "disc tcol next"; }
+  body.table .pile span { font-size: 9.5px; }
+}
+@media (max-width: 640px) {
+  body.table .stage[data-ph="pick"] .twhy { display: none; }
+  body.table .stage[data-ph="pick"] .board .mat { top: 66%; }
+  body.table .stage[data-ph="pick"] .played { transform: translateX(calc(var(--ux) * var(--pw) * .25)); }
+}
 </style>
 </head>
 <body>
@@ -1160,7 +1188,7 @@ function tableHtml() {
   S.fxReveal = fx.reveal; S.fxDeal = fx.deal;
   const N = G.players.length, size = N <= 4 ? 's' : N <= 6 ? 'm' : 'l';
   const seatsH = angs.map((a, k) => seatHtml(k + 1, a, fx)).join('') + seatHtml(0, 270, fx);
-  return `<section class="stage" data-n="${size}" aria-label="The table"><div class="board" aria-hidden="false">${matHtml()}</div>${seatsH}</section>`;
+  return `<section class="stage" data-n="${size}" data-ph="${S.phase}" aria-label="The table"><div class="board" aria-hidden="false">${matHtml()}</div>${seatsH}</section>`;
 }
 // Sweep the played cards into the discard pile, then carry on.
 function sweepThen(fn) {
