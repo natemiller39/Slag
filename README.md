@@ -13,6 +13,10 @@ The start screen has two areas:
 - **Quick tutorial** plays four guided rounds against two bots. It starts with the goal (empty your hand; what's left is slag), then: win and set yourself up with a good target, win again with a negative, set up again but lose to a bigger card, and finish with an Enforced Metal (a 6 plus one card) to go out. It ends on the deal's scores and explains that a game is 3 deals. Suggested cards glow, but you can play anything; off the suggested path the bots play for real and the coach explains what happened.
 - **Playtest lab** (folded away below it) holds every option and toggle for trying variants. Lab settings are saved on your device and never change the base set. In an online lobby, the same options sit under **Playtest options**.
 
+## The table
+
+The game is laid out like a real table seen from above: a wooden tabletop with the forge mat in the middle. Opponents hold a fanned, face-down hand, and computer players slide their face-down cards forward once they've decided. Your hand fans along the bottom; picked cards lift and glow. When everyone reveals, the cards flip together in front of each player, the winning card glows with a Winner badge, the others dim, and a short note says why each play won or lost. Enforced Metal, Clash and Quench get a stamp on the mat. Press Continue and the played cards sweep into the discard pile.
+
 ## Playing online
 
 1. On the start screen, enter your name and choose **Host a game**. You get a 4-letter room code and an invite link.
