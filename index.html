@@ -820,10 +820,13 @@ const hammerSvg = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4.5h1
 
 // ===== flow =====
 const BASE_SET = { colorRule: false, targetLine: false, blackDeck: false, scoring: 'count', quench: false, six: true, pureTang: false, slag: false, matchNumber: false, clash: false };
+// Smith's: the same deck and setup, but the most cards of the middle color wins, and there is no Enforced Metal.
+const SMITH_SET = { ...BASE_SET, colorRule: true, six: false };
+const baseSet = () => S.version === 'smith' ? SMITH_SET : BASE_SET;
 function applyRuleSet(o) { RULES.colorCount = !!o.colorRule; RULES.targetLine = !!o.targetLine; RULES.blackDeck = !!o.blackDeck; RULES.scoring = o.scoring || 'tiers'; RULES.quench = !!o.quench; RULES.usurper = false; RULES.six = !!o.six; RULES.pureTang = !!o.pureTang; RULES.slag = !!o.slag; RULES.matchNumber = !!o.matchNumber; RULES.clash = !!o.clash; }
 function startMatch(base) {
   if (typeof base !== 'boolean') base = !!S.lastBase;
-  S.lastBase = base; applyRuleSet(base ? BASE_SET : S);
+  S.lastBase = base; applyRuleSet(base ? baseSet() : S);
   const names = ['You', ...BOTS.slice(0, S.bots)];
   const styles = names.map((_, i) => i === 0 ? null : STYLES[(i - 1) % 3]);
   S.match = { names, styles, totals: names.map(() => 0), deals: [], mode: S.mode };
@@ -1361,7 +1364,7 @@ function overlay() {
 }
 function rulesHtml() {
   // Outside a game, explain the base set rather than whatever the playtest lab is set to.
-  if (!S.G && !S.online && typeof BASE_SET !== 'undefined') { const saved = { ...RULES }; applyRuleSet(BASE_SET); const h = rulesBody(); Object.assign(RULES, saved); return h; }
+  if (!S.G && !S.online && typeof BASE_SET !== 'undefined') { const saved = { ...RULES }; applyRuleSet(baseSet()); const h = rulesBody(); Object.assign(RULES, saved); return h; }
   return rulesBody();
 }
 function rulesBody() {
@@ -1388,6 +1391,7 @@ function rulesBody() {
     + (RULES.quench ? `<h4>Quench cards</h4><p>A 0 card you add to a play. When one is revealed, nobody wins: plays still shed, misses still draw, and a new target is flipped. Held at the end, it scores 5.</p>` : '');
   return `<h2 id="rules-h">How to play Slag</h2>
   <p class="rx-lead">You're a smith at the forge. Match the number in the middle to forge a weapon and get rid of your cards. Whatever's left in your hand at the end is <b>slag</b>. <b>Least slag wins.</b></p>
+  ${RULES.blackDeck ? '' : `<h3>Setup</h3><p><b>2 to 4 players:</b> take out Purple and Grey. <b>5 to 6 players:</b> use all six suits. Deal everyone 11 cards, plus a −1, −2 and −3. <b>7 players:</b> deal 10. <b>8 players:</b> deal 9. At 7 and 8, the black Slag viper negatives make up the extra −1, −2, −3 sets.</p>`}
   <h3>Each round</h3>
   <ol class="rx-steps">
     <li><b>Make the number.</b> Secretly pick 1 to 3 cards that add up to the middle card. Any colors work. You may add <b>one negative</b> to subtract.</li>
@@ -1423,7 +1427,7 @@ function splash() {
       <div class="panel mode"><h2 class="ph">Play the computer</h2>
         <div class="field"><span class="lbl" id="l-bots">Opponents</span>
           <div class="seg" role="group" aria-labelledby="l-bots">${[1, 2, 3, 4, 5, 6, 7].map(k => `<button data-bots="${k}" aria-pressed="${S.bots === k}">${k}</button>`).join('')}</div>
-          <span class="hint">${n} players: ${n === 8 ? 10 : 11} cards each plus a −1, −2 and −3.</span></div>
+          <span class="hint">${n} players: ${cfg.hand} cards each plus a −1, −2 and −3.</span></div>
         <div class="field"><span class="lbl" id="l-mode">Match</span>
           <div class="seg" role="group" aria-labelledby="l-mode">
             <button data-mode="deals" aria-pressed="${S.mode === 'deals'}">Three deals</button>
@@ -1433,7 +1437,12 @@ function splash() {
           <div class="seg" role="group" aria-labelledby="l-look">
             <button data-look="table" aria-pressed="${!isClassic()}">Tabletop</button>
             <button data-look="classic" aria-pressed="${isClassic()}">Classic</button></div></div>
-        <div class="base-set"><span class="eyebrow">Base set</span><span>${S.bots + 1} players · classic deck · Enforced Metal 6s · Card count scoring: every card left scores 1, every negative 2.</span></div>
+        <div class="field"><span class="lbl" id="l-version">Way to play</span>
+          <div class="seg" role="group" aria-labelledby="l-version">
+            <button data-version="classic" aria-pressed="${S.version !== 'smith'}">Classic</button>
+            <button data-version="smith" aria-pressed="${S.version === 'smith'}">Smith's</button></div>
+          <span class="hint">${S.version === 'smith' ? "The most cards of the middle color wins. Tied? The highest one. No Enforced Metal." : 'The highest card of the middle color wins. A 6 plus the middle color, no negatives, beats everything.'}</span></div>
+        <div class="base-set"><span class="eyebrow">Base set</span><span>${S.bots + 1} players · ${S.bots + 1 <= 4 ? '4 suits (Purple and Grey out)' : S.bots + 1 === 7 ? 'all 6 suits, 10 cards each' : S.bots + 1 === 8 ? 'all 6 suits, 9 cards each' : 'all 6 suits'} · ${S.version === 'smith' ? "Smith's: most of the middle color wins" : 'Classic with Enforced Metal 6s'} · Card count scoring: every card left scores 1, every negative 2.</span></div>
         <div class="actions"><button class="btn primary" id="b-play-base">Play Slag</button><button class="btn" id="b-learn">Quick tutorial</button></div>
         <details class="lab" ${S.labOpen ? 'open' : ''}><summary>Playtest lab: tweak the rules</summary>
         <p class="hint">Try other decks, scoring and options. Your settings here are saved on this device and don't change the base set.</p>
@@ -1499,6 +1508,7 @@ function bindSplash() {
   document.querySelectorAll('[data-bots]').forEach(b => b.onclick = () => { S.bots = +b.dataset.bots; save(); render(); });
   document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { S.mode = b.dataset.mode; save(); render(); });
   document.querySelectorAll('[data-look]').forEach(b => b.onclick = () => { S.look = b.dataset.look; saveLook(); render(); });
+  document.querySelectorAll('[data-version]').forEach(b => b.onclick = () => { S.version = b.dataset.version; try { localStorage.setItem('slag-version', S.version); } catch (e) {} render(); });
   document.querySelectorAll('[data-line]').forEach(b => b.onclick = () => { S.targetLine = b.dataset.line === 'on'; RULES.targetLine = S.targetLine; save(); render(); });
   document.querySelectorAll('[data-deck]').forEach(b => b.onclick = () => { S.blackDeck = b.dataset.deck === 'black'; RULES.blackDeck = S.blackDeck; save(); render(); });
   document.querySelectorAll('[data-scoring]').forEach(b => b.onclick = () => { S.scoring = b.dataset.scoring; RULES.scoring = S.scoring; save(); render(); });
@@ -1727,7 +1737,8 @@ function lobbyHtml() {
         ${host ? `<div class="actions"><button class="btn small" id="b-addbot" ${n >= 8 ? 'disabled' : ''}>Add a bot</button></div>` : ''}</div>
       <div class="panel rules-panel"><h2 class="ph">Rules</h2>
         <div class="field"><span class="lbl">Match</span>${seg('mode', [['deals', 'Three deals'], ['fifty', 'Play to ' + playTo()]], v.settings.mode)}</div>
-        <p class="hint" style="margin:0">Base set: classic deck, Enforced Metal 6s, Card count scoring.</p>
+        <div class="field"><span class="lbl">Way to play</span>${seg('way', [['classic', 'Classic'], ['smith', "Smith's"]], v.settings.colorRule && !v.settings.six ? 'smith' : 'classic')}</div>
+        <p class="hint" style="margin:0">${v.settings.colorRule && !v.settings.six ? "Smith's: the most cards of the middle color wins. No Enforced Metal." : 'Classic: the highest middle-color card wins, with Enforced Metal 6s.'} Card count scoring.</p>
         <details class="lab"><summary>Playtest options</summary>
         <div class="field"><span class="lbl">Target line</span>${seg('line', [['off', 'Off'], ['on', 'On']], v.settings.targetLine ? 'on' : 'off')}</div>
         <div class="field"><span class="lbl">Deck</span>${seg('deck', [['classic', 'Classic'], ['black', 'Black suit']], v.settings.blackDeck ? 'black' : 'classic')}</div>
@@ -1764,6 +1775,7 @@ function bindLobby() {
   document.querySelectorAll('[data-line]').forEach(b => b.onclick = () => onlineSend({ t: 'settings', targetLine: b.dataset.line === 'on' }));
   document.querySelectorAll('[data-quench]').forEach(b => b.onclick = () => onlineSend({ t: 'settings', quench: b.dataset.quench === 'on' }));
   document.querySelectorAll('[data-six]').forEach(b => b.onclick = () => onlineSend({ t: 'settings', six: b.dataset.six === 'on' }));
+  document.querySelectorAll('[data-way]').forEach(b => b.onclick = () => { const sm = b.dataset.way === 'smith'; onlineSend({ t: 'settings', colorRule: sm, six: !sm }); });
   document.querySelectorAll('[data-pure]').forEach(b => b.onclick = () => onlineSend({ t: 'settings', pureTang: b.dataset.pure === 'on' }));
   document.querySelectorAll('[data-slag]').forEach(b => b.onclick = () => onlineSend({ t: 'settings', slag: b.dataset.slag === 'on' }));
   document.querySelectorAll('[data-match]').forEach(b => b.onclick = () => onlineSend({ t: 'settings', matchNumber: b.dataset.match === 'on' }));
@@ -1773,6 +1785,7 @@ function bindLobby() {
 
 // remember setup choices for this viewer only
 function saveLook() { try { localStorage.setItem('slag-look', S.look); } catch (e) {} }
+try { S.version = localStorage.getItem('slag-version') === 'smith' ? 'smith' : 'classic'; } catch (e) { S.version = 'classic'; }
 try { S.look = localStorage.getItem('slag-look') || 'table'; } catch (e) { S.look = 'table'; }
 function save() { try { localStorage.setItem('slag-setup', JSON.stringify({ bots: S.bots, mode: S.mode, colorRule: S.colorRule, blackDeck: !!S.blackDeck, targetLine: !!S.targetLine, scoring: S.scoring || 'tiers', ruleChosen: !!S.ruleChosen, quench: !!S.quench, six: !!S.six, pureTang: !!S.pureTang, slag: !!S.slag, matchNumber: !!S.matchNumber, clash: !!S.clash, oname: S.oname || '' })); } catch (e) {} }
 function load() { try { const v = JSON.parse(localStorage.getItem('slag-setup') || 'null'); if (v) { S.bots = v.bots || 3; S.mode = v.mode || 'deals'; S.scoring = ['face', 'count', 'tiers'].includes(v.scoring) ? v.scoring : 'tiers'; S.blackDeck = !!v.blackDeck; S.targetLine = !!v.targetLine; if (v.ruleChosen && typeof v.colorRule === 'boolean') { S.colorRule = v.colorRule; S.ruleChosen = true; } S.quench = !!v.quench; S.six = !!v.six; S.pureTang = !!v.pureTang; S.slag = !!v.slag; S.matchNumber = !!v.matchNumber; S.clash = !!v.clash; if (v.oname) S.oname = v.oname; } } catch (e) {} }

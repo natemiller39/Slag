@@ -25,13 +25,12 @@ function shuffle(a, rng) { for (let i = a.length - 1; i > 0; i--) { const j = Ma
 const BLACK_HANDS = { 2: 11, 3: 11, 4: 11, 5: 10, 6: 9, 7: 8, 8: 7 };
 function setupFor(n) {
   if (RULES.blackDeck) return { suits: [...SUIT_ORDER, 'black'], doubles: false, hand: BLACK_HANDS[n], black: Math.max(0, n - 7) };
-  if (n === 2) return { suits: ['red', 'orange', 'blue', 'green'], doubles: false, hand: 11, black: 0 };
-  if (n === 3 || n === 4) return RULES.colorCount
-    ? { suits: SUIT_ORDER, doubles: true, hand: 11, black: 0, singleOnly: ['purple', 'grey'] } // Most of the color: Purple & Grey 1–10, no doubles
-    : { suits: SUIT_ORDER, doubles: true, hand: 11, black: 0, highOnly: ['purple', 'grey'] }; // Highest card: Purple & Grey 6–10 only
+  // Classic deck, whole suits only. 2–4 players: Red, Orange, Blue, Green (60 cards). 5–6: all six suits (90 cards).
+  // 7–8: all six suits, smaller hands; the black Slag viper negatives fill in the extra negative sets.
+  if (n <= 4) return { suits: ['red', 'orange', 'blue', 'green'], doubles: true, hand: 11, black: 0 };
   if (n <= 6) return { suits: SUIT_ORDER, doubles: true, hand: 11, black: 0 };
-  if (n === 7) return { suits: SUIT_ORDER, doubles: true, hand: 11, black: 1 };
-  return { suits: SUIT_ORDER, doubles: true, hand: 10, black: 2 };
+  if (n === 7) return { suits: SUIT_ORDER, doubles: true, hand: 10, black: 1 };
+  return { suits: SUIT_ORDER, doubles: true, hand: 9, black: 2 };
 }
 
 // Quench option: colorless 0-value Quench cards shuffled into the deck. One at 2–4 players, two at 5, three at 6–8.
