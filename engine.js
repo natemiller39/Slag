@@ -41,7 +41,7 @@ function cardLabel(c) { if (isQuench(c)) return 'Quench 0'; if (isUsurper(c)) re
 // Ranking key of a single positive card relative to a target (higher array wins, compared left to right)
 function cardKey(c, target, alone) {
   const real = c.suit === target.suit ? 1 : 0;
-  const k = [real || (alone && numMatch(c, target)) ? 1 : 0, c.value, SUITS[target.suit].sister === c.suit ? 1 : 0, SUITS[c.suit].rank, c.star ? 1 : 0];
+  const k = [real || (alone && numMatch(c, target)) ? 1 : 0, c.value, SUITS[target.suit].sister === c.suit ? 1 : 0, RULES.clash ? 0 : SUITS[c.suit].rank, c.star ? 1 : 0]; // with Clash ties, suit rank never breaks a tie (the star still does)
   if (RULES.matchNumber) k.splice(2, 0, real); // a real target-color card wins an exact tie with a matching number
   return k;
 }
@@ -244,8 +244,8 @@ function resolveRound(G, plays) {
   // color, number and sister suit, the blades clash: nobody wins and a new target is flipped.
   if (RULES.clash && res.winner >= 0 && !res.quenched) {
     const pool = res.sixWin ? res.made.filter(i => isTang(plays[i], t)) : res.made;
-    const wk = playKey(plays[res.winner], t).slice(0, -2);
-    const tied = pool.filter(i => i !== res.winner && cmpKey(playKey(plays[i], t).slice(0, -2), wk) === 0);
+    const wk = playKey(plays[res.winner], t);
+    const tied = pool.filter(i => i !== res.winner && cmpKey(playKey(plays[i], t), wk) === 0);
     if (tied.length) {
       res.clash = true; res.clashWith = [res.winner, ...tied]; res.wouldWin = res.winner;
       res.reason = `${[res.winner, ...tied].map(i => G.players[i].name).join(' and ')} tied${res.winCard ? ' on ' + res.winCard.value : ''}, so nobody wins`;

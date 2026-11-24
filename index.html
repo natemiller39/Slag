@@ -1404,7 +1404,7 @@ function rulesBody() {
   ${example}
   ${RULES.six ? `<h3>Enforced Metal 6s</h3><p>Every 6 is a solid blade. Play a <b>6 plus another card</b>, with the middle color in it and <b>no negatives</b>, and you win the round, no matter what. Add a negative and the blade cracks: it's just a normal play.</p>` : ''}
   <h3>Ties</h3>
-  <p>Same number? The middle card's sister color wins (Red &amp; Orange, Blue &amp; Green, Purple &amp; Grey). ${RULES.clash ? '<b>Still tied? Clash!</b> Nobody wins, and the next draw-pile card becomes the target.' : `Still tied: Blue, Red, Purple, Green, Orange, Grey${RULES.blackDeck ? ', Black' : ''}. Then the starred card.`}</p>
+  <p>Same number? The middle card's sister color wins (Red &amp; Orange, Blue &amp; Green, Purple &amp; Grey). ${RULES.clash ? 'Two identical cards? The starred copy wins. <b>Still tied? Clash!</b> Nobody wins, and the next draw-pile card becomes the target.' : `Still tied: Blue, Red, Purple, Green, Orange, Grey${RULES.blackDeck ? ', Black' : ''}. Then the starred card.`}</p>
   <h3>Winning</h3>
   <p>The deal ends when someone plays their last card, or nobody can make the number. ${score} Lowest total after three deals wins.</p>
   ${opts ? `<h3>Playtest options on</h3>${opts}` : ''}`;
@@ -1496,7 +1496,7 @@ function splash() {
         <div class="seg" role="group" aria-labelledby="l-clash">
           <button data-clash="off" aria-pressed="${!S.clash}">Off</button>
           <button data-clash="on" aria-pressed="${!!S.clash}">On</button></div>
-        ${S.clash ? '<span class="hint">No suit rank or stars. Same number and the sister color can\'t split it? The blades clash: nobody wins, and a new target is flipped.</span>' : ''}</div>
+        ${S.clash ? '<span class="hint">No suit rank. Same number, and the sister color and the star can\'t split it? The blades clash: nobody wins, and a new target is flipped.</span>' : ''}</div>
         <div class="actions"><button class="btn" id="b-start">Play with these rules</button></div>
         </details>
       </div>
