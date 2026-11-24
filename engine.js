@@ -22,15 +22,15 @@ function shuffle(a, rng) { for (let i = a.length - 1; i > 0; i--) { const j = Ma
 
 // Black suit deck option: six suits plus a black suit, each 1–10 with no doubles (70 cards), the same deck at every count.
 // Black has no sister and the lowest suit rank, so it never wins a tie. Black negatives pair with black cards.
+const CLASSIC_HANDS = { 2: 11, 3: 11, 4: 11, 5: 11, 6: 11, 7: 11, 8: 10 };
 const BLACK_HANDS = { 2: 11, 3: 11, 4: 11, 5: 10, 6: 9, 7: 8, 8: 7 };
 function setupFor(n) {
   if (RULES.blackDeck) return { suits: [...SUIT_ORDER, 'black'], doubles: false, hand: BLACK_HANDS[n], black: Math.max(0, n - 7) };
-  // Classic deck, whole suits only. 2–4 players: Red, Orange, Blue, Green (60 cards). 5–6: all six suits (90 cards).
-  // 7–8: all six suits, smaller hands; the black Slag viper negatives fill in the extra negative sets.
-  if (n <= 4) return { suits: ['red', 'orange', 'blue', 'green'], doubles: true, hand: 11, black: 0 };
-  if (n <= 6) return { suits: SUIT_ORDER, doubles: true, hand: 11, black: 0 };
-  if (n === 7) return { suits: SUIT_ORDER, doubles: true, hand: 10, black: 1 };
-  return { suits: SUIT_ORDER, doubles: true, hand: 9, black: 2 };
+  // One deck: six suits (1–5 doubled, one copy starred) plus Black 1–10, and a −1, −2, −3 set for each of the seven suits plus one neutral set.
+  // 2–4 players: take out Purple and Grey. 8 players: the neutral negatives come in as the eighth set.
+  const hand = CLASSIC_HANDS[n] || 11;
+  if (n <= 4) return { suits: ['red', 'orange', 'blue', 'green', 'black'], doubles: true, singleOnly: ['black'], hand, black: 0, neutral: 0 };
+  return { suits: [...SUIT_ORDER, 'black'], doubles: true, singleOnly: ['black'], hand, black: 0, neutral: n >= 8 ? 1 : 0 };
 }
 
 // Quench option: colorless 0-value Quench cards shuffled into the deck. One at 2–4 players, two at 5, three at 6–8.
@@ -61,7 +61,7 @@ function bestCard(play, target) {
 const RULES = { clash: false, targetLine: false, pureTang: false, blackDeck: false, scoring: 'tiers', colorCount: false, quench: false, usurper: false, slag: false, matchNumber: false, six: false };
 // Enforced Metal 6s option: every 6 is a blade. A 6 plus at least one other card, no negatives, with the 6 or another card in the target's color.
 // It always wins the round; between two Enforced Metals the normal order decides. A Quench still cancels it.
-const realSuit = s => SUIT_ORDER.includes(s) || (RULES.blackDeck && s === 'black');
+const realSuit = s => SUIT_ORDER.includes(s) || s === 'black'; // Black is a full suit in every deck now
 const isSix = c => !!c && c.value === 6 && realSuit(c.suit);
 // Enforced Metal (one color) option: 2+ cards, every one a positive card of the target's color. Negatives are neutral.
 const pureCombo = (p, t) => RULES.pureTang && p.length >= 2 && realSuit(t.suit) && p.every(c => c.suit === t.suit && c.value > 0);
@@ -77,7 +77,7 @@ const isUsurper = c => !!c && c.suit === 'usurper';
 // otherwise it is a plain colorless 3. (A card with a .pair would only work on its sister pair; not dealt.)
 const PAIRS = { red: ['red', 'orange'], green: ['green', 'blue'], purple: ['purple', 'grey'] };
 const usurperLive = (c, t, play) => isUsurper(c) && (!c.pair || PAIRS[c.pair].includes(t.suit)) && play.some(x => x.suit === t.suit && x.value > 0);
-const negColor = (play, t) => (SUIT_ORDER.includes(t.suit) || (RULES.blackDeck && t.suit === 'black')) && play.some(c => c.value < 0 && c.suit === t.suit);
+const negColor = (play, t) => (SUIT_ORDER.includes(t.suit) || t.suit === 'black') && play.some(c => c.value < 0 && c.suit === t.suit);
 function colorCount(play, target) { return play.filter(c => asColor(c, target, play)).length; }
 function topColor(play, target) { return Math.max(0, ...play.filter(c => c.value > 0 && asColor(c, target, play)).map(c => c.value)); }
 function playKey(play, target) {
@@ -152,6 +152,7 @@ function newDeal(names, rng, opts = {}) {
   shuffle(main, rng);
   const negSuits = cfg.suits.slice();
   for (let b = 0; b < cfg.black; b++) negSuits.push('black');
+  for (let b = 0; b < (cfg.neutral || 0); b++) negSuits.push('neutral');
   const piles = [-1, -2, -3].map(v => shuffle((RULES.pureTang ? names.map(() => 'neutral') : negSuits).map(s => mkCard(s, v, false)), rng));
   const players = names.map((name, i) => ({ name, hand: [], seat: i }));
   for (const p of players) p.hand = main.splice(0, cfg.hand);
@@ -452,5 +453,5 @@ function botTarget(hand, rng, ctx) {
   return best;
 }
 
-if (typeof module !== 'undefined') module.exports = { advanceLine, pureCombo, isTang, BLACK_HANDS, playTo, tierPts, cardPts, negColor, isSix, sixCombo, loneMatch, numMatch, asColor, PAIRS, usurperLive, isSlag, isUsurper, RULES, playKey, colorCount, SUITS, SUIT_ORDER, setupFor, newDeal, resolveRound, setNextTarget, legalPlays, isLegal, bestCard, cardKey, cmpKey, scoreHand, botPlay, botTarget, botCtx, botMove, isQuench, quenchCount, STYLES, cardLabel, shuffle };
+if (typeof module !== 'undefined') module.exports = { CLASSIC_HANDS, advanceLine, pureCombo, isTang, BLACK_HANDS, playTo, tierPts, cardPts, negColor, isSix, sixCombo, loneMatch, numMatch, asColor, PAIRS, usurperLive, isSlag, isUsurper, RULES, playKey, colorCount, SUITS, SUIT_ORDER, setupFor, newDeal, resolveRound, setNextTarget, legalPlays, isLegal, bestCard, cardKey, cmpKey, scoreHand, botPlay, botTarget, botCtx, botMove, isQuench, quenchCount, STYLES, cardLabel, shuffle };
 
