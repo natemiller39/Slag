@@ -1391,7 +1391,7 @@ function rulesBody() {
     + (RULES.quench ? `<h4>Quench cards</h4><p>A 0 card you add to a play. When one is revealed, nobody wins: plays still shed, misses still draw, and a new target is flipped. Held at the end, it scores 5.</p>` : '');
   return `<h2 id="rules-h">How to play Slag</h2>
   <p class="rx-lead">You're a smith at the forge. Match the number in the middle to forge a weapon and get rid of your cards. Whatever's left in your hand at the end is <b>slag</b>. <b>Least slag wins.</b></p>
-  ${RULES.blackDeck ? '' : `<h3>Setup</h3><p>One deck: six colors (1 to 5 twice, one copy starred, 6 to 10 once) plus Black 1 to 10, with a −1, −2, −3 set for each of the seven suits and one neutral set. <b>2 to 4 players:</b> take out Purple and Grey. <b>5 to 7 players:</b> use everything but the neutral negatives. <b>8 players:</b> add the neutral negatives. Deal everyone 11 cards (10 at 8 players), plus a −1, −2 and −3. Black has no sister color, and neutral negatives never count as a color.</p>`}
+  ${RULES.blackDeck ? '' : `<h3>Setup</h3><p>One deck: Red, Orange, Blue and Green (1 to 5 twice, one copy starred, 6 to 10 once), plus Purple, Grey and Black (1 to 10 once), with a −1, −2, −3 set for each of the seven suits and one neutral set. <b>2 to 4 players:</b> take out Purple and Grey. <b>5 to 7 players:</b> use everything but the neutral negatives. <b>8 players:</b> add the neutral negatives. Deal everyone 11 cards (10 at 7 players, 9 at 8), plus a −1, −2 and −3. Black has no sister color, and neutral negatives never count as a color.</p>`}
   <h3>Each round</h3>
   <ol class="rx-steps">
     <li><b>Make the number.</b> Secretly pick 1 to 3 cards that add up to the middle card. Any colors work. You may add <b>one negative</b> to subtract.</li>
@@ -1416,7 +1416,7 @@ function splash() {
   const mid = (fanCards.length - 1) / 2;
   const fan = fanCards.map((c, i) => { const o = i - mid; return `<span class="card" style="transform:translateX(calc(${o} * var(--spread))) translateY(${Math.abs(o) * Math.abs(o) * 5}px) rotate(${o * 7}deg)"><img src="${src(c)}" alt=""></span>`; }).join('');
   const n = S.bots + 1, cfg = setupFor(n);
-  const deck = RULES.blackDeck ? 'six suits plus a black suit, 1 to 10 with no doubles (70 cards)' + (cfg.black ? ' plus 1 extra black negative set' : '') : n <= 4 ? 'Red, Orange, Blue, Green and Black (70 cards; Purple and Grey stay in the box)' : 'all six colors plus Black (100 cards)' + (n >= 8 ? ' and the neutral negatives' : '');
+  const deck = RULES.blackDeck ? 'six suits plus a black suit, 1 to 10 with no doubles (70 cards)' + (cfg.black ? ' plus 1 extra black negative set' : '') : n <= 4 ? 'Red, Orange, Blue, Green and Black (70 cards; Purple and Grey stay in the box)' : 'all seven suits (90 cards)' + (n >= 8 ? ' and the neutral negatives' : '');
   return `<section class="splash">
     <div class="splash-top">
       <div><h1>Slag</h1><p class="lead">A card-shedding game for 2 to 8 players. Match the target to forge your weapon, outdo the other smiths, and leave the least slag behind.</p>
@@ -1442,7 +1442,7 @@ function splash() {
             <button data-version="classic" aria-pressed="${S.version !== 'smith'}">Classic</button>
             <button data-version="smith" aria-pressed="${S.version === 'smith'}">Smith's</button></div>
           <span class="hint">${S.version === 'smith' ? "The most cards of the middle color wins. Tied? The highest one. No Enforced Metal." : 'The highest card of the middle color wins. A 6 plus the middle color, no negatives, beats everything.'}</span></div>
-        <div class="base-set"><span class="eyebrow">Base set</span><span>${S.bots + 1} players · ${S.bots + 1 <= 4 ? '4 colors + Black (Purple and Grey out)' : S.bots + 1 === 8 ? 'all 7 suits + neutral negatives, 10 cards each' : 'all 7 suits'} · ${S.version === 'smith' ? "Smith's: most of the middle color wins" : 'Classic with Enforced Metal 6s'} · Unbroken ties clash · Card count scoring: every card left scores 1, every negative 2.</span></div>
+        <div class="base-set"><span class="eyebrow">Base set</span><span>${S.bots + 1} players · ${S.bots + 1 <= 4 ? '4 colors + Black (Purple and Grey out)' : S.bots + 1 === 8 ? 'all 7 suits + neutral negatives, 9 cards each' : S.bots + 1 === 7 ? 'all 7 suits, 10 cards each' : 'all 7 suits'} · ${S.version === 'smith' ? "Smith's: most of the middle color wins" : 'Classic with Enforced Metal 6s'} · Unbroken ties clash · Card count scoring: every card left scores 1, every negative 2.</span></div>
         <div class="actions"><button class="btn primary" id="b-play-base">Play Slag</button><button class="btn" id="b-learn">Quick tutorial</button></div>
         <details class="lab" ${S.labOpen ? 'open' : ''}><summary>Playtest lab: tweak the rules</summary>
         <p class="hint">Try other decks, scoring and options. Your settings here are saved on this device and don't change the base set.</p>

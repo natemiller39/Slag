@@ -22,15 +22,15 @@ function shuffle(a, rng) { for (let i = a.length - 1; i > 0; i--) { const j = Ma
 
 // Black suit deck option: six suits plus a black suit, each 1–10 with no doubles (70 cards), the same deck at every count.
 // Black has no sister and the lowest suit rank, so it never wins a tie. Black negatives pair with black cards.
-const CLASSIC_HANDS = { 2: 11, 3: 11, 4: 11, 5: 11, 6: 11, 7: 11, 8: 10 };
+const CLASSIC_HANDS = { 2: 11, 3: 11, 4: 11, 5: 11, 6: 11, 7: 10, 8: 9 };
 const BLACK_HANDS = { 2: 11, 3: 11, 4: 11, 5: 10, 6: 9, 7: 8, 8: 7 };
 function setupFor(n) {
   if (RULES.blackDeck) return { suits: [...SUIT_ORDER, 'black'], doubles: false, hand: BLACK_HANDS[n], black: Math.max(0, n - 7) };
-  // One deck: six suits (1–5 doubled, one copy starred) plus Black 1–10, and a −1, −2, −3 set for each of the seven suits plus one neutral set.
+  // One deck: Red, Orange, Blue, Green (1–5 doubled, one copy starred), Purple, Grey and Black (1–10 once), and a −1, −2, −3 set for each of the seven suits plus one neutral set.
   // 2–4 players: take out Purple and Grey. 8 players: the neutral negatives come in as the eighth set.
   const hand = CLASSIC_HANDS[n] || 11;
   if (n <= 4) return { suits: ['red', 'orange', 'blue', 'green', 'black'], doubles: true, singleOnly: ['black'], hand, black: 0, neutral: 0 };
-  return { suits: [...SUIT_ORDER, 'black'], doubles: true, singleOnly: ['black'], hand, black: 0, neutral: n >= 8 ? 1 : 0 };
+  return { suits: [...SUIT_ORDER, 'black'], doubles: true, singleOnly: ['purple', 'grey', 'black'], hand, black: 0, neutral: n >= 8 ? 1 : 0 };
 }
 
 // Quench option: colorless 0-value Quench cards shuffled into the deck. One at 2–4 players, two at 5, three at 6–8.
