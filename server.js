@@ -259,7 +259,7 @@ function handle(ws, msg) {
     }
     if (msg.rejoinOnly) return fail('That game has ended.', true);
     if (room.phase !== 'lobby') return fail('That game has already started.', true);
-    if (room.seats.length >= 8) return fail('That game is full (8 players).', true);
+    if (room.seats.length >= 6) return fail('That game is full (6 players).', true);
     const seat = addHuman(room, msg.name, ws);
     ws.room = room;
     send(ws, { t: 'joined', code: room.code, token: seat.token, name: seat.name });
@@ -287,7 +287,7 @@ function handle(ws, msg) {
       if (msg.mode === 'deals' || msg.mode === 'fifty') room.settings.mode = msg.mode;
       return broadcast(room);
     case 'addBot':
-      if (!isHost || room.phase !== 'lobby' || room.seats.length >= 8) return;
+      if (!isHost || room.phase !== 'lobby' || room.seats.length >= 6) return;
       addBot(room); return broadcast(room);
     case 'remove': {
       if (!isHost || room.phase !== 'lobby') return;

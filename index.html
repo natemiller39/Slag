@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Slag: A card-shedding game for 2 to 8 players. Match the target to forge your weapon, outdo the other smiths, and leave the least slag behind.">
+<meta name="description" content="Slag: A card-shedding game for 2 to 6 players. Match the target to forge your weapon, outdo the other smiths, and leave the least slag behind.">
 <style>
 :root { box-sizing: border-box; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
 body { margin: 0; }
@@ -890,14 +890,14 @@ function afterReveal() {
 function startTutorial() {
   applyRuleSet(BASE_SET);
   const C = (s, v, st) => mkCard(s, v, st);
-  const yB4 = C('blue', 4), yB3 = C('blue', 3), yR9 = C('red', 9), yR10 = C('red', 10), yGn1 = C('green', -1), yP8 = C('purple', 8), yP5 = C('purple', 5), yP3 = C('purple', 3), yO6 = C('orange', 6), yGr2 = C('green', 2);
+  const yB4 = C('blue', 4), yB3 = C('blue', 3), yR9 = C('red', 9), yR10 = C('red', 10), yGn1 = C('green', -1), yP8 = C('orange', 8), yP5 = C('orange', 5), yP3 = C('orange', 3), yO6 = C('orange', 6), yGr2 = C('green', 2);
   const you = [yB4, yB3, yR9, yR10, yGn1, yP8, yP5, yP3, yO6, yGr2];
-  const aB2 = C('blue', 2), aO5 = C('orange', 5), aR7 = C('red', 7), aR2 = C('red', 2), aG5 = C('grey', 5), aG3 = C('grey', 3), aGr10 = C('green', 10), aGn2 = C('grey', -2);
+  const aB2 = C('blue', 2), aO5 = C('orange', 5), aR7 = C('red', 7), aR2 = C('red', 2), aG5 = C('black', 5), aG3 = C('black', 3), aGr10 = C('green', 10), aGn2 = C('grey', -2);
   const ana = [aB2, aO5, aR7, aR2, aG5, aG3, aGr10, aGn2, C('orange', 9), C('blue', -3)];
-  const bGr5 = C('green', 5), bGr2 = C('green', 2), bP10 = C('purple', 10), bRn2 = C('red', -2), bGr8 = C('green', 8);
-  const ben = [bGr5, bGr2, bP10, bRn2, bGr8, C('grey', 4)];
+  const bGr5 = C('green', 5), bGr2 = C('green', 2), bP10 = C('orange', 10), bRn2 = C('red', -2), bGr8 = C('green', 8);
+  const ben = [bGr5, bGr2, bP10, bRn2, bGr8, C('black', 4)];
   const players = [{ name: 'You', hand: you, seat: 0 }, { name: 'Ana', hand: ana, seat: 1 }, { name: 'Ben', hand: ben, seat: 2 }];
-  const draw = [C('blue', 1), C('purple', 6), C('orange', 4), C('red', 1), C('grey', 8), C('orange', 2), C('purple', 2), C('green', 4)];
+  const draw = [C('blue', 1), C('purple', 6), C('orange', 4), C('red', 1), C('grey', 8), C('orange', 2), C('black', 2), C('green', 4)];
   S.G = { players, draw, discard: [], target: C('blue', 7), round: 1, reflips: 0, cfg: setupFor(3), n: 3, over: false, endReason: null, setter: -1 };
   S.match = { names: ['You', 'Ana', 'Ben'], styles: [null, 'steady', 'steady'], totals: [0, 0, 0], deals: [], mode: 'deals' };
   const script = [
@@ -906,10 +906,10 @@ function startTutorial() {
       reveal: `<b>You win!</b> Blue is the middle color, and your Blue 4 beats Ana's Blue 2. Ben used Green, so he couldn't win. Now the winner picks the next target from their hand. <b>Set yourself up:</b> you hold a Red 10, so pick your <b>Red 9</b>. Then tap Set target.` },
     { ids: [yR10.id, yGn1.id], bots: [null, [aR7, aR2], null], pickId: yP8.id,
       choose: `<b>Round 2.</b> You set Red 9, and you're holding a big Red card. You can add <b>one negative</b> to subtract: Red 10 + Green −1 = 9.`,
-      reveal: `<b>Set up for success!</b> Your Red 10 is the highest Red, so you win again. Ben couldn't make 9, so he <b>draws a penalty card</b>: more slag for him. Set yourself up again: you hold Purple 5 and Purple 3, so pick <b>Purple 8</b>.` },
+      reveal: `<b>Set up for success!</b> Your Red 10 is the highest Red, so you win again. Ben couldn't make 9, so he <b>draws a penalty card</b>: more slag for him. Set yourself up again: you hold Orange 5 and Orange 3, so pick <b>Orange 8</b>.` },
     { ids: [yP5.id, yP3.id], bots: [null, [aG5, aG3], [bP10, bRn2]], botPick: bGr8,
-      choose: `<b>Round 3.</b> Purple 8 is the target, and Purple 5 + Purple 3 makes it in Purple. Looks safe…`,
-      reveal: `<b>Ben had a bigger blade.</b> His Purple 10 beats your Purple 5. Other smiths can hold higher cards of your color, so a safe-looking target isn't always safe. You still got rid of two cards. Ben wins, so he sets the next target. Press Continue.` },
+      choose: `<b>Round 3.</b> Orange 8 is the target, and Orange 5 + Orange 3 makes it in Orange. Looks safe…`,
+      reveal: `<b>Ben had a bigger blade.</b> His Orange 10 beats your Orange 5. Other smiths can hold higher cards of your color, so a safe-looking target isn't always safe. You still got rid of two cards. Ben wins, so he sets the next target. Press Continue.` },
     { ids: [yO6.id, yGr2.id], bots: [null, [aGr10, aGn2], null], last: true,
       choose: `<b>Round 4.</b> Ben set <b>Green 8</b>, and you have two cards left. Here's your secret weapon: every <b>6</b> is an <b>Enforced Metal</b>. A 6 plus one other card, with the middle color and <b>no negatives</b>, always wins. Can you forge one?`,
       reveal: `<b>Enforced Metal!</b> Ana's Green 10 is the highest Green, so it would normally win, but an Enforced Metal always wins. And those were your last cards, so <b>the deal is over</b>. Press Continue to see the scores.` },
@@ -1391,7 +1391,7 @@ function rulesBody() {
     + (RULES.quench ? `<h4>Quench cards</h4><p>A 0 card you add to a play. When one is revealed, nobody wins: plays still shed, misses still draw, and a new target is flipped. Held at the end, it scores 5.</p>` : '');
   return `<h2 id="rules-h">How to play Slag</h2>
   <p class="rx-lead">You're a smith at the forge. Match the number in the middle to forge a weapon and get rid of your cards. Whatever's left in your hand at the end is <b>slag</b>. <b>Least slag wins.</b></p>
-  ${RULES.blackDeck ? '' : `<h3>Setup</h3><p>One deck: Red, Orange, Blue and Green (1 to 5 twice, one copy starred, 6 to 10 once), plus Purple, Grey and Black (1 to 10 once), with a −1, −2, −3 set for each of the seven suits and one neutral set. <b>2 to 4 players:</b> take out Purple and Grey. <b>5 to 7 players:</b> use everything but the neutral negatives. <b>8 players:</b> add the neutral negatives. Deal everyone 11 cards (10 at 7 players, 9 at 8), plus a −1, −2 and −3. Black has no sister color, and neutral negatives never count as a color.</p>`}
+  ${RULES.blackDeck ? '' : `<h3>Setup</h3><p>One deck for 2 to 6 players, and nothing comes out of it. Red, Orange, Blue and Green: 1 to 5 twice (one copy starred) and 6 to 10 once. Purple and Grey: 6 to 10 only. Black: 1 to 10 once (no sister color). Plus a −1, −2 and −3 for each of the seven suits. Deal everyone 11 cards (10 at 6 players), plus a −1, −2 and −3.</p>`}
   <h3>Each round</h3>
   <ol class="rx-steps">
     <li><b>Make the number.</b> Secretly pick 1 to 3 cards that add up to the middle card. Any colors work. You may add <b>one negative</b> to subtract.</li>
@@ -1416,17 +1416,17 @@ function splash() {
   const mid = (fanCards.length - 1) / 2;
   const fan = fanCards.map((c, i) => { const o = i - mid; return `<span class="card" style="transform:translateX(calc(${o} * var(--spread))) translateY(${Math.abs(o) * Math.abs(o) * 5}px) rotate(${o * 7}deg)"><img src="${src(c)}" alt=""></span>`; }).join('');
   const n = S.bots + 1, cfg = setupFor(n);
-  const deck = RULES.blackDeck ? 'six suits plus a black suit, 1 to 10 with no doubles (70 cards)' + (cfg.black ? ' plus 1 extra black negative set' : '') : n <= 4 ? 'Red, Orange, Blue, Green and Black (70 cards; Purple and Grey stay in the box)' : 'all seven suits (90 cards)' + (n >= 8 ? ' and the neutral negatives' : '');
+  const deck = RULES.blackDeck ? 'six suits plus a black suit, 1 to 10 with no doubles (70 cards)' + (cfg.black ? ' plus 1 extra black negative set' : '') : 'all seven suits (80 cards: Purple and Grey 6 to 10 only)';
   return `<section class="splash">
     <div class="splash-top">
-      <div><h1>Slag</h1><p class="lead">A card-shedding game for 2 to 8 players. Match the target to forge your weapon, outdo the other smiths, and leave the least slag behind.</p>
+      <div><h1>Slag</h1><p class="lead">A card-shedding game for 2 to 6 players. Match the target to forge your weapon, outdo the other smiths, and leave the least slag behind.</p>
         <div class="actions"><button class="btn small" id="b-rules">How to play</button></div></div>
       <div class="fan" aria-hidden="true">${fan}</div>
     </div>
     <div class="modes">
       <div class="panel mode"><h2 class="ph">Play the computer</h2>
         <div class="field"><span class="lbl" id="l-bots">Opponents</span>
-          <div class="seg" role="group" aria-labelledby="l-bots">${[1, 2, 3, 4, 5, 6, 7].map(k => `<button data-bots="${k}" aria-pressed="${S.bots === k}">${k}</button>`).join('')}</div>
+          <div class="seg" role="group" aria-labelledby="l-bots">${[1, 2, 3, 4, 5].map(k => `<button data-bots="${k}" aria-pressed="${S.bots === k}">${k}</button>`).join('')}</div>
           <span class="hint">${n} players: ${cfg.hand} cards each plus a −1, −2 and −3.</span></div>
         <div class="field"><span class="lbl" id="l-mode">Match</span>
           <div class="seg" role="group" aria-labelledby="l-mode">
@@ -1442,7 +1442,7 @@ function splash() {
             <button data-version="classic" aria-pressed="${S.version !== 'smith'}">Classic</button>
             <button data-version="smith" aria-pressed="${S.version === 'smith'}">Smith's</button></div>
           <span class="hint">${S.version === 'smith' ? "The most cards of the middle color wins. Tied? The highest one. No Enforced Metal." : 'The highest card of the middle color wins. A 6 plus the middle color, no negatives, beats everything.'}</span></div>
-        <div class="base-set"><span class="eyebrow">Base set</span><span>${S.bots + 1} players · ${S.bots + 1 <= 4 ? '4 colors + Black (Purple and Grey out)' : S.bots + 1 === 8 ? 'all 7 suits + neutral negatives, 9 cards each' : S.bots + 1 === 7 ? 'all 7 suits, 10 cards each' : 'all 7 suits'} · ${S.version === 'smith' ? "Smith's: most of the middle color wins" : 'Classic with Enforced Metal 6s'} · Unbroken ties clash · Card count scoring: every card left scores 1, every negative 2.</span></div>
+        <div class="base-set"><span class="eyebrow">Base set</span><span>${S.bots + 1} players · ${S.bots + 1 === 6 ? 'all 7 suits, 10 cards each' : 'all 7 suits, 11 cards each'} · ${S.version === 'smith' ? "Smith's: most of the middle color wins" : 'Classic with Enforced Metal 6s'} · Unbroken ties clash · Card count scoring: every card left scores 1, every negative 2.</span></div>
         <div class="actions"><button class="btn primary" id="b-play-base">Play Slag</button><button class="btn" id="b-learn">Quick tutorial</button></div>
         <details class="lab" ${S.labOpen ? 'open' : ''}><summary>Playtest lab: tweak the rules</summary>
         <p class="hint">Try other decks, scoring and options. Your settings here are saved on this device and don't change the base set.</p>
@@ -1734,7 +1734,7 @@ function lobbyHtml() {
         <span class="hint">Friends open the link, or enter <b>${v.code}</b> on the start screen.</span>
         <div class="actions deal-row">${deal}</div></div>
       <div class="panel"><h2 class="ph">Players <span class="meta">${n} of 8</span></h2><ul class="plist">${rows}${waiting}</ul>
-        ${host ? `<div class="actions"><button class="btn small" id="b-addbot" ${n >= 8 ? 'disabled' : ''}>Add a bot</button></div>` : ''}</div>
+        ${host ? `<div class="actions"><button class="btn small" id="b-addbot" ${n >= 6 ? 'disabled' : ''}>Add a bot</button></div>` : ''}</div>
       <div class="panel rules-panel"><h2 class="ph">Rules</h2>
         <div class="field"><span class="lbl">Match</span>${seg('mode', [['deals', 'Three deals'], ['fifty', 'Play to ' + playTo()]], v.settings.mode)}</div>
         <div class="field"><span class="lbl">Way to play</span>${seg('way', [['classic', 'Classic'], ['smith', "Smith's"]], v.settings.colorRule && !v.settings.six ? 'smith' : 'classic')}</div>
@@ -1788,7 +1788,7 @@ function saveLook() { try { localStorage.setItem('slag-look', S.look); } catch (
 try { S.version = localStorage.getItem('slag-version') === 'smith' ? 'smith' : 'classic'; } catch (e) { S.version = 'classic'; }
 try { S.look = localStorage.getItem('slag-look') || 'table'; } catch (e) { S.look = 'table'; }
 function save() { try { localStorage.setItem('slag-setup', JSON.stringify({ bots: S.bots, mode: S.mode, colorRule: S.colorRule, blackDeck: !!S.blackDeck, targetLine: !!S.targetLine, scoring: S.scoring || 'tiers', ruleChosen: !!S.ruleChosen, quench: !!S.quench, six: !!S.six, pureTang: !!S.pureTang, slag: !!S.slag, matchNumber: !!S.matchNumber, clash: !!S.clash, oname: S.oname || '' })); } catch (e) {} }
-function load() { try { const v = JSON.parse(localStorage.getItem('slag-setup') || 'null'); if (v) { S.bots = v.bots || 3; S.mode = v.mode || 'deals'; S.scoring = ['face', 'count', 'tiers'].includes(v.scoring) ? v.scoring : 'tiers'; S.blackDeck = !!v.blackDeck; S.targetLine = !!v.targetLine; if (v.ruleChosen && typeof v.colorRule === 'boolean') { S.colorRule = v.colorRule; S.ruleChosen = true; } S.quench = !!v.quench; S.six = !!v.six; S.pureTang = !!v.pureTang; S.slag = !!v.slag; S.matchNumber = !!v.matchNumber; S.clash = !!v.clash; if (v.oname) S.oname = v.oname; } } catch (e) {} }
+function load() { try { const v = JSON.parse(localStorage.getItem('slag-setup') || 'null'); if (v) { S.bots = Math.min(5, v.bots || 3); S.mode = v.mode || 'deals'; S.scoring = ['face', 'count', 'tiers'].includes(v.scoring) ? v.scoring : 'tiers'; S.blackDeck = !!v.blackDeck; S.targetLine = !!v.targetLine; if (v.ruleChosen && typeof v.colorRule === 'boolean') { S.colorRule = v.colorRule; S.ruleChosen = true; } S.quench = !!v.quench; S.six = !!v.six; S.pureTang = !!v.pureTang; S.slag = !!v.slag; S.matchNumber = !!v.matchNumber; S.clash = !!v.clash; if (v.oname) S.oname = v.oname; } } catch (e) {} }
 
 // keep a game in progress across page updates
 const hot = window.claude && window.claude.hot;

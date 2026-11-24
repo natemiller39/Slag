@@ -22,15 +22,14 @@ function shuffle(a, rng) { for (let i = a.length - 1; i > 0; i--) { const j = Ma
 
 // Black suit deck option: six suits plus a black suit, each 1–10 with no doubles (70 cards), the same deck at every count.
 // Black has no sister and the lowest suit rank, so it never wins a tie. Black negatives pair with black cards.
-const CLASSIC_HANDS = { 2: 11, 3: 11, 4: 11, 5: 11, 6: 11, 7: 10, 8: 9 };
+const CLASSIC_HANDS = { 2: 11, 3: 11, 4: 11, 5: 11, 6: 10 };
 const BLACK_HANDS = { 2: 11, 3: 11, 4: 11, 5: 10, 6: 9, 7: 8, 8: 7 };
 function setupFor(n) {
   if (RULES.blackDeck) return { suits: [...SUIT_ORDER, 'black'], doubles: false, hand: BLACK_HANDS[n], black: Math.max(0, n - 7) };
-  // One deck: Red, Orange, Blue, Green (1–5 doubled, one copy starred), Purple, Grey and Black (1–10 once), and a −1, −2, −3 set for each of the seven suits plus one neutral set.
-  // 2–4 players: take out Purple and Grey. 8 players: the neutral negatives come in as the eighth set.
-  const hand = CLASSIC_HANDS[n] || 11;
-  if (n <= 4) return { suits: ['red', 'orange', 'blue', 'green', 'black'], doubles: true, singleOnly: ['black'], hand, black: 0, neutral: 0 };
-  return { suits: [...SUIT_ORDER, 'black'], doubles: true, singleOnly: ['purple', 'grey', 'black'], hand, black: 0, neutral: n >= 8 ? 1 : 0 };
+  // One deck for 2–6 players, nothing taken out: Red, Orange, Blue, Green 1–5 doubled (one copy starred) and 6–10 once,
+  // Purple and Grey 6–10 only, Black 1–10 once (80 cards), and a −1, −2, −3 for each of the seven suits.
+  const hand = CLASSIC_HANDS[n] || 10;
+  return { suits: [...SUIT_ORDER, 'black'], doubles: true, highOnly: ['purple', 'grey'], singleOnly: ['black'], hand, black: 0, neutral: 0 };
 }
 
 // Quench option: colorless 0-value Quench cards shuffled into the deck. One at 2–4 players, two at 5, three at 6–8.
@@ -144,7 +143,7 @@ function newDeal(names, rng, opts = {}) {
   for (const s of cfg.suits) for (let v = 1; v <= 10; v++) {
     if (cfg.highOnly && cfg.highOnly.includes(s) && v <= 5) continue;
     main.push(mkCard(s, v, cfg.doubles && v <= 5 && !(cfg.singleOnly && cfg.singleOnly.includes(s))));
-    if (cfg.doubles && v <= 5 && !(cfg.singleOnly && cfg.singleOnly.includes(s))) main.push(mkCard(s, v, false));
+    if (!(cfg.highOnly && cfg.highOnly.includes(s) && v <= 5) && cfg.doubles && v <= 5 && !(cfg.singleOnly && cfg.singleOnly.includes(s))) main.push(mkCard(s, v, false));
   }
   if (RULES.usurper) main.push(mkCard('usurper', 3, false));
   if (RULES.slag) main.push(mkCard('slag', 7, false));
